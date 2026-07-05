@@ -37,7 +37,8 @@ public:
      * @param claw_angler          Claw angler solenoid (engaged while raising)
      * @param claw_clamp           Claw clamp solenoid (engaged while raising, released on score / bottom)
      * @param raise_mv             Upward drive voltage while raising (millivolts)
-     * @param lower_mv             Downward drive voltage while lowering (millivolts, kept modest so it eases in)
+     * @param lower_mv             Downward drive voltage when returning to the bottom (millivolts, kept modest so it eases in)
+     * @param score_mv             Downward drive voltage while scoring (millivolts, gentler for clean contact / resistance detection)
      * @param ease_rate_mv_s       How fast the command eases toward its target (mV per second)
      * @param score_lift_deg       Angle to raise after releasing on a score (~ a few inches; tune to geometry)
      * @param hold_pid             Position-hold PID (error in degrees, output in millivolts)
@@ -48,6 +49,7 @@ public:
          EnhancedDigitalOut& claw_clamp,
          double raise_mv = 12000.0,
          double lower_mv = 5000.0,
+         double score_mv = 3500.0,
          double ease_rate_mv_s = 48000.0,
          double score_lift_deg = 20.0,
          PIDController hold_pid = PIDController(350.0, 60.0, 1200.0, -12000.0, 12000.0));
@@ -111,6 +113,7 @@ private:
 
     double raise_mv_;
     double lower_mv_;
+    double score_mv_;
     double score_lift_deg_;
 
     SlewRateLimiter slew_;   ///< Eases the applied voltage between targets

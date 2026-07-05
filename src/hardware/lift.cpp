@@ -13,6 +13,7 @@ Lift::Lift(pros::Rotation& lift_rotation_sensor,
            EnhancedDigitalOut& claw_clamp,
            double raise_mv,
            double lower_mv,
+           double score_mv,
            double ease_rate_mv_s,
            double score_lift_deg,
            PIDController hold_pid)
@@ -22,6 +23,7 @@ Lift::Lift(pros::Rotation& lift_rotation_sensor,
       claw_clamp_(claw_clamp),
       raise_mv_(raise_mv),
       lower_mv_(lower_mv),
+      score_mv_(score_mv),
       score_lift_deg_(score_lift_deg),
       slew_(RAISE_SLEW_RATE_MV_S, ease_rate_mv_s),
       hold_pid_(hold_pid),
@@ -120,7 +122,7 @@ void Lift::update() {
                 mode_ = Mode::HOLD;
                 target_mv = hold_pid_.calculate(hold_angle_, get_angle());
             } else {
-                target_mv = -lower_mv_;      // eased descent onto the target
+                target_mv = -score_mv_;      // gentler eased descent onto the target
             }
             break;
 
