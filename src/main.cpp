@@ -6,8 +6,11 @@ pros::Controller master(pros::E_CONTROLLER_MASTER);
 pros::MotorGroup left_mg({-11, -12, -13});
 pros::MotorGroup right_mg({18, 19, 20});
 pros::MotorGroup intake_motors({4, 5});
+pros::Motor lift_motor(7);
+
 pros::Optical color_sort_os(21);
 pros::Distance color_sort_ds(10);
+pros::Rotation lift_rotation_sensor(6);
 pros::Distance left_distance_sensor(3);
 pros::Distance right_distance_sensor(5);
 pros::Distance front_distance_sensor(16);
@@ -16,12 +19,12 @@ DistanceResetOdometry::DistanceSensor left_sensor(&left_distance_sensor, 5.9272,
 DistanceResetOdometry::DistanceSensor right_sensor(&right_distance_sensor, 6.3209, 0);
 DistanceResetOdometry::DistanceSensor front_sensor(&front_distance_sensor, 2.8, -4.5);
 
-EnhancedDigitalOut stopper(3, false);
-EnhancedDigitalOut little_will(7, false);
-EnhancedDigitalOut intake_lift(6, false);
-EnhancedDigitalOut ear2(5, false);
-EnhancedDigitalOut midescore(4, false);
-Intake intake(intake_motors, stopper, intake_lift, color_sort_os, skills);
+EnhancedDigitalOut claw_clamp(3, false);
+EnhancedDigitalOut claw_angler(2, false);
+EnhancedDigitalOut flipper(7, false);
+EnhancedDigitalOut intake_widener(5, false);
+EnhancedDigitalOut bobby_wheel(6, false);
+Intake intake(intake_motors, intake_widener, color_sort_os, color_sort_ds);
 
 Trajectory trajectory;
 Trajectory goal_to_matchloader;
