@@ -15,3 +15,8 @@ temp.log
 temp.errors
 *.ini
 .d/
+
+# Test suite artifacts
+tests/output/
+__pycache__/
+.pytest_cache/

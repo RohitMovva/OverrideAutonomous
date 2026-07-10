@@ -1,0 +1,6 @@
+pytest
+matplotlib
+numpy
+# optional:
+#   pillow      — GIF export for `visualize.py animate* --gif`
+#   mplcursors  — hover tooltips on interactive (--show) plots
