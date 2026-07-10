@@ -44,7 +44,7 @@ public:
      * @param hold_pid             Position-hold PID (error in degrees, output in millivolts)
      */
     Lift(pros::Rotation& lift_rotation_sensor,
-         pros::Motor& lift_motor,
+         pros::MotorGroup& lift_motors,
          EnhancedDigitalOut& claw_angler,
          EnhancedDigitalOut& claw_clamp,
          double raise_mv = 12000.0,
@@ -116,7 +116,7 @@ private:
     };
 
     pros::Rotation& rotation_sensor_;
-    pros::Motor& motor_;
+    pros::MotorGroup& motors_;
     EnhancedDigitalOut& claw_angler_;
     EnhancedDigitalOut& claw_clamp_;
 

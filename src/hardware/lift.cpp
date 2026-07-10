@@ -9,7 +9,7 @@
 static constexpr double RAISE_SLEW_RATE_MV_S = 96000.0;
 
 Lift::Lift(pros::Rotation& lift_rotation_sensor,
-           pros::Motor& lift_motor,
+           pros::MotorGroup& lift_motors,
            EnhancedDigitalOut& claw_angler,
            EnhancedDigitalOut& claw_clamp,
            double raise_mv,
@@ -19,7 +19,7 @@ Lift::Lift(pros::Rotation& lift_rotation_sensor,
            double score_lift_deg,
            PIDController hold_pid)
     : rotation_sensor_(lift_rotation_sensor),
-      motor_(lift_motor),
+      motors_(lift_motors),
       claw_angler_(claw_angler),
       claw_clamp_(claw_clamp),
       raise_mv_(raise_mv),
@@ -173,7 +173,7 @@ void Lift::update() {
     }
     pros::lcd::print(1, "output mv:%.0f", output_mv);
 
-    motor_.move_voltage(static_cast<int>(output_mv));
+    motors_.move_voltage(static_cast<int>(output_mv));
 
     // Compact one-line lift telemetry: target angle, actual angle, PID output.
     pros::lcd::print(2, "Lift tgt:%.1f act:%.1f pid:%.0f",

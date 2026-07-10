@@ -6,7 +6,7 @@ pros::Controller master(pros::E_CONTROLLER_MASTER);
 pros::MotorGroup left_mg({-11, 12, 13});
 pros::MotorGroup right_mg({14, -15, -16});
 pros::MotorGroup intake_motors({17, -18});
-pros::Motor lift_motor(-19);
+pros::MotorGroup lift_motors({4, -19});
 
 pros::Optical color_sort_os(21);
 pros::Distance color_sort_ds(10);
@@ -21,7 +21,7 @@ DistanceResetOdometry::DistanceSensor front_sensor(&front_distance_sensor, 2.8, 
 
 EnhancedDigitalOut claw_clamp(5, false);
 EnhancedDigitalOut claw_angler(6, false);
-EnhancedDigitalOut flipper(5, false);
+EnhancedDigitalOut flipper(3, false);
 EnhancedDigitalOut intake_widener(7, false);
 EnhancedDigitalOut bobby_wheel(6, false);
 
@@ -29,14 +29,14 @@ EnhancedDigitalOut bobby_wheel(6, false);
 // ±12000 — the ±127 default would starve the hold and let the lift sag. kI trims
 // out the residual droop a pure-P hold would leave against gravity.
 PIDController lift_pid(250, 60, 1200, -12000, 12000);
-Lift lift(lift_rotation_sensor, lift_motor, claw_angler, claw_clamp, 12000, 12000, 8000, 192000, 200, lift_pid);
+Lift lift(lift_rotation_sensor, lift_motors, claw_angler, claw_clamp, 12000, 12000, 8000, 192000, 200, lift_pid);
 Intake intake(intake_motors, intake_widener, color_sort_os, color_sort_ds);
 
 Trajectory trajectory;
 Trajectory goal_to_matchloader;
 Trajectory low_goal;
 
-pros::Imu imu_sensor(15);
+pros::Imu imu_sensor(1);
 
 Logger *logger = Logger::getInstance();
 
@@ -75,47 +75,47 @@ void initialize()
     left_mg.tare_position_all();
     right_mg.tare_position_all();
 
-    // if (!skills){
-    //     ;
-    //     intake.start_color_sorting("blue");
+    if (!skills){
+        ;
+        intake.start_color_sorting("blue");
+    }
+
+    imu_sensor.reset();
+
+    side_encoder.set_reversed(true);
+
+    DistanceResetOdometry::DistanceSensors distance_sensors = {front_sensor, nullptr, left_sensor, right_sensor};
+
+    auto localization = LocalizationManager::create(
+        LocalizationType::DISTANCE_RESET_ODOMETRY,
+        left_mg, right_mg, side_encoder, imu_sensor, distance_sensors,
+        false, true
+    );
+
+    ramsete_controller = new RamseteController(2.4, 0.4, 4.5 * 12, 5.0, 0.0254000508);
+    drive_controller = new DrivetrainController(2.5, 1.45, 0.275, 3.0, 0.00, 0.0);
+
+    robot = new Robot(&left_mg, &right_mg, &imu_sensor, &master, drive_controller, ramsete_controller, std::move(localization), &intake);
+
+    pros::delay(5);
+    trajectory.loadFromFile("/usd/routes/" + route_name + ".txt");
+
+    if (skills && routes.size() > 0){
+        for (auto& route: routes){
+            Trajectory traj;
+            traj.loadFromFile("/usd/routes/" + route + ".txt");
+            trajectories.push_back(traj);
+        }
+    }
+
+    goal_to_matchloader.loadFromFile("/usd/routes/goal_to_matchloader.txt");
+    low_goal.loadFromFile("/usd/routes/low_goal.txt");
+    // trajectory.loadFromVector();
+    // if (trajectory.empty())
+    // {
+    //     logger->log("Error: Route file is empty or could not be opened.");
+    //     return;
     // }
-
-    // imu_sensor.reset();
-
-    // side_encoder.set_reversed(true);
-
-    // DistanceResetOdometry::DistanceSensors distance_sensors = {front_sensor, nullptr, left_sensor, right_sensor};
-
-    // auto localization = LocalizationManager::create(
-    //     LocalizationType::DISTANCE_RESET_ODOMETRY,
-    //     left_mg, right_mg, side_encoder, imu_sensor, distance_sensors,
-    //     false, true
-    // );
-
-    // ramsete_controller = new RamseteController(2.4, 0.4, 4.5 * 12, 5.0, 0.0254000508);
-    // drive_controller = new DrivetrainController(2.5, 1.45, 0.275, 3.0, 0.00, 0.0);
-
-    // robot = new Robot(&left_mg, &right_mg, &imu_sensor, &master, drive_controller, ramsete_controller, std::move(localization), &intake);
-
-    // pros::delay(5);
-    // trajectory.loadFromFile("/usd/routes/" + route_name + ".txt");
-
-    // if (skills && routes.size() > 0){
-    //     for (auto& route: routes){
-    //         Trajectory traj;
-    //         traj.loadFromFile("/usd/routes/" + route + ".txt");
-    //         trajectories.push_back(traj);
-    //     }
-    // }
-
-    // goal_to_matchloader.loadFromFile("/usd/routes/goal_to_matchloader.txt");
-    // low_goal.loadFromFile("/usd/routes/low_goal.txt");
-    // // trajectory.loadFromVector();
-    // // if (trajectory.empty())
-    // // {
-    // //     logger->log("Error: Route file is empty or could not be opened.");
-    // //     return;
-    // // }
 
     logger->log("Robot initialized");
 }
@@ -153,77 +153,28 @@ void competition_initialize()
  */
 void autonomous()
 {
-    // logger->log("Program type: %s", program_type.c_str());
-    // // trajectory.loadFromFile("/usd/routes/" + route_name + ".txt");
+    logger->log("Program type: %s", program_type.c_str());
+    // trajectory.loadFromFile("/usd/routes/" + route_name + ".txt");
 
-    // if (program_type == "autonomous")
-    // {
-    //     // intake.set_state(1);
-    //     // intake.update();
-    //     // left_mg.move_voltage(3000);
-    //     // right_mg.move_voltage(3000);
-    //     // intake.update();
-    //     // pros::delay(500);
-    //     // left_mg.move_voltage(-3000);
-    //     // right_mg.move_voltage(-3000);
-    //     // pros::delay(200);
-    //     // left_mg.move_voltage(0);
-    //     // right_mg.move_voltage(0);
-    //     // pros::delay(500);
-    //     // for (int i = -1; i < 2; i +=2){
-    //     //     left_mg.move_voltage(3000*i);
-    //     //     right_mg.move_voltage(3000*i*-1);
-    //     //     pros::delay(250);
-    //     //     if (i==1)pros::delay(150);
-    //     // }
-    //     // left_mg.move_voltage(3000);
-    //     // right_mg.move_voltage(3000);
-    //     // pros::delay(500);
-    //     // for (int i = -1; i < 2; i +=2){
-    //     //     left_mg.move_voltage(3000*i);
-    //     //     right_mg.move_voltage(3000*i*-1);
-    //     //     pros::delay(250);
-    //     //     if (i==1)pros::delay(100);
-    //     // }
-    //     // left_mg.move_voltage(3000);
-    //     // right_mg.move_voltage(3000);
-    //     // pros::delay(500);
-    //     // left_mg.move_voltage(-5000);
-    //     // right_mg.move_voltage(-5000);
-    //     // pros::delay(1000);
+    if (program_type == "autonomous")
+    {
+        logger->log("Starting autonomous");
 
-    //     // left_mg.move_voltage(2000);
-    //     // right_mg.move_voltage(2000);
-    //     // pros::delay(1000);
-
-    //     // left_mg.move_voltage(0);
-    //     // right_mg.move_voltage(0);
-    //     // left_mg.move_voltage(8000);
-    //     // right_mg.move_voltage(8000);
-    //     // pros::delay(500);
-    //     // for (int i = -1; i < 2; i +=2){
-    //     //     left_mg.move_voltage(5000*i);
-    //     //     right_mg.move_voltage(5000*i*-1);
-    //     //     pros::delay(250);
-    //     // }
-    //     logger->log("Starting autonomous");
-
-    //     if (trajectories.size() == 0){
-    //         robot->followTrajectory(trajectory);
-    //     } else {
-    //         robot->followTrajectories(trajectories);
-    //     }
-    //     // robot->tuneTrackWidth();
-    // }
-    // if (route_name == "splitsevenhigh" || route_name == "splitsevenhighcounter"){
-    //     left_mg.move_voltage(3600);
-    //     right_mg.move_voltage(-3600);
-    //     pros::delay(600);
-    //     right_mg.move_voltage(0);
-    //     left_mg.move_voltage(0);
-    // }
-    // left_mg.set_brake_mode_all(MOTOR_BRAKE_BRAKE);
-    // right_mg.set_brake_mode_all(MOTOR_BRAKE_BRAKE);
+        if (trajectories.size() == 0){
+            robot->followTrajectory(trajectory);
+        } else {
+            robot->followTrajectories(trajectories);
+        }
+    }
+    if (route_name == "splitsevenhigh" || route_name == "splitsevenhighcounter"){
+        left_mg.move_voltage(3600);
+        right_mg.move_voltage(-3600);
+        pros::delay(600);
+        right_mg.move_voltage(0);
+        left_mg.move_voltage(0);
+    }
+    left_mg.set_brake_mode_all(MOTOR_BRAKE_BRAKE);
+    right_mg.set_brake_mode_all(MOTOR_BRAKE_BRAKE);
 }
 
 int joystickCurve(int x, double a = 3.0)
@@ -370,7 +321,6 @@ int joystickCurveSkills(int x, double a = 3.0)
  */
 void opcontrol()
 {
-    // ear.input_toggle(true);
     double drivetrain_slow = 0.5;
     left_mg.set_brake_mode_all(MOTOR_BRAKE_COAST);
     right_mg.set_brake_mode_all(MOTOR_BRAKE_COAST);
