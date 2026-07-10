@@ -20,7 +20,6 @@ void Intake::set_state(int state) {
     if (intake_state_ == 5 && state == 0) { // don't stop intaking when parking
         return;
     }
-    pros::lcd::print(3, "Intake delay: %d", intake_decay_ms_);
     if (state != 3 && (intake_state_ == 3 || intake_state_ == 13)){
         intake_state_ = state;
         intake_decay_ms_ = 0;
@@ -41,7 +40,6 @@ void Intake::state_decay(int start_state, int end_state, int delay_ms) {
     if (start_state == 3 && (intake_state_ == 3 || intake_state_ == 13) && intake_decay_ms_ > 0){
         return;
     }
-    pros::lcd::print(1, "dlayy");
     intake_decay_state_ = end_state;
     intake_decay_ms_ = delay_ms;
     set_state(start_state);
@@ -52,15 +50,9 @@ int Intake::get_state() const {
 }
 
 void Intake::apply_state_motors() {
-    pros::lcd::print(0, "intake state: %d", intake_state_);
-
     switch (intake_state_) {
         case 0:
-            if (!skills_ && time_since_state_set_ < 1000){
-                intake_motors_.move_voltage(intake_max_speed_/4);
-            } else {
-                intake_motors_.move_voltage(0);
-            }
+            intake_motors_.move_voltage(0);
             break;
 
         case 1: // Intake
@@ -68,88 +60,11 @@ void Intake::apply_state_motors() {
             break;
 
         case 2: // Outtake to low goal
-            if (skills_) {
-                intake_motors_.move_velocity(-40);
-            } else {
-                intake_motors_.move_voltage(-intake_max_speed_);
-            }
-            break;
-
-        case 3: // Outtake to middle goal
-            intake_motors_.move_voltage(intake_max_speed_);
-            break;
-
-        case 4: // Outtake to high goal
-            intake_motors_.move_voltage(intake_max_speed_);
-            break;
-
-        case 5: // Slow outake to park
-            intake_motors_.move_voltage(-6500);
-            break;
-
-        case 6: // Eject blocks
-            intake_motors_.move_voltage(12000);
-            break;
-
-        case 7:
-            intake_motors_.move_voltage(intake_max_speed_);
-            break;
-
-        case 8:
             intake_motors_.move_voltage(-intake_max_speed_);
             break;
 
-        case 9:
-            intake_motors_.move_velocity(-25);
-            break;
-
-        case 10:
-            intake_motors_.move_voltage(-intake_max_speed_);
-            break;
-
-        case 11:
-            intake_motors_.move_voltage(intake_max_speed_);
-            break;
-            
-
-        case 12:
-            intake_motors_.move_velocity(-75);
-            break;
-
-        case 13:
-            intake_motors_.move_voltage(intake_max_speed_);
-            break;
-
-        case 14:
-            intake_motors_.move_voltage(intake_max_speed_);
-            break;
-
-        case 15:
-            intake_motors_.move_voltage(intake_max_speed_);
-            break;
-
-        case 16:
-            intake_motors_.move_voltage(intake_max_speed_);
-            break;
-
-        case 17:
-            intake_motors_.move_voltage(intake_max_speed_);
-            break;
-
-        case 18:
-            intake_motors_.move_voltage(-intake_max_speed_);
-            break;
-
-        case 19:
-            intake_motors_.move_voltage(intake_max_speed_);
-            break;
-
-        case 20:
-            intake_motors_.move_voltage(intake_max_speed_);
-            break;
-
-        case 21:
-            intake_motors_.move_voltage(-intake_max_speed_);
+        case 4: // Outtake slowly (e.g. while the lift lowers)
+            intake_motors_.move_voltage(-4000);
             break;
 
         default:
@@ -173,75 +88,37 @@ bool Intake::is_color_sorting_active() const {
 }
 
 void Intake::update(){
-    double hue = color_sort_os_.get_hue();
-    double saturation = color_sort_os_.get_saturation();
-    pros::lcd::print(1, "dist: %d", color_sort_os_.get_proximity());
+    // double hue = color_sort_os_.get_hue();
+    // double saturation = color_sort_os_.get_saturation();
 
     bool detected = false;
-    if (saturation > 0 && color_sorting_active_ && color_sort_os_.get_proximity() > 100) {
-        if (strcmp(target_color_, "red") == 0) {
-            if (hue >= 200 && hue <= 240) {
-                detected = true;
-            } else {
-                detected = false;
-            }
-        } else if (strcmp(target_color_, "blue") == 0) {
-            if (hue >= 359 || hue <= 20) {
-                detected = true;
-            } else {
-                detected = false;
-            }
-        }
-    }
-    pros::lcd::print(4, "WHAA");
 
-    if (skills_ && (intake_state_ == 17 || intake_state_ == 16) && (hue >= 200 && hue <= 270) && color_sort_os_.get_proximity() > 100){
-        intake_decay_ms_ = 200;
-        intake_decay_state_ = 21;
-        intake_state_ = 21;
-        pros::lcd::print(7, "DETECTED RAA");
-    }
-
-    if (detected && color_sorting_active_) { // Actual block
-        if (intake_state_ == 3){
-            intake_decay_state_ = intake_state_;
-            intake_state_ = 2;
-            intake_decay_ms_ = 300;
+    // Auto-widener: if the distance sensor sees something close for
+    // WIDENER_TRIGGER_MS, pull the widener in and hold it for WIDENER_HOLD_MS.
+    if (widener_close_ms_ > 0) {
+        widener_close_ms_ -= 10;
+        if (widener_close_ms_ <= 0) {
+            widener_close_ms_ = 0;
+            widener_detect_ms_ = 0;   // require a fresh detection after releasing
+            widener_cooldown_ms_ = WIDENER_COOLDOWN_MS;   // wait before re-triggering
+            intake_widener_.set_state(false);
         }
-        else {
-            intake_decay_state_ = intake_state_;
-            intake_decay_ms_ = 20;
-            intake_state_ = 6;
+    } else if (widener_cooldown_ms_ > 0) {
+        widener_cooldown_ms_ -= 10;   // cooling down: ignore detections
+    } else {
+        if (color_sort_ds_.get_distance() < WIDENER_DISTANCE_THRESHOLD) {
+            widener_detect_ms_ += 10;
+        } else {
+            widener_detect_ms_ = 0;
         }
-
-        apply_state_motors();
+        if (widener_detect_ms_ >= WIDENER_TRIGGER_MS) {
+            widener_detect_ms_ = 0;
+            widener_close_ms_ = WIDENER_HOLD_MS;
+            intake_widener_.set_state(true);
+        }
     }
 
     time_since_state_set_ += 10;
-
-    if (intake_decay_ms_ > 0) {
-        intake_decay_ms_ -= 10;
-        if (intake_decay_ms_ <= 0) {
-            intake_decay_ms_ = 0;
-            intake_state_ = intake_decay_state_;
-            time_since_state_set_ = 0;
-            pros::lcd::print(6, "set state to %d", intake_decay_state_);
-
-            if (skills_ && intake_state_ == 16){
-                intake_decay_state_ = 17;
-                intake_decay_ms_ = 500;
-            }
-
-            if (skills_ && intake_state_ == 17){
-                intake_decay_state_ = 19;
-                intake_decay_ms_ = 2500;
-            }
-        }
-    }
-
-    if (intake_state_ == 7 && (hue >= 200 && hue <= 250)){
-        set_state(8);
-    }
 
     apply_state_motors();
 }

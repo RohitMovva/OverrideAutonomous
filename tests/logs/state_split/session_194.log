@@ -1,0 +1,11 @@
+[00:00:00.193] [LOG] Robot initialized
+[00:00:01.974] [LOG] Program type: autonomous
+[00:00:01.974] [LOG] Starting autonomous
+[00:00:01.974] [LOG] Starting trajectory following
+[00:00:01.974] [LOG] Following trajectory with DistanceResetOdometry localization
+[00:00:01.974] [LOG] Initial pose: -49.500000 -15.500000 -1.570796
+[00:00:01.974] [LOG] Route size: 1627
+[00:00:01.974] [LOG] Has next: 1
+[00:00:01.974] [WARNING] Invalid deltaTime: 0.000000, reverting to default
+[00:00:00.000] [INFO] Logger initialized successfully
+[00:00:00.000] [INFO] Log file: /usd/robot_log_19700101_000000.txt

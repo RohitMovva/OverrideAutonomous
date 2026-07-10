@@ -51,9 +51,6 @@ private:
     bool m_feedbackEnabled;
 
 
-
-    EnhancedDigitalOut *little_will; ///< Digital output for little will
-    EnhancedDigitalOut *wing;        ///< Digital output for wing
     Intake *m_intake;         ///< Intake class w/ color sorting
 
     /**
@@ -100,8 +97,6 @@ public:
           DrivetrainController *driveController,
           RamseteController *ramseteController,
           std::unique_ptr<ILocalization> localization,
-          EnhancedDigitalOut *littleWill,
-          EnhancedDigitalOut *wing,
           Intake *intake);
 
     /**

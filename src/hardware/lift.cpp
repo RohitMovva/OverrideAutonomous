@@ -1,5 +1,6 @@
 #include "hardware/lift.hpp"
 #include "config.hpp"
+#include "pros/llemu.hpp"  // pros::lcd::print for the brain-screen readout
 #include <cmath>
 
 // Raising should feel responsive, so the command ramps up quickly; every other
@@ -30,11 +31,16 @@ Lift::Lift(pros::Rotation& lift_rotation_sensor,
       mode_(Mode::REST),
       raise_requested_(false),
       hold_angle_(0.0),
+      last_pid_output_(0.0),
       descent_start_ms_(0),
       last_update_ms_(0) {}
 
 double Lift::get_angle() const {
     return rotation_sensor_.get_position() / 100.0;  // centidegrees -> degrees
+}
+
+bool Lift::is_lowering() const {
+    return mode_ == Mode::LOWERING;
 }
 
 void Lift::raise() {
@@ -43,13 +49,14 @@ void Lift::raise() {
 
 void Lift::move_down() {
     // Open the claw on the way down.
-    claw_clamp_.set_state(false);
+    claw_clamp_.set_state(true);
     claw_angler_.set_state(false);
     mode_ = Mode::LOWERING;
     descent_start_ms_ = pros::millis();
 }
 
 void Lift::score() {
+    claw_clamp_.set_state(false);
     mode_ = Mode::SCORING;
     descent_start_ms_ = pros::millis();
 }
@@ -58,6 +65,17 @@ void Lift::stop() {
     hold_angle_ = get_angle();
     hold_pid_.reset();
     mode_ = Mode::HOLD;
+}
+
+const char* Lift::mode_name(Mode m) {
+    switch (m) {
+        case Mode::HOLD:     return "HOLD";
+        case Mode::RAISING:  return "RAISING";
+        case Mode::LOWERING: return "LOWERING";
+        case Mode::SCORING:  return "SCORING";
+        case Mode::REST:     return "REST";
+    }
+    return "?";
 }
 
 bool Lift::descent_stalled(uint32_t now) const {
@@ -85,7 +103,7 @@ void Lift::update() {
             mode_ = Mode::RAISING;
         }
         claw_angler_.set_state(true);
-        claw_clamp_.set_state(true);
+        claw_clamp_.set_state(false);
     } else if (mode_ == Mode::RAISING) {
         hold_angle_ = get_angle();
         hold_pid_.reset();
@@ -99,13 +117,20 @@ void Lift::update() {
             break;
 
         case Mode::HOLD:
-            // Closed-loop hold against gravity / band imbalance.
-            target_mv = hold_pid_.calculate(hold_angle_, get_angle());
+            // Closed-loop hold against gravity / band imbalance. The derivative
+            // is fed the sensor's hardware velocity (centidegrees/sec -> deg/sec)
+            // rather than a numeric difference of the quantized angle, which
+            // otherwise makes the command spike/toggle as the sensor steps.
+            target_mv = hold_pid_.calculate(hold_angle_, get_angle(),
+                                             rotation_sensor_.get_velocity() / 100.0);
+            last_pid_output_ = target_mv;
             break;
 
         case Mode::LOWERING:
             if (descent_stalled(now)) {
                 mode_ = Mode::REST;          // settled on the hard stop
+                claw_clamp_.set_state(true);
+                claw_angler_.set_state(false);
                 target_mv = 0.0;
             } else {
                 target_mv = -lower_mv_;      // eased in by the slew limiter
@@ -116,23 +141,44 @@ void Lift::update() {
             if (descent_stalled(now)) {
                 // Met resistance: release pin/cup, then lift a few inches and
                 // hold there (the HOLD PID drives up to the raised target).
-                claw_clamp_.set_state(false);
+                claw_clamp_.set_state(true);
                 hold_angle_ = get_angle() + score_lift_deg_;
                 hold_pid_.reset();
                 mode_ = Mode::HOLD;
-                target_mv = hold_pid_.calculate(hold_angle_, get_angle());
+                target_mv = hold_pid_.calculate(hold_angle_, get_angle(),
+                                                rotation_sensor_.get_velocity() / 100.0);
             } else {
                 target_mv = -score_mv_;      // gentler eased descent onto the target
             }
             break;
 
         case Mode::REST:
+            claw_clamp_.set_state(true);
+            claw_angler_.set_state(false);
             target_mv = 0.0;
             break;
     }
 
-    double output_mv = slew_.calculate(target_mv, dt);
+    // Closed-loop HOLD drives the motor directly. Feeding the position PID
+    // through the slew limiter adds phase lag inside the loop, which makes the
+    // hold oscillate. Keep the slew's state synced to the applied voltage so
+    // that when we hand back to an open-loop mode (RAISING / LOWERING / SCORING)
+    // it ramps from the true current voltage instead of a stale one.
+    double output_mv;
+    if (mode_ == Mode::HOLD) {
+        output_mv = target_mv;
+        slew_.reset(output_mv);
+    } else {
+        output_mv = slew_.calculate(target_mv, dt);
+    }
+    pros::lcd::print(1, "output mv:%.0f", output_mv);
+
     motor_.move_voltage(static_cast<int>(output_mv));
+
+    // Compact one-line lift telemetry: target angle, actual angle, PID output.
+    pros::lcd::print(2, "Lift tgt:%.1f act:%.1f pid:%.0f",
+                     hold_angle_, get_angle(), last_pid_output_);
+    pros::lcd::print(3, "Lift mode:%s", mode_name(mode_));
 
     // Consume the raise request; the driver must re-assert it each loop.
     raise_requested_ = false;

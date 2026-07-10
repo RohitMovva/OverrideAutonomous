@@ -6,7 +6,8 @@
 
 PIDController::PIDController(double kP, double kI, double kD,
                            double minOutput, double maxOutput,
-                           double integralLimit)
+                           double integralLimit,
+                           double derivativeFilterAlpha)
     : kP(kP), kI(kI), kD(kD)
     , minOutput(minOutput), maxOutput(maxOutput)
     , integralTerm(0.0)
@@ -15,6 +16,8 @@ PIDController::PIDController(double kP, double kI, double kD,
     , lastTime(0)
     , firstRun(true)
     , integralLimit(integralLimit)
+    , derivativeFilterAlpha(derivativeFilterAlpha)
+    , filteredDerivative(0.0)
 {
     Logger::getInstance()->log("PID Controller initialized - kP: %f, kI: %f, kD: %f", kP, kI, kD);
 }
@@ -24,50 +27,95 @@ double PIDController::calculate(double setpoint, double processVariable) {
     return calculate(error);
 }
 
-double PIDController::calculate(double error) {
-    // Get current time and calculate delta
+double PIDController::calculate(double setpoint, double processVariable, double measuredRate) {
+    double error = setpoint - processVariable;
+
     uint32_t currentTime = pros::millis();
     double dt = Units::millisecondsToSeconds(currentTime - lastTime);
-    
-    // Handle first run or invalid time step
+
+    bool isFirstRun = firstRun;
     if (firstRun || dt <= 0) {
         dt = Units::millisecondsToSeconds(Config::DT);
         firstRun = false;
     }
-    
-    // Calculate proportional term
-    double proportional = kP * error;
-    
-    // Calculate integral term with windup protection
-    integralTerm = clamp(
-        integralTerm + error * dt,
-        -integralLimit, integralLimit);
-    double integral = kI * integralTerm;
-    
-    // Calculate derivative term
+
+    // Derivative on measurement. For a (locally) constant setpoint,
+    // d(error)/dt = -d(processVariable)/dt, so we drive the derivative with the
+    // negated measured rate. This avoids differentiating a quantized position
+    // signal, whose per-tick steps make a numeric derivative spike. Still
+    // low-pass filtered to smooth any residual velocity noise. Skipped on the
+    // first run after a reset (no valid history yet).
     double derivative = 0.0;
-    if (dt > MIN_DELTA_TIME) {
-        derivative = kD * (error - lastError) / dt;
+    if (!isFirstRun) {
+        double errorRate = -measuredRate;
+        filteredDerivative = derivativeFilterAlpha * errorRate
+                           + (1.0 - derivativeFilterAlpha) * filteredDerivative;
+        derivative = kD * filteredDerivative;
     }
-    
-    // Calculate total output
-    double output = proportional + integral + derivative;
-    
-    // Clamp output to limits
-    output = clamp(output, minOutput, maxOutput);
-    
+
+    return composeOutput(error, derivative, dt, currentTime);
+}
+
+double PIDController::calculate(double error) {
+    // Get current time and calculate delta
+    uint32_t currentTime = pros::millis();
+    double dt = Units::millisecondsToSeconds(currentTime - lastTime);
+
+    // Handle first run or invalid time step
+    bool isFirstRun = firstRun;
+    if (firstRun || dt <= 0) {
+        dt = Units::millisecondsToSeconds(Config::DT);
+        firstRun = false;
+    }
+
+    // Calculate derivative term. Skip it on the first run after a reset:
+    // lastError is 0 there but the true error may be large, which would
+    // otherwise produce a huge one-tick derivative "kick". The raw derivative
+    // is low-pass filtered to suppress noise amplification from quantized /
+    // noisy sensors (a high kD on a coarse sensor is a major source of jitter).
+    double derivative = 0.0;
+    if (!isFirstRun && dt > MIN_DELTA_TIME) {
+        double rawDerivative = (error - lastError) / dt;
+        filteredDerivative = derivativeFilterAlpha * rawDerivative
+                           + (1.0 - derivativeFilterAlpha) * filteredDerivative;
+        derivative = kD * filteredDerivative;
+    }
+
+    return composeOutput(error, derivative, dt, currentTime);
+}
+
+double PIDController::composeOutput(double error, double derivative, double dt, uint32_t currentTime) {
+    double proportional = kP * error;
+
+    // Conditional-integration anti-windup: tentatively advance the integral,
+    // but only commit it if the resulting output would not push further into
+    // saturation. When railed in the direction the error is driving, we hold
+    // the integral steady so it cannot wind up; it is still free to unwind (or
+    // grow the other way) once the error reverses. The integral is also hard
+    // clamped to +/-integralLimit as a backstop.
+    double candidateIntegral = clamp(integralTerm + error * dt, -integralLimit, integralLimit);
+    double candidateOutput = proportional + kI * candidateIntegral + derivative;
+    bool worsensHighSaturation = candidateOutput > maxOutput && error > 0.0;
+    bool worsensLowSaturation  = candidateOutput < minOutput && error < 0.0;
+    if (!worsensHighSaturation && !worsensLowSaturation) {
+        integralTerm = candidateIntegral;
+    }
+    double integral = kI * integralTerm;
+
+    double output = clamp(proportional + integral + derivative, minOutput, maxOutput);
+
     // Log key values periodically (not every calculation)
     static uint32_t logCounter = 0;
     if (++logCounter % 50 == 0) {  // Log every 50 calculations
-        Logger::getInstance()->log("PID Output: %f (P: %f, I: %f, D: %f)", 
+        Logger::getInstance()->log("PID Output: %f (P: %f, I: %f, D: %f)",
                                  output, proportional, integral, derivative);
     }
-    
+
     // Update state
     lastError = error;
     lastOutput = output;
     lastTime = currentTime;
-    
+
     return output;
 }
 
@@ -77,7 +125,8 @@ void PIDController::reset() {
     lastOutput = 0.0;
     lastTime = 0;
     firstRun = true;
-    
+    filteredDerivative = 0.0;
+
     Logger::getInstance()->log("PID Controller reset");
 }
 
@@ -103,6 +152,12 @@ void PIDController::setIntegralLimit(double integralLimit) {
     integralTerm = clamp(integralTerm, -integralLimit, integralLimit);
     
     Logger::getInstance()->log("PID integral limit updated: %f", integralLimit);
+}
+
+void PIDController::setDerivativeFilter(double alpha) {
+    derivativeFilterAlpha = alpha;
+
+    Logger::getInstance()->log("PID derivative filter alpha updated: %f", alpha);
 }
 
 double PIDController::clamp(double value, double min, double max) {

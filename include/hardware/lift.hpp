@@ -52,7 +52,11 @@ public:
          double score_mv = 3500.0,
          double ease_rate_mv_s = 48000.0,
          double score_lift_deg = 20.0,
-         PIDController hold_pid = PIDController(350.0, 60.0, 1200.0, -12000.0, 12000.0));
+         // kD is in mV per (deg/sec) since the derivative is fed the sensor's
+         // velocity — so it must be small: at e.g. 100 deg/s, kD=50 already asks
+         // for 5000 mV of braking. The derivative low-pass (alpha 0.3) smooths
+         // residual velocity noise. Starting points — tune on the robot.
+         PIDController hold_pid = PIDController(350.0, 60.0, 50.0, -12000.0, 12000.0, 50.0, 0.3));
 
     /**
      * @brief Request the lift to raise this iteration (and engage the claw).
@@ -96,6 +100,11 @@ public:
      */
     double get_angle() const;
 
+    /**
+     * @brief Whether the lift is currently easing down to the bottom hard stop.
+     */
+    bool is_lowering() const;
+
 private:
     /// Internal control state.
     enum class Mode {
@@ -122,16 +131,20 @@ private:
     Mode mode_;
     bool raise_requested_;         ///< raise() called this cycle (consumed by update)
     double hold_angle_;            ///< Angle the lift is holding (deg)
+    double last_pid_output_;       ///< Most recent hold-PID output (mV), for telemetry
     uint32_t descent_start_ms_;    ///< millis() when the current descent began
     uint32_t last_update_ms_;      ///< millis() of previous update (for dt)
 
     /// Below this |velocity| (centidegrees/sec) while descending counts as stalled / resistance.
-    static constexpr double STALL_VELOCITY_CDPS = 200.0;
+    static constexpr double STALL_VELOCITY_CDPS = 50.0;
     /// Minimum descent time before stall detection is trusted (lets it start moving).
-    static constexpr uint32_t STALL_GRACE_MS = 250;
+    static constexpr uint32_t STALL_GRACE_MS = 750;
 
     /// True once the lift has descended long enough and is no longer moving.
     bool descent_stalled(uint32_t now) const;
+
+    /// Human-readable name for a control mode (for brain-screen telemetry).
+    static const char* mode_name(Mode m);
 };
 
 #endif // LIFT_HPP

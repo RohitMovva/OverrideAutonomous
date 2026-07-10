@@ -22,10 +22,15 @@ public:
      * @param minOutput Minimum output value (default: -127)
      * @param maxOutput Maximum output value (default: 127)
      * @param integralLimit Maximum integral accumulation (default: 50.0)
+     * @param derivativeFilterAlpha Low-pass smoothing factor for the derivative
+     *        term, in (0, 1]. 1.0 = no filtering (raw derivative); smaller values
+     *        smooth harder. Use this to tame derivative noise from quantized /
+     *        noisy sensors (default: 1.0, i.e. disabled for backward compat).
      */
-    PIDController(double kP, double kI, double kD, 
+    PIDController(double kP, double kI, double kD,
                   double minOutput = -127.0, double maxOutput = 127.0,
-                  double integralLimit = 50.0);
+                  double integralLimit = 50.0,
+                  double derivativeFilterAlpha = 1.0);
 
     /**
      * @brief Calculate PID output based on current error
@@ -37,8 +42,24 @@ public:
     double calculate(double setpoint, double processVariable);
 
     /**
+     * @brief Calculate PID output using a measured rate for the derivative
+     *
+     * Derivative-on-measurement: instead of numerically differentiating the
+     * (often quantized / stepwise) process variable — which spikes every time
+     * the sensor updates — the derivative term is driven by an externally
+     * supplied rate, e.g. a hardware velocity. Units of @p measuredRate must be
+     * (process-variable units) per second; kD is then "output per (unit/sec)".
+     *
+     * @param setpoint Desired target value
+     * @param processVariable Current measured value
+     * @param measuredRate Rate of change of the process variable (units/sec)
+     * @return double Control output clamped to output limits
+     */
+    double calculate(double setpoint, double processVariable, double measuredRate);
+
+    /**
      * @brief Calculate PID output with explicit error input
-     * 
+     *
      * @param error Direct error value (setpoint - processVariable)
      * @return double Control output clamped to output limits
      */
@@ -75,6 +96,14 @@ public:
      * @param integralLimit Maximum absolute value for integral accumulation
      */
     void setIntegralLimit(double integralLimit);
+
+    /**
+     * @brief Set the derivative low-pass smoothing factor
+     *
+     * @param alpha Smoothing factor in (0, 1]. 1.0 disables filtering (raw
+     *        derivative); smaller values smooth the derivative term harder.
+     */
+    void setDerivativeFilter(double alpha);
 
     /**
      * @brief Get current integral term value
@@ -117,8 +146,29 @@ private:
     // Integral windup protection
     double integralLimit;    ///< Maximum integral accumulation
 
+    // Derivative filtering
+    double derivativeFilterAlpha;  ///< Low-pass smoothing factor in (0, 1]; 1.0 = off
+    double filteredDerivative;     ///< Low-pass filtered raw derivative (error/sec)
+
     // Timing constants
     static constexpr double MIN_DELTA_TIME = 0.001;  ///< Minimum time step (seconds)
+
+    /**
+     * @brief Combine P/I/D into a clamped output, with conditional-integration
+     *        anti-windup, logging, and state bookkeeping.
+     *
+     * Shared by every calculate() overload once the derivative term has been
+     * computed. Accumulates the integral only when doing so would not drive the
+     * output further into saturation, so the integral cannot wind up while the
+     * output is railed.
+     *
+     * @param error Current error (setpoint - processVariable)
+     * @param derivative Fully-formed derivative term (already scaled by kD)
+     * @param dt Time step used for integration (seconds)
+     * @param currentTime Timestamp of this calculation (ms) for state bookkeeping
+     * @return double Control output clamped to output limits
+     */
+    double composeOutput(double error, double derivative, double dt, uint32_t currentTime);
 
     /**
      * @brief Clamp value to specified range

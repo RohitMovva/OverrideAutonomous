@@ -1,0 +1,3346 @@
+[00:00:00.000] [INFO] Logger initialized successfully
+[00:00:00.000] [INFO] Log file: /usd/robot_log_19700101_000000.txt
+[00:00:00.071] [LOG] Robot initialized
+[00:00:02.384] [LOG] Program type: autonomous
+[00:00:02.384] [LOG] Starting autonomous
+[00:00:02.384] [LOG] Following trajectory
+[00:00:02.384] [LOG] Initial pose: -23.450506 -23.660000 1.570793
+[00:00:02.384] [LOG] Route size: 505
+[00:00:02.384] [LOG] IMU Heading: -359.985083
+[00:00:02.384] [LOG] Heading: 0.000260
+[00:00:02.384] [LOG] Left Positions: 1943.000000 1941.000000 1943.000000
+[00:00:02.384] [LOG] Right Positions: 1465.000000 1462.000000 1463.000000
+[00:00:02.384] [LOG] Left: 41.951388, Right: 31.605731
+[00:00:02.384] [LOG] DeltaLeft: 41.951388, DeltaRight: 31.605731
+[00:00:02.384] [LOG] Forward displacement: 36.778560
+[00:00:02.384] [LOG] Delta theta: 0.000260
+[00:00:02.384] [LOG] DeltaX: 0.000114, DeltaY: 36.778560
+[00:00:02.384] [LOG] Executing action with 11 parameters
+[00:00:02.384] [LOG] Action: 0.000000
+[00:00:02.384] [LOG] Action: 0.000000
+[00:00:02.384] [LOG] Action: 0.000000
+[00:00:02.384] [LOG] Action: 0.000000
+[00:00:02.384] [LOG] Action: 0.000000
+[00:00:02.384] [LOG] Action: 0.000000
+[00:00:02.384] [LOG] Action: 0.000000
+[00:00:02.384] [LOG] Action: 0.000000
+[00:00:02.384] [LOG] Action: 0.000000
+[00:00:02.384] [LOG] Action: 0.000000
+[00:00:02.384] [LOG] Action: 0.000000
+[00:00:02.394] [LOG] IMU Heading: -359.999754
+[00:00:02.394] [LOG] Heading: 0.000004
+[00:00:02.394] [LOG] Left Positions: -0.000000 -0.000000 -0.000000
+[00:00:02.394] [LOG] Right Positions: 0.000000 0.000000 0.000000
+[00:00:02.394] [LOG] Left: 41.951388, Right: 31.605731
+[00:00:02.394] [LOG] DeltaLeft: 0.000000, DeltaRight: 0.000000
+[00:00:02.394] [LOG] Forward displacement: 0.000000
+[00:00:02.394] [LOG] Delta theta: 0.000004
+[00:00:02.394] [LOG] DeltaX: -0.000000, DeltaY: 0.000000
+[00:00:02.394] [LOG] Pose: -23.450392 13.118560 1.571058
+[00:00:02.394] [LOG] Goal: -23.450506 -23.660000 1.570793
+[00:00:02.394] [LOG] Ramsete Output: -1.325340 -0.000001
+[00:00:02.394] [LOG] MP Output: 1.560000 -0.000000
+[00:00:02.394] [LOG] Left wheel velocities: -1.325331 0.000000
+[00:00:02.394] [LOG] Right wheel velocities: -1.325348 0.000000
+[00:00:02.394] [LOG] Velocity: -1.325331, Acceleration: -nan
+[00:00:02.394] [LOG] Velocity: -1.325348, Acceleration: nan
+[00:00:02.394] [LOG] Left Feedforward: -nan, Right Feedforward: nan
+[00:00:02.394] [LOG] Left Feedback: -11.927981, Right Feedback: -11.928131
+[00:00:02.394] [LOG] Left Voltage: 0, Right Voltage: 0
+[00:00:02.394] [LOG] Voltages: 0 0
+[00:00:02.404] [LOG] IMU Heading: -359.999748
+[00:00:02.404] [LOG] Heading: 0.000004
+[00:00:02.404] [LOG] Left Positions: -0.000000 -0.000000 -0.000000
+[00:00:02.404] [LOG] Right Positions: 0.000000 0.000000 0.000000
+[00:00:02.404] [LOG] Left: 41.951388, Right: 31.605731
+[00:00:02.404] [LOG] DeltaLeft: 0.000000, DeltaRight: 0.000000
+[00:00:02.404] [LOG] Forward displacement: 0.000000
+[00:00:02.404] [LOG] Delta theta: 0.000004
+[00:00:02.404] [LOG] DeltaX: -0.000000, DeltaY: 0.000000
+[00:00:02.404] [LOG] Pose: -23.450392 13.118560 1.571062
+[00:00:02.404] [LOG] Goal: -23.450506 -23.637200 1.570796
+[00:00:02.404] [LOG] Ramsete Output: -2.545347 0.000487
+[00:00:02.404] [LOG] MP Output: 3.000000 0.000489
+[00:00:02.404] [LOG] Left wheel velocities: -2.548802 0.000000
+[00:00:02.404] [LOG] Right wheel velocities: -2.541893 0.000000
+[00:00:02.404] [LOG] Velocity: -2.548802, Acceleration: 143.653214
+[00:00:02.404] [LOG] Velocity: -2.541893, Acceleration: 144.346786
+[00:00:02.404] [LOG] Left Feedforward: 35.880681, Right Feedforward: 36.101534
+[00:00:02.404] [LOG] Left Feedback: -22.939215, Right Feedback: -22.877033
+[00:00:02.404] [LOG] Left Voltage: 12, Right Voltage: 13
+[00:00:02.404] [LOG] Voltages: 12 13
+[00:00:02.414] [LOG] IMU Heading: -359.999746
+[00:00:02.414] [LOG] Heading: 0.000004
+[00:00:02.414] [LOG] Left Positions: -0.000000 -0.000000 -0.000000
+[00:00:02.414] [LOG] Right Positions: 0.000000 0.000000 0.000000
+[00:00:02.414] [LOG] Left: 41.951388, Right: 31.605731
+[00:00:02.414] [LOG] DeltaLeft: 0.000000, DeltaRight: 0.000000
+[00:00:02.414] [LOG] Forward displacement: 0.000000
+[00:00:02.414] [LOG] Delta theta: 0.000004
+[00:00:02.414] [LOG] DeltaX: -0.000000, DeltaY: 0.000000
+[00:00:02.414] [LOG] Pose: -23.450392 13.118560 1.571067
+[00:00:02.414] [LOG] Goal: -23.450506 -23.600001 1.570805
+[00:00:02.414] [LOG] Ramsete Output: -3.759092 0.001511
+[00:00:02.414] [LOG] MP Output: 4.440000 0.001512
+[00:00:02.414] [LOG] Left wheel velocities: -3.769820 0.000000
+[00:00:02.414] [LOG] Right wheel velocities: -3.748363 0.000000
+[00:00:02.414] [LOG] Velocity: -3.769820, Acceleration: 143.273234
+[00:00:02.414] [LOG] Velocity: -3.748363, Acceleration: 144.726766
+[00:00:02.414] [LOG] Left Feedforward: 33.507802, Right Feedforward: 33.983558
+[00:00:02.414] [LOG] Left Feedback: -33.928384, Right Feedback: -33.735269
+[00:00:02.414] [LOG] Left Voltage: 0, Right Voltage: 0
+[00:00:02.414] [LOG] Voltages: 0 0
+[00:00:02.424] [LOG] IMU Heading: -359.999737
+[00:00:02.424] [LOG] Heading: 0.000005
+[00:00:02.424] [LOG] Left Positions: 1.000000 1.000000 -0.000000
+[00:00:02.424] [LOG] Right Positions: 1.000000 1.000000 1.000000
+[00:00:02.424] [LOG] Left: 41.965787, Right: 31.627330
+[00:00:02.424] [LOG] DeltaLeft: 0.014399, DeltaRight: 0.021598
+[00:00:02.424] [LOG] Forward displacement: 0.017999
+[00:00:02.424] [LOG] Delta theta: 0.000005
+[00:00:02.424] [LOG] DeltaX: -0.000005, DeltaY: 0.017999
+[00:00:02.424] [LOG] Pose: -23.450397 13.136558 1.571071
+[00:00:02.424] [LOG] Goal: -23.450507 -23.548401 1.570819
+[00:00:02.424] [LOG] Ramsete Output: -4.968820 0.002853
+[00:00:02.424] [LOG] MP Output: 5.880000 0.002850
+[00:00:02.424] [LOG] Left wheel velocities: -4.989070 1.439897
+[00:00:02.424] [LOG] Right wheel velocities: -4.948571 2.000000
+[00:00:02.424] [LOG] Velocity: -4.989070, Acceleration: 143.050554
+[00:00:02.424] [LOG] Velocity: -4.948571, Acceleration: 144.949446
+[00:00:02.424] [LOG] Left Feedforward: 31.185387, Right Feedforward: 31.829978
+[00:00:02.424] [LOG] Left Feedback: -57.860697, Right Feedback: -62.537136
+[00:00:02.424] [LOG] Left Voltage: -26, Right Voltage: -30
+[00:00:02.424] [LOG] Voltages: -26 -30
+[00:00:02.434] [LOG] IMU Heading: -359.999747
+[00:00:02.434] [LOG] Heading: 0.000004
+[00:00:02.434] [LOG] Left Positions: -0.000000 -0.000000 1.000000
+[00:00:02.434] [LOG] Right Positions: 1.000000 1.000000 1.000000
+[00:00:02.434] [LOG] Left: 41.972987, Right: 31.648928
+[00:00:02.434] [LOG] DeltaLeft: 0.007199, DeltaRight: 0.021598
+[00:00:02.434] [LOG] Forward displacement: 0.014399
+[00:00:02.434] [LOG] Delta theta: 0.000004
+[00:00:02.434] [LOG] DeltaX: -0.000004, DeltaY: 0.014399
+[00:00:02.434] [LOG] Pose: -23.450401 13.150957 1.571076
+[00:00:02.434] [LOG] Goal: -23.450510 -23.482401 1.570865
+[00:00:02.434] [LOG] Ramsete Output: -6.168675 0.005772
+[00:00:02.434] [LOG] MP Output: 7.320000 0.005752
+[00:00:02.434] [LOG] Left wheel velocities: -6.209643 0.719948
+[00:00:02.434] [LOG] Right wheel velocities: -6.127707 2.159845
+[00:00:02.434] [LOG] Velocity: -6.209643, Acceleration: 141.940345
+[00:00:02.434] [LOG] Velocity: -6.127707, Acceleration: 146.059655
+[00:00:02.434] [LOG] Left Feedforward: 28.594263, Right Feedforward: 29.981639
+[00:00:02.434] [LOG] Left Feedback: -62.366325, Right Feedback: -74.587967
+[00:00:02.434] [LOG] Left Voltage: -33, Right Voltage: -44
+[00:00:02.434] [LOG] Voltages: -33 -44
+[00:00:02.444] [LOG] IMU Heading: -359.999788
+[00:00:02.444] [LOG] Heading: 0.000004
+[00:00:02.444] [LOG] Left Positions: -2.000000 -2.000000 -4.000000
+[00:00:02.444] [LOG] Right Positions: -3.000000 -2.000000 -3.000000
+[00:00:02.444] [LOG] Left: 41.915391, Right: 31.591332
+[00:00:02.444] [LOG] DeltaLeft: -0.057596, DeltaRight: -0.057596
+[00:00:02.444] [LOG] Forward displacement: -0.057596
+[00:00:02.444] [LOG] Delta theta: 0.000004
+[00:00:02.444] [LOG] DeltaX: 0.000016, DeltaY: -0.057596
+[00:00:02.444] [LOG] Pose: -23.450385 13.093362 1.571079
+[00:00:02.444] [LOG] Goal: -23.450517 -23.402003 1.570933
+[00:00:02.444] [LOG] Ramsete Output: -7.324744 0.009479
+[00:00:02.444] [LOG] MP Output: 8.760000 0.009426
+[00:00:02.444] [LOG] Left wheel velocities: -7.392030 -1.280052
+[00:00:02.444] [LOG] Right wheel velocities: -7.257458 0.159845
+[00:00:02.444] [LOG] Velocity: -7.392030, Acceleration: 141.392127
+[00:00:02.444] [LOG] Velocity: -7.257458, Acceleration: 146.607873
+[00:00:02.444] [LOG] Left Feedforward: 26.242383, Right Feedforward: 28.056064
+[00:00:02.444] [LOG] Left Feedback: -55.007801, Right Feedback: -66.755731
+[00:00:02.444] [LOG] Left Voltage: -28, Right Voltage: -38
+[00:00:02.444] [LOG] Voltages: -28 -38
+[00:00:02.454] [LOG] IMU Heading: -0.003101
+[00:00:02.454] [LOG] Heading: -0.000054
+[00:00:02.454] [LOG] Left Positions: -5.000000 -5.000000 -5.000000
+[00:00:02.454] [LOG] Right Positions: -6.000000 -7.000000 -8.000000
+[00:00:02.454] [LOG] Left: 41.807399, Right: 31.440143
+[00:00:02.454] [LOG] DeltaLeft: -0.107992, DeltaRight: -0.151189
+[00:00:02.454] [LOG] Forward displacement: -0.129591
+[00:00:02.454] [LOG] Delta theta: -0.000054
+[00:00:02.454] [LOG] DeltaX: 0.000037, DeltaY: -0.129591
+[00:00:02.454] [LOG] Pose: -23.450348 12.963771 1.571025
+[00:00:02.454] [LOG] Goal: -23.450534 -23.307202 1.571076
+[00:00:02.454] [LOG] Ramsete Output: -8.421743 0.015539
+[00:00:02.454] [LOG] MP Output: 10.200000 0.015401
+[00:00:02.454] [LOG] Left wheel velocities: -8.532046 -3.280052
+[00:00:02.454] [LOG] Right wheel velocities: -8.311441 -1.840155
+[00:00:02.454] [LOG] Velocity: -8.532046, Acceleration: 139.758151
+[00:00:02.454] [LOG] Velocity: -8.311441, Acceleration: 148.241849
+[00:00:02.454] [LOG] Left Feedforward: 23.643161, Right Feedforward: 26.596389
+[00:00:02.454] [LOG] Left Feedback: -47.267946, Right Feedback: -58.241571
+[00:00:02.454] [LOG] Left Voltage: -23, Right Voltage: -31
+[00:00:02.454] [LOG] Voltages: -23 -31
+[00:00:02.464] [LOG] IMU Heading: -0.002138
+[00:00:02.464] [LOG] Heading: -0.000037
+[00:00:02.464] [LOG] Left Positions: -7.000000 -6.000000 -7.000000
+[00:00:02.464] [LOG] Right Positions: -7.000000 -7.000000 -8.000000
+[00:00:02.464] [LOG] Left: 41.663409, Right: 31.281754
+[00:00:02.464] [LOG] DeltaLeft: -0.143990, DeltaRight: -0.158389
+[00:00:02.464] [LOG] Forward displacement: -0.151189
+[00:00:02.464] [LOG] Delta theta: -0.000037
+[00:00:02.464] [LOG] DeltaX: 0.000035, DeltaY: -0.151189
+[00:00:02.464] [LOG] Pose: -23.450314 12.812582 1.570988
+[00:00:02.464] [LOG] Goal: -23.450569 -23.198005 1.571269
+[00:00:02.464] [LOG] Ramsete Output: -9.469927 0.022737
+[00:00:02.464] [LOG] MP Output: 11.640000 0.022465
+[00:00:02.464] [LOG] Left wheel velocities: -9.631321 -5.280052
+[00:00:02.464] [LOG] Right wheel velocities: -9.308533 -3.840155
+[00:00:02.464] [LOG] Velocity: -9.631321, Acceleration: 138.986105
+[00:00:02.464] [LOG] Velocity: -9.308533, Acceleration: 149.013895
+[00:00:02.464] [LOG] Left Feedforward: 21.377887, Right Feedforward: 24.983383
+[00:00:02.464] [LOG] Left Feedback: -39.161428, Right Feedback: -49.215398
+[00:00:02.464] [LOG] Left Voltage: -17, Right Voltage: -24
+[00:00:02.464] [LOG] Voltages: -17 -24
+[00:00:02.474] [LOG] IMU Heading: -359.999991
+[00:00:02.474] [LOG] Heading: 0.000000
+[00:00:02.474] [LOG] Left Positions: -5.000000 -4.000000 -2.000000
+[00:00:02.474] [LOG] Right Positions: -6.000000 -4.000000 -1.000000
+[00:00:02.474] [LOG] Left: 41.584215, Right: 31.202560
+[00:00:02.474] [LOG] DeltaLeft: -0.079194, DeltaRight: -0.079194
+[00:00:02.474] [LOG] Forward displacement: -0.079194
+[00:00:02.474] [LOG] Delta theta: 0.000000
+[00:00:02.474] [LOG] DeltaX: 0.000015, DeltaY: -0.079194
+[00:00:02.474] [LOG] Pose: -23.450299 12.733387 1.570988
+[00:00:02.474] [LOG] Goal: -23.450635 -23.074404 1.571510
+[00:00:02.474] [LOG] Ramsete Output: -10.523828 0.031073
+[00:00:02.474] [LOG] MP Output: 13.080000 0.030607
+[00:00:02.474] [LOG] Left wheel velocities: -10.744391 -7.280052
+[00:00:02.474] [LOG] Right wheel velocities: -10.303266 -5.840155
+[00:00:02.474] [LOG] Velocity: -10.744391, Acceleration: 138.220392
+[00:00:02.474] [LOG] Velocity: -10.303266, Acceleration: 149.779608
+[00:00:02.474] [LOG] Left Feedforward: 19.088995, Right Feedforward: 23.372841
+[00:00:02.474] [LOG] Left Feedback: -31.179050, Right Feedback: -40.167995
+[00:00:02.474] [LOG] Left Voltage: -12, Right Voltage: -16
+[00:00:02.474] [LOG] Voltages: -12 -16
+[00:00:02.484] [LOG] IMU Heading: -0.004789
+[00:00:02.484] [LOG] Heading: -0.000084
+[00:00:02.484] [LOG] Left Positions: -4.000000 -1.000000 -1.000000
+[00:00:02.484] [LOG] Right Positions: -2.000000 -2.000000 -1.000000
+[00:00:02.484] [LOG] Left: 41.541018, Right: 31.166563
+[00:00:02.484] [LOG] DeltaLeft: -0.043197, DeltaRight: -0.035997
+[00:00:02.484] [LOG] Forward displacement: -0.039597
+[00:00:02.484] [LOG] Delta theta: -0.000084
+[00:00:02.484] [LOG] DeltaX: 0.000008, DeltaY: -0.039597
+[00:00:02.484] [LOG] Pose: -23.450291 12.693790 1.570905
+[00:00:02.484] [LOG] Goal: -23.450749 -22.936406 1.571905
+[00:00:02.484] [LOG] Ramsete Output: -11.580572 0.042572
+[00:00:02.484] [LOG] MP Output: 14.520000 0.041758
+[00:00:02.484] [LOG] Left wheel velocities: -11.882759 -5.280052
+[00:00:02.484] [LOG] Right wheel velocities: -11.278385 -3.840155
+[00:00:02.484] [LOG] Velocity: -11.882759, Acceleration: 136.084528
+[00:00:02.484] [LOG] Velocity: -11.278385, Acceleration: 151.915472
+[00:00:02.484] [LOG] Left Feedforward: 16.342255, Right Feedforward: 22.209630
+[00:00:02.484] [LOG] Left Feedback: -59.424362, Right Feedback: -66.944068
+[00:00:02.484] [LOG] Left Voltage: -43, Right Voltage: -44
+[00:00:02.484] [LOG] Voltages: -43 -44
+[00:00:02.494] [LOG] IMU Heading: -0.040970
+[00:00:02.494] [LOG] Heading: -0.000715
+[00:00:02.494] [LOG] Left Positions: -1.000000 -1.000000 -1.000000
+[00:00:02.494] [LOG] Right Positions: 0.000000 0.000000 -2.000000
+[00:00:02.494] [LOG] Left: 41.519419, Right: 31.152164
+[00:00:02.494] [LOG] DeltaLeft: -0.021598, DeltaRight: -0.014399
+[00:00:02.494] [LOG] Forward displacement: -0.017999
+[00:00:02.494] [LOG] Delta theta: -0.000715
+[00:00:02.494] [LOG] DeltaX: 0.000002, DeltaY: -0.017999
+[00:00:02.494] [LOG] Pose: -23.450289 12.675792 1.570189
+[00:00:02.494] [LOG] Goal: -23.450936 -22.784009 1.572382
+[00:00:02.494] [LOG] Ramsete Output: -12.606559 0.055516
+[00:00:02.494] [LOG] MP Output: 15.932822 0.054181
+[00:00:02.494] [LOG] Left wheel velocities: -13.000631 -3.280052
+[00:00:02.494] [LOG] Right wheel velocities: -12.212487 -1.840155
+[00:00:02.494] [LOG] Velocity: -13.000631, Acceleration: 132.464133
+[00:00:02.494] [LOG] Velocity: -12.212487, Acceleration: 150.100309
+[00:00:02.494] [LOG] Left Feedforward: 13.188072, Right Feedforward: 19.936992
+[00:00:02.494] [LOG] Left Feedback: -87.485217, Right Feedback: -93.350986
+[00:00:02.494] [LOG] Left Voltage: -74, Right Voltage: -73
+[00:00:02.494] [LOG] Voltages: -74 -73
+[00:00:02.504] [LOG] IMU Heading: -0.063230
+[00:00:02.504] [LOG] Heading: -0.001104
+[00:00:02.504] [LOG] Left Positions: -3.000000 -4.000000 -4.000000
+[00:00:02.504] [LOG] Right Positions: -3.000000 -4.000000 -1.000000
+[00:00:02.504] [LOG] Left: 41.440225, Right: 31.094568
+[00:00:02.504] [LOG] DeltaLeft: -0.079194, DeltaRight: -0.057596
+[00:00:02.504] [LOG] Forward displacement: -0.068395
+[00:00:02.504] [LOG] Delta theta: -0.001104
+[00:00:02.504] [LOG] DeltaX: -0.000079, DeltaY: -0.068395
+[00:00:02.504] [LOG] Pose: -23.450368 12.607397 1.569086
+[00:00:02.504] [LOG] Goal: -23.451227 -22.617619 1.572939
+[00:00:02.504] [LOG] Ramsete Output: -13.515706 0.069816
+[00:00:02.504] [LOG] MP Output: 17.284018 0.067772
+[00:00:02.504] [LOG] Left wheel velocities: -14.011284 -5.280052
+[00:00:02.504] [LOG] Right wheel velocities: -13.020127 -3.840155
+[00:00:02.504] [LOG] Velocity: -14.011284, Acceleration: 125.472459
+[00:00:02.504] [LOG] Velocity: -13.020127, Acceleration: 144.766730
+[00:00:02.504] [LOG] Left Feedforward: 9.220861, Right Feedforward: 16.842784
+[00:00:02.504] [LOG] Left Feedback: -78.581095, Right Feedback: -82.619749
+[00:00:02.504] [LOG] Left Voltage: -69, Right Voltage: -65
+[00:00:02.504] [LOG] Voltages: -69 -65
+[00:00:02.514] [LOG] IMU Heading: -0.066344
+[00:00:02.514] [LOG] Heading: -0.001158
+[00:00:02.514] [LOG] Left Positions: -8.000000 -9.000000 -5.000000
+[00:00:02.514] [LOG] Right Positions: -8.000000 -6.000000 -5.000000
+[00:00:02.514] [LOG] Left: 41.281836, Right: 30.957778
+[00:00:02.514] [LOG] DeltaLeft: -0.158389, DeltaRight: -0.136790
+[00:00:02.514] [LOG] Forward displacement: -0.147589
+[00:00:02.514] [LOG] Delta theta: -0.001158
+[00:00:02.514] [LOG] DeltaX: -0.000338, DeltaY: -0.147589
+[00:00:02.514] [LOG] Pose: -23.450706 12.459807 1.567928
+[00:00:02.514] [LOG] Goal: -23.451662 -22.438025 1.573746
+[00:00:02.514] [LOG] Ramsete Output: -14.327663 0.087934
+[00:00:02.514] [LOG] MP Output: 18.630431 0.084822
+[00:00:02.514] [LOG] Left wheel velocities: -14.951843 -7.280052
+[00:00:02.514] [LOG] Right wheel velocities: -13.703483 -5.840155
+[00:00:02.514] [LOG] Velocity: -14.951843, Acceleration: 122.538264
+[00:00:02.514] [LOG] Velocity: -13.703483, Acceleration: 146.744397
+[00:00:02.514] [LOG] Left Feedforward: 6.600569, Right Feedforward: 16.171875
+[00:00:02.514] [LOG] Left Feedback: -69.046124, Right Feedback: -70.769955
+[00:00:02.514] [LOG] Left Voltage: -62, Right Voltage: -54
+[00:00:02.514] [LOG] Voltages: -62 -54
+[00:00:02.524] [LOG] IMU Heading: -0.048776
+[00:00:02.524] [LOG] Heading: -0.000851
+[00:00:02.524] [LOG] Left Positions: -10.000000 -7.000000 -5.000000
+[00:00:02.524] [LOG] Right Positions: -7.000000 -6.000000 -5.000000
+[00:00:02.524] [LOG] Left: 41.123448, Right: 30.828187
+[00:00:02.524] [LOG] DeltaLeft: -0.158389, DeltaRight: -0.129591
+[00:00:02.524] [LOG] Forward displacement: -0.143990
+[00:00:02.524] [LOG] Delta theta: -0.000851
+[00:00:02.524] [LOG] DeltaX: -0.000413, DeltaY: -0.143989
+[00:00:02.524] [LOG] Pose: -23.451119 12.315818 1.567077
+[00:00:02.524] [LOG] Goal: -23.452289 -22.244991 1.574671
+[00:00:02.524] [LOG] Ramsete Output: -15.079020 0.107424
+[00:00:02.524] [LOG] MP Output: 19.947616 0.103006
+[00:00:02.524] [LOG] Left wheel velocities: -15.841551 -9.280052
+[00:00:02.524] [LOG] Right wheel velocities: -14.316489 -7.840155
+[00:00:02.524] [LOG] Velocity: -15.841551, Acceleration: 118.811035
+[00:00:02.524] [LOG] Velocity: -14.316489, Acceleration: 144.625919
+[00:00:02.524] [LOG] Left Feedforward: 3.836440, Right Feedforward: 14.402271
+[00:00:02.524] [LOG] Left Feedback: -59.053498, Right Feedback: -58.287006
+[00:00:02.524] [LOG] Left Voltage: -55, Right Voltage: -43
+[00:00:02.524] [LOG] Voltages: -55 -43
+[00:00:02.534] [LOG] IMU Heading: -0.020082
+[00:00:02.534] [LOG] Heading: -0.000351
+[00:00:02.534] [LOG] Left Positions: -5.000000 -4.000000 -6.000000
+[00:00:02.534] [LOG] Right Positions: -3.000000 -5.000000 -6.000000
+[00:00:02.534] [LOG] Left: 41.015456, Right: 30.727394
+[00:00:02.534] [LOG] DeltaLeft: -0.107992, DeltaRight: -0.100793
+[00:00:02.534] [LOG] Forward displacement: -0.104393
+[00:00:02.534] [LOG] Delta theta: -0.000351
+[00:00:02.534] [LOG] DeltaX: -0.000388, DeltaY: -0.104392
+[00:00:02.534] [LOG] Pose: -23.451508 12.211427 1.566726
+[00:00:02.534] [LOG] Goal: -23.453167 -22.038933 1.575711
+[00:00:02.534] [LOG] Ramsete Output: -15.832846 0.128330
+[00:00:02.534] [LOG] MP Output: 21.268758 0.122378
+[00:00:02.534] [LOG] Left wheel velocities: -16.743773 -10.799225
+[00:00:02.534] [LOG] Right wheel velocities: -14.921918 -9.840155
+[00:00:02.534] [LOG] Velocity: -16.743773, Acceleration: 118.363832
+[00:00:02.534] [LOG] Velocity: -14.921918, Acceleration: 145.864563
+[00:00:02.534] [LOG] Left Feedforward: 2.033169, Right Feedforward: 13.653821
+[00:00:02.534] [LOG] Left Feedback: -53.500938, Right Feedback: -45.735865
+[00:00:02.534] [LOG] Left Voltage: -51, Right Voltage: -32
+[00:00:02.534] [LOG] Voltages: -51 -32
+[00:00:02.544] [LOG] IMU Heading: -0.008461
+[00:00:02.544] [LOG] Heading: -0.000148
+[00:00:02.544] [LOG] Left Positions: -5.000000 -5.000000 -7.000000
+[00:00:02.544] [LOG] Right Positions: -4.000000 -4.000000 -4.000000
+[00:00:02.544] [LOG] Left: 40.893064, Right: 30.641000
+[00:00:02.544] [LOG] DeltaLeft: -0.122391, DeltaRight: -0.086394
+[00:00:02.544] [LOG] Forward displacement: -0.104393
+[00:00:02.544] [LOG] Delta theta: -0.000148
+[00:00:02.544] [LOG] DeltaX: -0.000425, DeltaY: -0.104392
+[00:00:02.544] [LOG] Pose: -23.451932 12.107035 1.566578
+[00:00:02.544] [LOG] Goal: -23.454368 -21.819644 1.577105
+[00:00:02.544] [LOG] Ramsete Output: -16.540602 0.153160
+[00:00:02.544] [LOG] MP Output: 22.554783 0.145124
+[00:00:02.544] [LOG] Left wheel velocities: -17.627782 -12.239121
+[00:00:02.544] [LOG] Right wheel velocities: -15.453422 -8.639380
+[00:00:02.544] [LOG] Velocity: -17.627782, Acceleration: 112.456375
+[00:00:02.544] [LOG] Velocity: -15.453422, Acceleration: 144.748512
+[00:00:02.544] [LOG] Left Feedforward: -1.374485, Right Feedforward: 12.335723
+[00:00:02.544] [LOG] Left Feedback: -48.497949, Right Feedback: -61.326379
+[00:00:02.544] [LOG] Left Voltage: -49, Right Voltage: -48
+[00:00:02.544] [LOG] Voltages: -49 -48
+[00:00:02.554] [LOG] IMU Heading: -0.036328
+[00:00:02.554] [LOG] Heading: -0.000634
+[00:00:02.554] [LOG] Left Positions: -3.000000 -9.000000 -5.000000
+[00:00:02.554] [LOG] Right Positions: -3.000000 -4.000000 -5.000000
+[00:00:02.554] [LOG] Left: 40.770673, Right: 30.554607
+[00:00:02.554] [LOG] DeltaLeft: -0.122391, DeltaRight: -0.086394
+[00:00:02.554] [LOG] Forward displacement: -0.104393
+[00:00:02.554] [LOG] Delta theta: -0.000634
+[00:00:02.554] [LOG] DeltaX: -0.000440, DeltaY: -0.104392
+[00:00:02.554] [LOG] Pose: -23.452373 12.002643 1.565944
+[00:00:02.554] [LOG] Goal: -23.455972 -21.587668 1.578652
+[00:00:02.554] [LOG] Ramsete Output: -17.210585 0.179542
+[00:00:02.554] [LOG] MP Output: 23.842542 0.168915
+[00:00:02.554] [LOG] Left wheel velocities: -18.485033 -12.239121
+[00:00:02.554] [LOG] Right wheel velocities: -15.936137 -8.639380
+[00:00:02.554] [LOG] Velocity: -18.485033, Acceleration: 111.888272
+[00:00:02.554] [LOG] Velocity: -15.936137, Acceleration: 145.663677
+[00:00:02.554] [LOG] Left Feedforward: -3.130830, Right Feedforward: 11.717250
+[00:00:02.554] [LOG] Left Feedback: -56.213205, Right Feedback: -65.670815
+[00:00:02.554] [LOG] Left Voltage: -59, Right Voltage: -53
+[00:00:02.554] [LOG] Voltages: -59 -53
+[00:00:02.564] [LOG] IMU Heading: -0.036244
+[00:00:02.564] [LOG] Heading: -0.000633
+[00:00:02.564] [LOG] Left Positions: -7.000000 -6.000000 -7.000000
+[00:00:02.564] [LOG] Right Positions: -6.000000 -6.000000 -7.000000
+[00:00:02.564] [LOG] Left: 40.626683, Right: 30.417816
+[00:00:02.564] [LOG] DeltaLeft: -0.143990, DeltaRight: -0.136790
+[00:00:02.564] [LOG] Forward displacement: -0.140390
+[00:00:02.564] [LOG] Delta theta: -0.000633
+[00:00:02.564] [LOG] DeltaX: -0.000681, DeltaY: -0.140388
+[00:00:02.564] [LOG] Pose: -23.453054 11.862255 1.565312
+[00:00:02.564] [LOG] Goal: -23.458076 -21.342816 1.580345
+[00:00:02.564] [LOG] Ramsete Output: -17.782250 0.207217
+[00:00:02.564] [LOG] MP Output: 25.118369 0.193534
+[00:00:02.564] [LOG] Left wheel velocities: -19.253142 -14.239121
+[00:00:02.564] [LOG] Right wheel velocities: -16.311358 -10.639380
+[00:00:02.564] [LOG] Velocity: -19.253142, Acceleration: 110.107124
+[00:00:02.564] [LOG] Velocity: -16.311358, Acceleration: 145.058208
+[00:00:02.564] [LOG] Left Feedforward: -5.086176, Right Feedforward: 10.841450
+[00:00:02.564] [LOG] Left Feedback: -45.126186, Right Feedback: -51.047804
+[00:00:02.564] [LOG] Left Voltage: -50, Right Voltage: -40
+[00:00:02.564] [LOG] Voltages: -50 -40
+[00:00:02.574] [LOG] IMU Heading: -0.009040
+[00:00:02.574] [LOG] Heading: -0.000158
+[00:00:02.574] [LOG] Left Positions: -6.000000 -6.000000 -6.000000
+[00:00:02.574] [LOG] Right Positions: -8.000000 -8.000000 -7.000000
+[00:00:02.574] [LOG] Left: 40.497093, Right: 30.252228
+[00:00:02.574] [LOG] DeltaLeft: -0.129591, DeltaRight: -0.165588
+[00:00:02.574] [LOG] Forward displacement: -0.147589
+[00:00:02.574] [LOG] Delta theta: -0.000158
+[00:00:02.574] [LOG] DeltaX: -0.000809, DeltaY: -0.147587
+[00:00:02.574] [LOG] Pose: -23.453863 11.714668 1.565154
+[00:00:02.574] [LOG] Goal: -23.460787 -21.085275 1.582497
+[00:00:02.574] [LOG] Ramsete Output: -18.303970 0.238855
+[00:00:02.574] [LOG] MP Output: 26.373739 0.221295
+[00:00:02.574] [LOG] Left wheel velocities: -19.999436 -12.959070
+[00:00:02.574] [LOG] Right wheel velocities: -16.608505 -12.639380
+[00:00:02.574] [LOG] Velocity: -19.999436, Acceleration: 105.831676
+[00:00:02.574] [LOG] Velocity: -16.608505, Acceleration: 145.242231
+[00:00:02.574] [LOG] Left Feedforward: -7.749453, Right Feedforward: 10.346935
+[00:00:02.574] [LOG] Left Feedback: -63.363293, Right Feedback: -35.722128
+[00:00:02.574] [LOG] Left Voltage: -71, Right Voltage: -25
+[00:00:02.574] [LOG] Voltages: -71 -25
+[00:00:02.584] [LOG] IMU Heading: -359.967113
+[00:00:02.584] [LOG] Heading: 0.000574
+[00:00:02.584] [LOG] Left Positions: -7.000000 -7.000000 -7.000000
+[00:00:02.584] [LOG] Right Positions: -7.000000 -6.000000 -6.000000
+[00:00:02.584] [LOG] Left: 40.345904, Right: 30.115438
+[00:00:02.584] [LOG] DeltaLeft: -0.151189, DeltaRight: -0.136790
+[00:00:02.584] [LOG] Forward displacement: -0.143990
+[00:00:02.584] [LOG] Delta theta: 0.000574
+[00:00:02.584] [LOG] DeltaX: -0.000812, DeltaY: -0.143987
+[00:00:02.584] [LOG] Pose: -23.454676 11.570681 1.565728
+[00:00:02.584] [LOG] Goal: -23.464225 -20.815274 1.584829
+[00:00:02.584] [LOG] Ramsete Output: -18.775611 0.271506
+[00:00:02.584] [LOG] MP Output: 27.628355 0.249651
+[00:00:02.584] [LOG] Left wheel velocities: -20.702843 -14.959070
+[00:00:02.584] [LOG] Right wheel velocities: -16.848380 -13.679018
+[00:00:02.584] [LOG] Velocity: -20.702843, Acceleration: 105.333852
+[00:00:02.584] [LOG] Velocity: -16.848380, Acceleration: 145.589338
+[00:00:02.584] [LOG] Left Feedforward: -9.200103, Right Feedforward: 10.007298
+[00:00:02.584] [LOG] Left Feedback: -51.693956, Right Feedback: -28.524259
+[00:00:02.584] [LOG] Left Voltage: -60, Right Voltage: -18
+[00:00:02.584] [LOG] Voltages: -60 -18
+[00:00:02.594] [LOG] IMU Heading: -359.952556
+[00:00:02.594] [LOG] Heading: 0.000828
+[00:00:02.594] [LOG] Left Positions: -7.000000 -8.000000 -7.000000
+[00:00:02.594] [LOG] Right Positions: -3.000000 -3.000000 -5.000000
+[00:00:02.594] [LOG] Left: 40.187515, Right: 30.036244
+[00:00:02.594] [LOG] DeltaLeft: -0.158389, DeltaRight: -0.079194
+[00:00:02.594] [LOG] Forward displacement: -0.118791
+[00:00:02.594] [LOG] Delta theta: 0.000828
+[00:00:02.594] [LOG] DeltaX: -0.000602, DeltaY: -0.118790
+[00:00:02.594] [LOG] Pose: -23.455278 11.451891 1.566556
+[00:00:02.594] [LOG] Goal: -23.468525 -20.532764 1.587701
+[00:00:02.594] [LOG] Ramsete Output: -19.242392 0.307946
+[00:00:02.594] [LOG] MP Output: 28.866403 0.280704
+[00:00:02.594] [LOG] Left wheel velocities: -21.428288 -15.838863
+[00:00:02.594] [LOG] Right wheel velocities: -17.056496 -11.679018
+[00:00:02.594] [LOG] Velocity: -21.428288, Acceleration: 101.762448
+[00:00:02.594] [LOG] Velocity: -17.056496, Acceleration: 145.847260
+[00:00:02.594] [LOG] Left Feedforward: -11.613598, Right Feedforward: 9.699661
+[00:00:02.594] [LOG] Left Feedback: -50.304822, Right Feedback: -48.397301
+[00:00:02.594] [LOG] Left Voltage: -61, Right Voltage: -38
+[00:00:02.594] [LOG] Voltages: -61 -38
+[00:00:02.604] [LOG] IMU Heading: -359.958298
+[00:00:02.604] [LOG] Heading: 0.000728
+[00:00:02.604] [LOG] Left Positions: -8.000000 -7.000000 -8.000000
+[00:00:02.604] [LOG] Right Positions: -3.000000 -2.000000 -4.000000
+[00:00:02.604] [LOG] Left: 40.021927, Right: 29.971448
+[00:00:02.604] [LOG] DeltaLeft: -0.165588, DeltaRight: -0.064795
+[00:00:02.604] [LOG] Forward displacement: -0.115192
+[00:00:02.604] [LOG] Delta theta: 0.000728
+[00:00:02.604] [LOG] DeltaX: -0.000488, DeltaY: -0.115191
+[00:00:02.604] [LOG] Pose: -23.455766 11.336700 1.567284
+[00:00:02.604] [LOG] Goal: -23.473835 -20.237946 1.590383
+[00:00:02.604] [LOG] Ramsete Output: -19.625539 0.342350
+[00:00:02.604] [LOG] MP Output: 30.104061 0.309580
+[00:00:02.604] [LOG] Left wheel velocities: -22.055646 -16.558811
+[00:00:02.604] [LOG] Right wheel velocities: -17.195431 -9.679018
+[00:00:02.604] [LOG] Velocity: -22.055646, Acceleration: 103.268202
+[00:00:02.604] [LOG] Velocity: -17.195431, Acceleration: 144.263394
+[00:00:02.604] [LOG] Left Feedforward: -12.322485, Right Feedforward: 8.967470
+[00:00:02.604] [LOG] Left Feedback: -49.471513, Right Feedback: -67.647718
+[00:00:02.604] [LOG] Left Voltage: -61, Right Voltage: -58
+[00:00:02.604] [LOG] Voltages: -61 -58
+[00:00:02.614] [LOG] IMU Heading: -359.940875
+[00:00:02.614] [LOG] Heading: 0.001032
+[00:00:02.614] [LOG] Left Positions: -7.000000 -8.000000 -8.000000
+[00:00:02.614] [LOG] Right Positions: -6.000000 -6.000000 -7.000000
+[00:00:02.614] [LOG] Left: 39.856339, Right: 29.834658
+[00:00:02.614] [LOG] DeltaLeft: -0.165588, DeltaRight: -0.136790
+[00:00:02.614] [LOG] Forward displacement: -0.151189
+[00:00:02.614] [LOG] Delta theta: 0.001032
+[00:00:02.614] [LOG] DeltaX: -0.000453, DeltaY: -0.151188
+[00:00:02.614] [LOG] Pose: -23.456219 11.185511 1.568316
+[00:00:02.614] [LOG] Goal: -23.480317 -19.930802 1.593630
+[00:00:02.614] [LOG] Ramsete Output: -19.911328 0.380383
+[00:00:02.614] [LOG] MP Output: 31.342570 0.340842
+[00:00:02.614] [LOG] Left wheel velocities: -22.611407 -16.558811
+[00:00:02.614] [LOG] Right wheel velocities: -17.211249 -11.679018
+[00:00:02.614] [LOG] Velocity: -22.611407, Acceleration: 101.660370
+[00:00:02.614] [LOG] Velocity: -17.211249, Acceleration: 146.041381
+[00:00:02.614] [LOG] Left Feedforward: -13.832991, Right Feedforward: 9.471603
+[00:00:02.614] [LOG] Left Feedback: -54.473360, Right Feedback: -49.790081
+[00:00:02.614] [LOG] Left Voltage: -68, Right Voltage: -40
+[00:00:02.614] [LOG] Voltages: -68 -40
+[00:00:02.624] [LOG] IMU Heading: -359.875687
+[00:00:02.624] [LOG] Heading: 0.002170
+[00:00:02.624] [LOG] Left Positions: -8.000000 -8.000000 -8.000000
+[00:00:02.624] [LOG] Right Positions: -8.000000 -8.000000 -8.000000
+[00:00:02.624] [LOG] Left: 39.683551, Right: 29.661871
+[00:00:02.624] [LOG] DeltaLeft: -0.172788, DeltaRight: -0.172788
+[00:00:02.624] [LOG] Forward displacement: -0.172788
+[00:00:02.624] [LOG] Delta theta: 0.002170
+[00:00:02.624] [LOG] DeltaX: -0.000241, DeltaY: -0.172787
+[00:00:02.624] [LOG] Pose: -23.456460 11.012724 1.570486
+[00:00:02.624] [LOG] Goal: -23.488148 -19.611275 1.597494
+[00:00:02.624] [LOG] Ramsete Output: -20.094013 0.421101
+[00:00:02.624] [LOG] MP Output: 32.559102 0.373743
+[00:00:02.624] [LOG] Left wheel velocities: -23.083116 -17.278760
+[00:00:02.624] [LOG] Right wheel velocities: -17.104911 -13.679018
+[00:00:02.624] [LOG] Velocity: -23.083116, Acceleration: 98.298968
+[00:00:02.624] [LOG] Velocity: -17.104911, Acceleration: 145.007385
+[00:00:02.624] [LOG] Left Feedforward: -15.714074, Right Feedforward: 9.358131
+[00:00:02.624] [LOG] Left Feedback: -52.239205, Right Feedback: -30.833035
+[00:00:02.624] [LOG] Left Voltage: -67, Right Voltage: -21
+[00:00:02.624] [LOG] Voltages: -67 -21
+[00:00:02.634] [LOG] IMU Heading: -359.787213
+[00:00:02.634] [LOG] Heading: 0.003714
+[00:00:02.634] [LOG] Left Positions: -9.000000 -9.000000 -9.000000
+[00:00:02.634] [LOG] Right Positions: -9.000000 -12.000000 -7.000000
+[00:00:02.634] [LOG] Left: 39.489165, Right: 29.460285
+[00:00:02.634] [LOG] DeltaLeft: -0.194386, DeltaRight: -0.201586
+[00:00:02.634] [LOG] Forward displacement: -0.197986
+[00:00:02.634] [LOG] Delta theta: 0.003714
+[00:00:02.634] [LOG] DeltaX: 0.000306, DeltaY: -0.197985
+[00:00:02.634] [LOG] Pose: -23.456154 10.814739 1.574199
+[00:00:02.634] [LOG] Goal: -23.497508 -19.279727 1.601101
+[00:00:02.634] [LOG] Ramsete Output: -20.121350 0.458658
+[00:00:02.634] [LOG] MP Output: 33.788848 0.404210
+[00:00:02.634] [LOG] Left wheel velocities: -23.377049 -19.278760
+[00:00:02.634] [LOG] Right wheel velocities: -16.865652 -15.679018
+[00:00:02.634] [LOG] Velocity: -23.377049, Acceleration: 101.348239
+[00:00:02.634] [LOG] Velocity: -16.865652, Acceleration: 144.601131
+[00:00:02.634] [LOG] Left Feedforward: -15.343068, Right Feedforward: 9.678883
+[00:00:02.634] [LOG] Left Feedback: -36.884602, Right Feedback: -10.679707
+[00:00:02.634] [LOG] Left Voltage: -52, Right Voltage: -1
+[00:00:02.634] [LOG] Voltages: -52 -1
+[00:00:02.644] [LOG] IMU Heading: -359.746236
+[00:00:02.644] [LOG] Heading: 0.004429
+[00:00:02.644] [LOG] Left Positions: -9.000000 -5.000000 -10.000000
+[00:00:02.644] [LOG] Right Positions: -7.000000 -4.000000 -5.000000
+[00:00:02.644] [LOG] Left: 39.316378, Right: 29.345093
+[00:00:02.644] [LOG] DeltaLeft: -0.172788, DeltaRight: -0.115192
+[00:00:02.644] [LOG] Forward displacement: -0.143990
+[00:00:02.644] [LOG] Delta theta: 0.004429
+[00:00:02.644] [LOG] DeltaX: 0.000809, DeltaY: -0.143987
+[00:00:02.644] [LOG] Pose: -23.455345 10.670751 1.578628
+[00:00:02.644] [LOG] Goal: -23.508604 -18.935884 1.605335
+[00:00:02.644] [LOG] Ramsete Output: -20.173722 0.498610
+[00:00:02.644] [LOG] MP Output: 35.019943 0.435949
+[00:00:02.644] [LOG] Left wheel velocities: -23.713010 -17.278760
+[00:00:02.644] [LOG] Right wheel velocities: -16.634434 -13.679018
+[00:00:02.644] [LOG] Velocity: -23.713010, Acceleration: 100.580385
+[00:00:02.644] [LOG] Velocity: -16.634434, Acceleration: 145.638468
+[00:00:02.644] [LOG] Left Feedforward: -16.194954, Right Feedforward: 10.417837
+[00:00:02.644] [LOG] Left Feedback: -57.908257, Right Feedback: -26.598746
+[00:00:02.644] [LOG] Left Voltage: -74, Right Voltage: -16
+[00:00:02.644] [LOG] Voltages: -74 -16
+[00:00:02.654] [LOG] IMU Heading: -359.754393
+[00:00:02.654] [LOG] Heading: 0.004287
+[00:00:02.654] [LOG] Left Positions: -9.000000 -10.000000 -9.000000
+[00:00:02.654] [LOG] Right Positions: -5.000000 -3.000000 -5.000000
+[00:00:02.654] [LOG] Left: 39.114792, Right: 29.251500
+[00:00:02.654] [LOG] DeltaLeft: -0.201586, DeltaRight: -0.093593
+[00:00:02.654] [LOG] Forward displacement: -0.147589
+[00:00:02.654] [LOG] Delta theta: 0.004287
+[00:00:02.654] [LOG] DeltaX: 0.001472, DeltaY: -0.147582
+[00:00:02.654] [LOG] Pose: -23.453873 10.523169 1.582915
+[00:00:02.654] [LOG] Goal: -23.521648 -18.579776 1.609735
+[00:00:02.654] [LOG] Ramsete Output: -20.112172 0.538163
+[00:00:02.654] [LOG] MP Output: 36.242907 0.466576
+[00:00:02.654] [LOG] Left wheel velocities: -23.932221 -19.278760
+[00:00:02.654] [LOG] Right wheel velocities: -16.292123 -11.679018
+[00:00:02.654] [LOG] Velocity: -23.932221, Acceleration: 100.556421
+[00:00:02.654] [LOG] Velocity: -16.292123, Acceleration: 144.036398
+[00:00:02.654] [LOG] Left Feedforward: -16.607682, Right Feedforward: 10.570492
+[00:00:02.654] [LOG] Left Feedback: -41.881149, Right Feedback: -41.517946
+[00:00:02.654] [LOG] Left Voltage: -58, Right Voltage: -30
+[00:00:02.654] [LOG] Voltages: -58 -30
+[00:00:02.664] [LOG] IMU Heading: -359.756801
+[00:00:02.664] [LOG] Heading: 0.004245
+[00:00:02.664] [LOG] Left Positions: -9.000000 -10.000000 -12.000000
+[00:00:02.664] [LOG] Right Positions: -4.000000 -4.000000 -5.000000
+[00:00:02.664] [LOG] Left: 38.891608, Right: 29.157907
+[00:00:02.664] [LOG] DeltaLeft: -0.223184, DeltaRight: -0.093593
+[00:00:02.664] [LOG] Forward displacement: -0.158389
+[00:00:02.664] [LOG] Delta theta: 0.004245
+[00:00:02.664] [LOG] DeltaX: 0.002256, DeltaY: -0.158372
+[00:00:02.664] [LOG] Pose: -23.451618 10.364797 1.587160
+[00:00:02.664] [LOG] Goal: -23.536856 -18.211549 1.614794
+[00:00:02.664] [LOG] Ramsete Output: -19.947870 0.579881
+[00:00:02.664] [LOG] MP Output: 37.481421 0.497616
+[00:00:02.664] [LOG] Left wheel velocities: -24.064049 -21.278760
+[00:00:02.664] [LOG] Right wheel velocities: -15.831691 -9.679018
+[00:00:02.664] [LOG] Velocity: -24.064049, Acceleration: 101.818288
+[00:00:02.664] [LOG] Velocity: -15.831691, Acceleration: 145.884558
+[00:00:02.664] [LOG] Left Feedforward: -16.473004, Right Feedforward: 11.976738
+[00:00:02.664] [LOG] Left Feedback: -25.067603, Right Feedback: -55.374061
+[00:00:02.664] [LOG] Left Voltage: -41, Right Voltage: -43
+[00:00:02.664] [LOG] Voltages: -41 -43
+[00:00:02.674] [LOG] IMU Heading: -359.720047
+[00:00:02.674] [LOG] Heading: 0.004886
+[00:00:02.674] [LOG] Left Positions: -13.000000 -11.000000 -10.000000
+[00:00:02.674] [LOG] Right Positions: -6.000000 -5.000000 -6.000000
+[00:00:02.674] [LOG] Left: 38.646826, Right: 29.035516
+[00:00:02.674] [LOG] DeltaLeft: -0.244782, DeltaRight: -0.122391
+[00:00:02.674] [LOG] Forward displacement: -0.183587
+[00:00:02.674] [LOG] Delta theta: 0.004886
+[00:00:02.674] [LOG] DeltaX: 0.003452, DeltaY: -0.183554
+[00:00:02.674] [LOG] Pose: -23.448165 10.181243 1.592046
+[00:00:02.674] [LOG] Goal: -23.554469 -17.830952 1.620009
+[00:00:02.674] [LOG] Ramsete Output: -19.605903 0.620178
+[00:00:02.674] [LOG] MP Output: 38.720214 0.526909
+[00:00:02.674] [LOG] Left wheel velocities: -24.008116 -23.278760
+[00:00:02.674] [LOG] Right wheel velocities: -15.203689 -11.679018
+[00:00:02.674] [LOG] Velocity: -24.008116, Acceleration: 103.085873
+[00:00:02.674] [LOG] Velocity: -15.203689, Acceleration: 144.672773
+[00:00:02.674] [LOG] Left Feedforward: -15.989253, Right Feedforward: 12.775007
+[00:00:02.674] [LOG] Left Feedback: -6.564209, Right Feedback: -31.722041
+[00:00:02.674] [LOG] Left Voltage: -22, Right Voltage: -18
+[00:00:02.674] [LOG] Voltages: -22 -18
+[00:00:02.684] [LOG] IMU Heading: -359.681162
+[00:00:02.684] [LOG] Heading: 0.005565
+[00:00:02.684] [LOG] Left Positions: -9.000000 -10.000000 -11.000000
+[00:00:02.684] [LOG] Right Positions: -8.000000 -11.000000 -10.000000
+[00:00:02.684] [LOG] Left: 38.430841, Right: 28.826731
+[00:00:02.684] [LOG] DeltaLeft: -0.215984, DeltaRight: -0.208785
+[00:00:02.684] [LOG] Forward displacement: -0.212385
+[00:00:02.684] [LOG] Delta theta: 0.005565
+[00:00:02.684] [LOG] DeltaX: 0.005103, DeltaY: -0.212323
+[00:00:02.684] [LOG] Pose: -23.443062 9.968920 1.597611
+[00:00:02.684] [LOG] Goal: -23.574721 -17.438081 1.625351
+[00:00:02.684] [LOG] Ramsete Output: -19.072586 0.658929
+[00:00:02.684] [LOG] MP Output: 39.972396 0.554469
+[00:00:02.684] [LOG] Left wheel velocities: -23.749867 -21.598449
+[00:00:02.684] [LOG] Right wheel velocities: -14.395306 -13.679018
+[00:00:02.684] [LOG] Velocity: -23.749867, Acceleration: 105.655248
+[00:00:02.684] [LOG] Velocity: -14.395306, Acceleration: 144.781060
+[00:00:02.684] [LOG] Left Feedforward: -14.740679, Right Feedforward: 14.303002
+[00:00:02.684] [LOG] Left Feedback: -19.362756, Right Feedback: -6.446589
+[00:00:02.684] [LOG] Left Voltage: -34, Right Voltage: 7
+[00:00:02.684] [LOG] Voltages: -34 7
+[00:00:02.694] [LOG] IMU Heading: -359.648557
+[00:00:02.694] [LOG] Heading: 0.006134
+[00:00:02.694] [LOG] Left Positions: -8.000000 -9.000000 -8.000000
+[00:00:02.694] [LOG] Right Positions: -6.000000 -8.000000 -8.000000
+[00:00:02.694] [LOG] Left: 38.250854, Right: 28.668342
+[00:00:02.694] [LOG] DeltaLeft: -0.179987, DeltaRight: -0.158389
+[00:00:02.694] [LOG] Forward displacement: -0.169188
+[00:00:02.694] [LOG] Delta theta: 0.006134
+[00:00:02.694] [LOG] DeltaX: 0.005055, DeltaY: -0.169112
+[00:00:02.694] [LOG] Pose: -23.438007 9.799808 1.603744
+[00:00:02.694] [LOG] Goal: -23.597866 -17.032760 1.630798
+[00:00:02.694] [LOG] Ramsete Output: -18.494227 0.695908
+[00:00:02.694] [LOG] MP Output: 41.236472 0.580131
+[00:00:02.694] [LOG] Left wheel velocities: -23.434001 -19.598449
+[00:00:02.694] [LOG] Right wheel velocities: -13.554453 -15.679018
+[00:00:02.694] [LOG] Velocity: -23.434001, Acceleration: 108.192343
+[00:00:02.694] [LOG] Velocity: -13.554453, Acceleration: 144.622845
+[00:00:02.694] [LOG] Left Feedforward: -13.395199, Right Feedforward: 15.811115
+[00:00:02.694] [LOG] Left Feedback: -34.519964, Right Feedback: 19.121081
+[00:00:02.694] [LOG] Left Voltage: -47, Right Voltage: 34
+[00:00:02.694] [LOG] Voltages: -47 34
+[00:00:02.704] [LOG] IMU Heading: -359.630280
+[00:00:02.704] [LOG] Heading: 0.006453
+[00:00:02.704] [LOG] Left Positions: -8.000000 -8.000000 -9.000000
+[00:00:02.704] [LOG] Right Positions: -4.000000 -3.000000 -2.000000
+[00:00:02.704] [LOG] Left: 38.070867, Right: 28.603547
+[00:00:02.704] [LOG] DeltaLeft: -0.179987, DeltaRight: -0.064795
+[00:00:02.704] [LOG] Forward displacement: -0.122391
+[00:00:02.704] [LOG] Delta theta: 0.006453
+[00:00:02.704] [LOG] DeltaX: 0.004426, DeltaY: -0.122311
+[00:00:02.704] [LOG] Pose: -23.433581 9.677497 1.610197
+[00:00:02.704] [LOG] Goal: -23.624158 -16.614900 1.636880
+[00:00:02.704] [LOG] Ramsete Output: -17.886454 0.732660
+[00:00:02.704] [LOG] MP Output: 42.505310 0.604084
+[00:00:02.704] [LOG] Left wheel velocities: -23.087100 -17.998708
+[00:00:02.704] [LOG] Right wheel velocities: -12.685807 -13.679018
+[00:00:02.704] [LOG] Velocity: -23.087100, Acceleration: 109.881125
+[00:00:02.704] [LOG] Velocity: -12.685807, Acceleration: 143.886552
+[00:00:02.704] [LOG] Left Feedforward: -12.246798, Right Feedforward: 17.197222
+[00:00:02.704] [LOG] Left Feedback: -45.795530, Right Feedback: 8.938897
+[00:00:02.704] [LOG] Left Voltage: -58, Right Voltage: 26
+[00:00:02.704] [LOG] Voltages: -58 26
+[00:00:02.714] [LOG] IMU Heading: -359.663590
+[00:00:02.714] [LOG] Heading: 0.005871
+[00:00:02.714] [LOG] Left Positions: -10.000000 -9.000000 -10.000000
+[00:00:02.714] [LOG] Right Positions: 1.000000 1.000000 2.000000
+[00:00:02.714] [LOG] Left: 37.862082, Right: 28.632345
+[00:00:02.714] [LOG] DeltaLeft: -0.208785, DeltaRight: 0.028798
+[00:00:02.714] [LOG] Forward displacement: -0.089994
+[00:00:02.714] [LOG] Delta theta: 0.005871
+[00:00:02.714] [LOG] DeltaX: 0.003809, DeltaY: -0.089913
+[00:00:02.714] [LOG] Pose: -23.429772 9.587584 1.616069
+[00:00:02.714] [LOG] Goal: -23.653848 -16.184513 1.643027
+[00:00:02.714] [LOG] Ramsete Output: -17.217407 0.767931
+[00:00:02.714] [LOG] MP Output: 43.794433 0.625487
+[00:00:02.714] [LOG] Left wheel velocities: -22.668421 -19.998708
+[00:00:02.714] [LOG] Right wheel velocities: -11.766393 -11.679018
+[00:00:02.714] [LOG] Velocity: -22.668421, Acceleration: 113.719404
+[00:00:02.714] [LOG] Velocity: -11.766393, Acceleration: 144.105273
+[00:00:02.714] [LOG] Left Feedforward: -10.320759, Right Feedforward: 18.963755
+[00:00:02.714] [LOG] Left Feedback: -24.027422, Right Feedback: -0.786375
+[00:00:02.714] [LOG] Left Voltage: -34, Right Voltage: 18
+[00:00:02.714] [LOG] Voltages: -34 18
+[00:00:02.724] [LOG] IMU Heading: -359.709144
+[00:00:02.724] [LOG] Heading: 0.005076
+[00:00:02.724] [LOG] Left Positions: -13.000000 -18.000000 -12.000000
+[00:00:02.724] [LOG] Right Positions: 3.000000 0.000000 -1.000000
+[00:00:02.724] [LOG] Left: 37.552504, Right: 28.646744
+[00:00:02.724] [LOG] DeltaLeft: -0.309578, DeltaRight: 0.014399
+[00:00:02.724] [LOG] Forward displacement: -0.147589
+[00:00:02.724] [LOG] Delta theta: 0.005076
+[00:00:02.724] [LOG] DeltaX: 0.007054, DeltaY: -0.147421
+[00:00:02.724] [LOG] Pose: -23.422718 9.440163 1.621145
+[00:00:02.724] [LOG] Goal: -23.687201 -15.741379 1.649210
+[00:00:02.724] [LOG] Ramsete Output: -16.001908 0.788573
+[00:00:02.724] [LOG] MP Output: 44.356777 0.633561
+[00:00:02.724] [LOG] Left wheel velocities: -21.599446 -21.998708
+[00:00:02.724] [LOG] Right wheel velocities: -10.404370 -9.679018
+[00:00:02.724] [LOG] Velocity: -21.599446, Acceleration: 50.503713
+[00:00:02.724] [LOG] Velocity: -10.404370, Acceleration: 61.965011
+[00:00:02.724] [LOG] Left Feedforward: -27.307860, Right Feedforward: -3.158581
+[00:00:02.724] [LOG] Left Feedback: 3.593361, Right Feedback: -6.528169
+[00:00:02.724] [LOG] Left Voltage: -23, Right Voltage: -9
+[00:00:02.724] [LOG] Voltages: -23 -9
+[00:00:02.734] [LOG] IMU Heading: -359.717747
+[00:00:02.734] [LOG] Heading: 0.004926
+[00:00:02.734] [LOG] Left Positions: -11.000000 -11.000000 -12.000000
+[00:00:02.734] [LOG] Right Positions: 0.000000 -1.000000 -3.000000
+[00:00:02.734] [LOG] Left: 37.307722, Right: 28.617946
+[00:00:02.734] [LOG] DeltaLeft: -0.244782, DeltaRight: -0.028798
+[00:00:02.734] [LOG] Forward displacement: -0.136790
+[00:00:02.734] [LOG] Delta theta: 0.004926
+[00:00:02.734] [LOG] DeltaX: 0.007221, DeltaY: -0.136599
+[00:00:02.734] [LOG] Pose: -23.415497 9.303564 1.626071
+[00:00:02.734] [LOG] Goal: -23.723532 -15.296502 1.655962
+[00:00:02.734] [LOG] Ramsete Output: -14.549436 0.797642
+[00:00:02.734] [LOG] MP Output: 44.371865 0.630506
+[00:00:02.734] [LOG] Left wheel velocities: -20.211344 -23.998708
+[00:00:02.734] [LOG] Right wheel velocities: -8.887527 -7.679018
+[00:00:02.734] [LOG] Velocity: -20.211344, Acceleration: 3.676982
+[00:00:02.734] [LOG] Velocity: -8.887527, Acceleration: -0.659306
+[00:00:02.734] [LOG] Left Feedforward: -38.787892, Right Feedforward: -19.139718
+[00:00:02.734] [LOG] Left Feedback: 34.086272, Right Feedback: -10.876585
+[00:00:02.734] [LOG] Left Voltage: -4, Right Voltage: -30
+[00:00:02.734] [LOG] Voltages: -4 -30
+[00:00:02.744] [LOG] IMU Heading: -359.654722
+[00:00:02.744] [LOG] Heading: 0.006026
+[00:00:02.744] [LOG] Left Positions: -10.000000 -10.000000 -9.000000
+[00:00:02.744] [LOG] Right Positions: -4.000000 -4.000000 -4.000000
+[00:00:02.744] [LOG] Left: 37.098937, Right: 28.531552
+[00:00:02.744] [LOG] DeltaLeft: -0.208785, DeltaRight: -0.086394
+[00:00:02.744] [LOG] Forward displacement: -0.147589
+[00:00:02.744] [LOG] Delta theta: 0.006026
+[00:00:02.744] [LOG] DeltaX: 0.008598, DeltaY: -0.147339
+[00:00:02.744] [LOG] Pose: -23.406899 9.156225 1.632098
+[00:00:02.744] [LOG] Goal: -23.762452 -14.854420 1.662128
+[00:00:02.744] [LOG] Ramsete Output: -13.042603 0.801690
+[00:00:02.744] [LOG] MP Output: 44.401727 0.625075
+[00:00:02.744] [LOG] Left wheel velocities: -18.733244 -21.998708
+[00:00:02.744] [LOG] Right wheel velocities: -7.351961 -8.639380
+[00:00:02.744] [LOG] Velocity: -18.733244, Acceleration: 6.841555
+[00:00:02.744] [LOG] Velocity: -7.351961, Acceleration: -0.869245
+[00:00:02.744] [LOG] Left Feedforward: -35.104035, Right Feedforward: -16.361902
+[00:00:02.744] [LOG] Left Feedback: 29.389176, Right Feedback: 11.586768
+[00:00:02.744] [LOG] Left Voltage: -5, Right Voltage: -4
+[00:00:02.744] [LOG] Voltages: -5 -4
+[00:00:02.754] [LOG] IMU Heading: -359.511494
+[00:00:02.754] [LOG] Heading: 0.008526
+[00:00:02.754] [LOG] Left Positions: -7.000000 -5.000000 -6.000000
+[00:00:02.754] [LOG] Right Positions: -6.000000 -6.000000 -6.000000
+[00:00:02.754] [LOG] Left: 36.969346, Right: 28.401961
+[00:00:02.754] [LOG] DeltaLeft: -0.129591, DeltaRight: -0.129591
+[00:00:02.754] [LOG] Forward displacement: -0.129591
+[00:00:02.754] [LOG] Delta theta: 0.008526
+[00:00:02.754] [LOG] DeltaX: 0.008490, DeltaY: -0.129312
+[00:00:02.754] [LOG] Pose: -23.398409 9.026914 1.640624
+[00:00:02.754] [LOG] Goal: -23.804171 -14.412201 1.668247
+[00:00:02.754] [LOG] Ramsete Output: -11.536576 0.800497
+[00:00:02.754] [LOG] MP Output: 44.447916 0.617306
+[00:00:02.754] [LOG] Left wheel velocities: -17.218754 -19.998708
+[00:00:02.754] [LOG] Right wheel velocities: -5.854398 -10.639380
+[00:00:02.754] [LOG] Velocity: -17.218754, Acceleration: 10.133407
+[00:00:02.754] [LOG] Velocity: -5.854398, Acceleration: -0.895631
+[00:00:02.754] [LOG] Left Feedforward: -31.314672, Right Feedforward: -13.599325
+[00:00:02.754] [LOG] Left Feedback: 25.019587, Right Feedback: 43.064837
+[00:00:02.754] [LOG] Left Voltage: -6, Right Voltage: 29
+[00:00:02.754] [LOG] Voltages: -6 29
+[00:00:02.764] [LOG] IMU Heading: -358.726468
+[00:00:02.764] [LOG] Heading: 0.022227
+[00:00:02.764] [LOG] Left Positions: -3.000000 -3.000000 -4.000000
+[00:00:02.764] [LOG] Right Positions: -5.000000 -5.000000 -5.000000
+[00:00:02.764] [LOG] Left: 36.897351, Right: 28.293969
+[00:00:02.764] [LOG] DeltaLeft: -0.071995, DeltaRight: -0.107992
+[00:00:02.764] [LOG] Forward displacement: -0.089994
+[00:00:02.764] [LOG] Delta theta: 0.022227
+[00:00:02.764] [LOG] DeltaX: 0.007276, DeltaY: -0.089697
+[00:00:02.764] [LOG] Pose: -23.391133 8.937217 1.662851
+[00:00:02.764] [LOG] Goal: -23.848674 -13.969718 1.674293
+[00:00:02.764] [LOG] Ramsete Output: -10.008377 0.781768
+[00:00:02.764] [LOG] MP Output: 44.505600 0.607289
+[00:00:02.764] [LOG] Left wheel velocities: -15.557610 -17.998708
+[00:00:02.764] [LOG] Right wheel velocities: -4.459145 -10.799225
+[00:00:02.764] [LOG] Velocity: -15.557610, Acceleration: 12.878932
+[00:00:02.764] [LOG] Velocity: -4.459145, Acceleration: -1.342202
+[00:00:02.764] [LOG] Left Feedforward: -27.417898, Right Feedforward: -11.152079
+[00:00:02.764] [LOG] Left Feedback: 21.969884, Right Feedback: 57.060715
+[00:00:02.764] [LOG] Left Voltage: -5, Right Voltage: 45
+[00:00:02.764] [LOG] Voltages: -5 45
+[00:00:02.774] [LOG] IMU Heading: -359.440701
+[00:00:02.774] [LOG] Heading: 0.009762
+[00:00:02.774] [LOG] Left Positions: -3.000000 -4.000000 -3.000000
+[00:00:02.774] [LOG] Right Positions: 0.000000 0.000000 1.000000
+[00:00:02.774] [LOG] Left: 36.825356, Right: 28.301168
+[00:00:02.774] [LOG] DeltaLeft: -0.071995, DeltaRight: 0.007199
+[00:00:02.774] [LOG] Forward displacement: -0.032398
+[00:00:02.774] [LOG] Delta theta: 0.009762
+[00:00:02.774] [LOG] DeltaX: 0.003136, DeltaY: -0.032245
+[00:00:02.774] [LOG] Pose: -23.387997 8.904971 1.672613
+[00:00:02.774] [LOG] Goal: -23.895928 -13.526912 1.680243
+[00:00:02.774] [LOG] Ramsete Output: -8.671247 0.773637
+[00:00:02.774] [LOG] MP Output: 44.575665 0.595187
+[00:00:02.774] [LOG] Left wheel velocities: -14.162763 -15.998708
+[00:00:02.774] [LOG] Right wheel velocities: -3.179731 -8.799225
+[00:00:02.774] [LOG] Velocity: -14.162763, Acceleration: 15.596462
+[00:00:02.774] [LOG] Velocity: -3.179731, Acceleration: -1.583299
+[00:00:02.774] [LOG] Left Feedforward: -24.022172, Right Feedforward: -8.857492
+[00:00:02.774] [LOG] Left Feedback: 16.523507, Right Feedback: 50.575447
+[00:00:02.774] [LOG] Left Voltage: -7, Right Voltage: 41
+[00:00:02.774] [LOG] Voltages: -7 41
+[00:00:02.784] [LOG] IMU Heading: -359.564734
+[00:00:02.784] [LOG] Heading: 0.007597
+[00:00:02.784] [LOG] Left Positions: -3.000000 -4.000000 -4.000000
+[00:00:02.784] [LOG] Right Positions: 0.000000 1.000000 1.000000
+[00:00:02.784] [LOG] Left: 36.746162, Right: 28.315567
+[00:00:02.784] [LOG] DeltaLeft: -0.079194, DeltaRight: 0.014399
+[00:00:02.784] [LOG] Forward displacement: -0.032398
+[00:00:02.784] [LOG] Delta theta: 0.007597
+[00:00:02.784] [LOG] DeltaX: 0.003415, DeltaY: -0.032217
+[00:00:02.784] [LOG] Pose: -23.384582 8.872754 1.680209
+[00:00:02.784] [LOG] Goal: -23.945904 -13.083622 1.686077
+[00:00:02.784] [LOG] Ramsete Output: -7.328379 0.765390
+[00:00:02.784] [LOG] MP Output: 44.653556 0.581089
+[00:00:02.784] [LOG] Left wheel velocities: -12.761352 -13.998708
+[00:00:02.784] [LOG] Right wheel velocities: -1.895407 -6.799225
+[00:00:02.784] [LOG] Velocity: -12.761352, Acceleration: 17.796749
+[00:00:02.784] [LOG] Velocity: -1.895407, Acceleration: -2.218526
+[00:00:02.784] [LOG] Left Feedforward: -20.769477, Right Feedforward: -6.672060
+[00:00:02.784] [LOG] Left Feedback: 11.136200, Right Feedback: 44.134363
+[00:00:02.784] [LOG] Left Voltage: -9, Right Voltage: 37
+[00:00:02.784] [LOG] Voltages: -9 37
+[00:00:02.794] [LOG] IMU Heading: -359.562269
+[00:00:02.794] [LOG] Heading: 0.007640
+[00:00:02.794] [LOG] Left Positions: -5.000000 -5.000000 -7.000000
+[00:00:02.794] [LOG] Right Positions: 0.000000 0.000000 0.000000
+[00:00:02.794] [LOG] Left: 36.623771, Right: 28.315567
+[00:00:02.794] [LOG] DeltaLeft: -0.122391, DeltaRight: 0.000000
+[00:00:02.794] [LOG] Forward displacement: -0.061196
+[00:00:02.794] [LOG] Delta theta: 0.007640
+[00:00:02.794] [LOG] DeltaX: 0.006915, DeltaY: -0.060804
+[00:00:02.794] [LOG] Pose: -23.377668 8.811950 1.687849
+[00:00:02.794] [LOG] Goal: -23.998554 -12.639800 1.691772
+[00:00:02.794] [LOG] Ramsete Output: -5.900819 0.754824
+[00:00:02.794] [LOG] MP Output: 44.745774 0.565220
+[00:00:02.794] [LOG] Left wheel velocities: -11.258798 -12.239121
+[00:00:02.794] [LOG] Right wheel velocities: -0.542841 -4.799225
+[00:00:02.794] [LOG] Velocity: -11.258798, Acceleration: 20.486158
+[00:00:02.794] [LOG] Velocity: -0.542841, Acceleration: -2.042706
+[00:00:02.794] [LOG] Left Feedforward: -17.182929, Right Feedforward: -4.117068
+[00:00:02.794] [LOG] Left Feedback: 8.822912, Right Feedback: 38.307453
+[00:00:02.794] [LOG] Left Voltage: -8, Right Voltage: 34
+[00:00:02.794] [LOG] Voltages: -8 34
+[00:00:02.804] [LOG] IMU Heading: -359.467429
+[00:00:02.804] [LOG] Heading: 0.009295
+[00:00:02.804] [LOG] Left Positions: -6.000000 -7.000000 -7.000000
+[00:00:02.804] [LOG] Right Positions: 0.000000 0.000000 0.000000
+[00:00:02.804] [LOG] Left: 36.479781, Right: 28.315567
+[00:00:02.804] [LOG] DeltaLeft: -0.143990, DeltaRight: 0.000000
+[00:00:02.804] [LOG] Forward displacement: -0.071995
+[00:00:02.804] [LOG] Delta theta: 0.009295
+[00:00:02.804] [LOG] DeltaX: 0.008740, DeltaY: -0.071462
+[00:00:02.804] [LOG] Pose: -23.368927 8.740488 1.697144
+[00:00:02.804] [LOG] Goal: -24.053836 -12.195281 1.697311
+[00:00:02.804] [LOG] Ramsete Output: -4.420969 0.740046
+[00:00:02.804] [LOG] MP Output: 44.848388 0.547662
+[00:00:02.804] [LOG] Left wheel velocities: -9.674046 -14.239121
+[00:00:02.804] [LOG] Right wheel velocities: 0.832107 -2.799225
+[00:00:02.804] [LOG] Velocity: -9.674046, Acceleration: 22.724207
+[00:00:02.804] [LOG] Velocity: 0.832107, Acceleration: -2.201295
+[00:00:02.804] [LOG] Left Feedforward: -13.579722, Right Feedforward: 3.379010
+[00:00:02.804] [LOG] Left Feedback: 41.085681, Right Feedback: 32.681987
+[00:00:02.804] [LOG] Left Voltage: 27, Right Voltage: 36
+[00:00:02.804] [LOG] Voltages: 27 36
+[00:00:02.814] [LOG] IMU Heading: -359.442489
+[00:00:02.814] [LOG] Heading: 0.009730
+[00:00:02.814] [LOG] Left Positions: -5.000000 -5.000000 -4.000000
+[00:00:02.814] [LOG] Right Positions: 0.000000 0.000000 1.000000
+[00:00:02.814] [LOG] Left: 36.378988, Right: 28.322767
+[00:00:02.814] [LOG] DeltaLeft: -0.100793, DeltaRight: 0.007199
+[00:00:02.814] [LOG] Forward displacement: -0.046797
+[00:00:02.814] [LOG] Delta theta: 0.009730
+[00:00:02.814] [LOG] DeltaX: 0.006123, DeltaY: -0.046394
+[00:00:02.814] [LOG] Pose: -23.362805 8.694094 1.706875
+[00:00:02.814] [LOG] Goal: -24.111685 -11.750041 1.702675
+[00:00:02.814] [LOG] Ramsete Output: -2.986025 0.722485
+[00:00:02.814] [LOG] MP Output: 44.960645 0.528535
+[00:00:02.814] [LOG] Left wheel velocities: -8.114447 -12.239121
+[00:00:02.814] [LOG] Right wheel velocities: 2.142396 -0.799225
+[00:00:02.814] [LOG] Velocity: -8.114447, Acceleration: 24.802467
+[00:00:02.814] [LOG] Velocity: 2.142396, Acceleration: -2.351092
+[00:00:02.814] [LOG] Left Feedforward: -10.070987, Right Feedforward: 5.758106
+[00:00:02.814] [LOG] Left Feedback: 37.122069, Right Feedback: 26.474591
+[00:00:02.814] [LOG] Left Voltage: 27, Right Voltage: 32
+[00:00:02.814] [LOG] Voltages: 27 32
+[00:00:02.824] [LOG] IMU Heading: -359.465753
+[00:00:02.824] [LOG] Heading: 0.009324
+[00:00:02.824] [LOG] Left Positions: -1.000000 -1.000000 -1.000000
+[00:00:02.824] [LOG] Right Positions: 1.000000 2.000000 1.000000
+[00:00:02.824] [LOG] Left: 36.357390, Right: 28.351565
+[00:00:02.824] [LOG] DeltaLeft: -0.021598, DeltaRight: 0.028798
+[00:00:02.824] [LOG] Forward displacement: 0.003600
+[00:00:02.824] [LOG] Delta theta: 0.009324
+[00:00:02.824] [LOG] DeltaX: -0.000505, DeltaY: 0.003564
+[00:00:02.824] [LOG] Pose: -23.363310 8.697658 1.716199
+[00:00:02.824] [LOG] Goal: -24.172043 -11.303957 1.708308
+[00:00:02.824] [LOG] Ramsete Output: -1.647443 0.702183
+[00:00:02.824] [LOG] MP Output: 45.076418 0.505824
+[00:00:02.824] [LOG] Left wheel velocities: -6.631759 -10.239121
+[00:00:02.824] [LOG] Right wheel velocities: 3.336874 1.200775
+[00:00:02.824] [LOG] Velocity: -6.631759, Acceleration: 27.698936
+[00:00:02.824] [LOG] Velocity: 3.336874, Acceleration: -4.544298
+[00:00:02.824] [LOG] Left Feedforward: -6.459073, Right Feedforward: 7.309927
+[00:00:02.824] [LOG] Left Feedback: 32.466262, Right Feedback: 19.224887
+[00:00:02.824] [LOG] Left Voltage: 26, Right Voltage: 26
+[00:00:02.824] [LOG] Voltages: 26 26
+[00:00:02.834] [LOG] IMU Heading: -359.515726
+[00:00:02.834] [LOG] Heading: 0.008452
+[00:00:02.834] [LOG] Left Positions: -0.000000 -0.000000 -0.000000
+[00:00:02.834] [LOG] Right Positions: 2.000000 0.000000 2.000000
+[00:00:02.834] [LOG] Left: 36.357390, Right: 28.380363
+[00:00:02.834] [LOG] DeltaLeft: 0.000000, DeltaRight: 0.028798
+[00:00:02.834] [LOG] Forward displacement: 0.014399
+[00:00:02.834] [LOG] Delta theta: 0.008452
+[00:00:02.834] [LOG] DeltaX: -0.002146, DeltaY: 0.014238
+[00:00:02.834] [LOG] Pose: -23.365456 8.711896 1.724651
+[00:00:02.834] [LOG] Goal: -24.234829 -10.857006 1.713255
+[00:00:02.834] [LOG] Ramsete Output: -0.352597 0.681775
+[00:00:02.834] [LOG] MP Output: 45.205871 0.483775
+[00:00:02.834] [LOG] Left wheel velocities: -5.192045 -8.239121
+[00:00:02.834] [LOG] Right wheel velocities: 4.486851 2.879793
+[00:00:02.834] [LOG] Velocity: -5.192045, Acceleration: 28.596270
+[00:00:02.834] [LOG] Velocity: 4.486851, Acceleration: -2.705711
+[00:00:02.834] [LOG] Left Feedforward: -3.526403, Right Feedforward: 9.988961
+[00:00:02.834] [LOG] Left Feedback: 27.423684, Right Feedback: 14.463521
+[00:00:02.834] [LOG] Left Voltage: 23, Right Voltage: 24
+[00:00:02.834] [LOG] Voltages: 23 24
+[00:00:02.844] [LOG] IMU Heading: -359.606058
+[00:00:02.844] [LOG] Heading: 0.006876
+[00:00:02.844] [LOG] Left Positions: -1.000000 -0.000000 -0.000000
+[00:00:02.844] [LOG] Right Positions: 1.000000 2.000000 1.000000
+[00:00:02.844] [LOG] Left: 36.350190, Right: 28.409161
+[00:00:02.844] [LOG] DeltaLeft: -0.007199, DeltaRight: 0.028798
+[00:00:02.844] [LOG] Forward displacement: 0.010799
+[00:00:02.844] [LOG] Delta theta: 0.006876
+[00:00:02.844] [LOG] DeltaX: -0.001692, DeltaY: 0.010666
+[00:00:02.844] [LOG] Pose: -23.367148 8.722562 1.731527
+[00:00:02.844] [LOG] Goal: -24.299985 -10.409002 1.717979
+[00:00:02.844] [LOG] Ramsete Output: 0.941531 0.661303
+[00:00:02.844] [LOG] MP Output: 45.337094 0.460429
+[00:00:02.844] [LOG] Left wheel velocities: -3.752602 -6.239121
+[00:00:02.844] [LOG] Right wheel velocities: 5.635664 2.879793
+[00:00:02.844] [LOG] Velocity: -3.752602, Acceleration: 29.694086
+[00:00:02.844] [LOG] Velocity: 5.635664, Acceleration: -3.449592
+[00:00:02.844] [LOG] Left Feedforward: -0.534089, Right Feedforward: 11.891101
+[00:00:02.844] [LOG] Left Feedback: 22.378671, Right Feedback: 24.802840
+[00:00:02.844] [LOG] Left Voltage: 21, Right Voltage: 36
+[00:00:02.844] [LOG] Voltages: 21 36
+[00:00:02.854] [LOG] IMU Heading: -359.708115
+[00:00:02.854] [LOG] Heading: 0.005094
+[00:00:02.854] [LOG] Left Positions: -0.000000 -0.000000 -0.000000
+[00:00:02.854] [LOG] Right Positions: 2.000000 2.000000 2.000000
+[00:00:02.854] [LOG] Left: 36.350190, Right: 28.452357
+[00:00:02.854] [LOG] DeltaLeft: 0.000000, DeltaRight: 0.043197
+[00:00:02.854] [LOG] Forward displacement: 0.021598
+[00:00:02.854] [LOG] Delta theta: 0.005094
+[00:00:02.854] [LOG] DeltaX: -0.003511, DeltaY: 0.021311
+[00:00:02.854] [LOG] Pose: -23.370659 8.743873 1.736621
+[00:00:02.854] [LOG] Goal: -24.367410 -9.959985 1.722467
+[00:00:02.854] [LOG] Ramsete Output: 2.195985 0.641278
+[00:00:02.854] [LOG] MP Output: 45.475150 0.435943
+[00:00:02.854] [LOG] Left wheel velocities: -2.356009 -4.239121
+[00:00:02.854] [LOG] Right wheel velocities: 6.747978 4.319690
+[00:00:02.854] [LOG] Velocity: -2.356009, Acceleration: 31.186175
+[00:00:02.854] [LOG] Velocity: 6.747978, Acceleration: -3.574842
+[00:00:02.854] [LOG] Left Feedforward: 2.497237, Right Feedforward: 13.911306
+[00:00:02.854] [LOG] Left Feedback: 16.948015, Right Feedback: 21.854592
+[00:00:02.854] [LOG] Left Voltage: 19, Right Voltage: 35
+[00:00:02.854] [LOG] Voltages: 19 35
+[00:00:02.864] [LOG] IMU Heading: -359.822491
+[00:00:02.864] [LOG] Heading: 0.003098
+[00:00:02.864] [LOG] Left Positions: -0.000000 -0.000000 -0.000000
+[00:00:02.864] [LOG] Right Positions: 3.000000 2.000000 2.000000
+[00:00:02.864] [LOG] Left: 36.350190, Right: 28.502754
+[00:00:02.864] [LOG] DeltaLeft: 0.000000, DeltaRight: 0.050396
+[00:00:02.864] [LOG] Forward displacement: 0.025198
+[00:00:02.864] [LOG] Delta theta: 0.003098
+[00:00:02.864] [LOG] DeltaX: -0.004198, DeltaY: 0.024846
+[00:00:02.864] [LOG] Pose: -23.374857 8.768719 1.739719
+[00:00:02.864] [LOG] Goal: -24.437013 -9.509906 1.726333
+[00:00:02.864] [LOG] Ramsete Output: 3.408300 0.623739
+[00:00:02.864] [LOG] MP Output: 45.619686 0.412892
+[00:00:02.864] [LOG] Left wheel velocities: -1.019191 -2.239121
+[00:00:02.864] [LOG] Right wheel velocities: 7.835791 5.039638
+[00:00:02.864] [LOG] Velocity: -1.019191, Acceleration: 30.815951
+[00:00:02.864] [LOG] Velocity: 7.835791, Acceleration: -1.908830
+[00:00:02.864] [LOG] Left Feedforward: 4.859282, Right Feedforward: 16.423564
+[00:00:02.864] [LOG] Left Feedback: 10.979375, Right Feedback: 25.165375
+[00:00:02.864] [LOG] Left Voltage: 15, Right Voltage: 41
+[00:00:02.864] [LOG] Voltages: 15 41
+[00:00:02.874] [LOG] IMU Heading: -359.948233
+[00:00:02.874] [LOG] Heading: 0.000904
+[00:00:02.874] [LOG] Left Positions: -0.000000 -0.000000 -0.000000
+[00:00:02.874] [LOG] Right Positions: 2.000000 4.000000 3.000000
+[00:00:02.874] [LOG] Left: 36.350190, Right: 28.567549
+[00:00:02.874] [LOG] DeltaLeft: 0.000000, DeltaRight: 0.064795
+[00:00:02.874] [LOG] Forward displacement: 0.032398
+[00:00:02.874] [LOG] Delta theta: 0.000904
+[00:00:02.874] [LOG] DeltaX: -0.005447, DeltaY: 0.031937
+[00:00:02.874] [LOG] Pose: -23.380303 8.800656 1.740623
+[00:00:02.874] [LOG] Goal: -24.508704 -9.058662 1.730339
+[00:00:02.874] [LOG] Ramsete Output: 4.598365 0.606160
+[00:00:02.874] [LOG] MP Output: 45.774992 0.386510
+[00:00:02.874] [LOG] Left wheel velocities: 0.295652 -0.239121
+[00:00:02.874] [LOG] Right wheel velocities: 8.901077 6.479535
+[00:00:02.874] [LOG] Velocity: 0.295652, Acceleration: 34.257071
+[00:00:02.874] [LOG] Velocity: 8.901077, Acceleration: -3.195850
+[00:00:02.874] [LOG] Left Feedforward: 13.324078, Right Feedforward: 18.008238
+[00:00:02.874] [LOG] Left Feedback: 4.812962, Right Feedback: 21.793883
+[00:00:02.874] [LOG] Left Voltage: 18, Right Voltage: 39
+[00:00:02.874] [LOG] Voltages: 18 39
+[00:00:02.884] [LOG] IMU Heading: -359.969034
+[00:00:02.884] [LOG] Heading: 0.000540
+[00:00:02.884] [LOG] Left Positions: 1.000000 1.000000 1.000000
+[00:00:02.884] [LOG] Right Positions: 4.000000 3.000000 3.000000
+[00:00:02.884] [LOG] Left: 36.371789, Right: 28.639544
+[00:00:02.884] [LOG] DeltaLeft: 0.021598, DeltaRight: 0.071995
+[00:00:02.884] [LOG] Forward displacement: 0.046797
+[00:00:02.884] [LOG] Delta theta: 0.000540
+[00:00:02.884] [LOG] DeltaX: -0.007909, DeltaY: 0.046123
+[00:00:02.884] [LOG] Pose: -23.388212 8.846779 1.741163
+[00:00:02.884] [LOG] Goal: -24.582399 -8.606100 1.734077
+[00:00:02.884] [LOG] Ramsete Output: 5.747491 0.587496
+[00:00:02.884] [LOG] MP Output: 45.926811 0.359151
+[00:00:02.884] [LOG] Left wheel velocities: 1.577264 1.760879
+[00:00:02.884] [LOG] Right wheel velocities: 9.917718 7.199483
+[00:00:02.884] [LOG] Velocity: 1.577264, Acceleration: 34.602535
+[00:00:02.884] [LOG] Velocity: 9.917718, Acceleration: -4.238796
+[00:00:02.884] [LOG] Left Feedforward: 15.798700, Right Feedforward: 19.576139
+[00:00:02.884] [LOG] Left Feedback: -1.652529, Right Feedback: 24.464113
+[00:00:02.884] [LOG] Left Voltage: 14, Right Voltage: 44
+[00:00:02.884] [LOG] Voltages: 14 44
+[00:00:02.894] [LOG] IMU Heading: -359.888833
+[00:00:02.894] [LOG] Heading: 0.001940
+[00:00:02.894] [LOG] Left Positions: 1.000000 1.000000 1.000000
+[00:00:02.894] [LOG] Right Positions: 4.000000 3.000000 3.000000
+[00:00:02.894] [LOG] Left: 36.393387, Right: 28.711539
+[00:00:02.894] [LOG] DeltaLeft: 0.021598, DeltaRight: 0.071995
+[00:00:02.894] [LOG] Forward displacement: 0.046797
+[00:00:02.894] [LOG] Delta theta: 0.001940
+[00:00:02.894] [LOG] DeltaX: -0.007979, DeltaY: 0.046111
+[00:00:02.894] [LOG] Pose: -23.396191 8.892891 1.743104
+[00:00:02.894] [LOG] Goal: -24.657967 -8.152313 1.737537
+[00:00:02.894] [LOG] Ramsete Output: 6.908104 0.565651
+[00:00:02.894] [LOG] MP Output: 46.095719 0.331050
+[00:00:02.894] [LOG] Left wheel velocities: 2.892937 2.159845
+[00:00:02.894] [LOG] Right wheel velocities: 10.923272 7.199483
+[00:00:02.894] [LOG] Velocity: 2.892937, Acceleration: 36.838058
+[00:00:02.894] [LOG] Velocity: 10.923272, Acceleration: -3.056333
+[00:00:02.894] [LOG] Left Feedforward: 18.903350, Right Feedforward: 21.791154
+[00:00:02.894] [LOG] Left Feedback: 6.597824, Right Feedback: 33.514104
+[00:00:02.894] [LOG] Left Voltage: 25, Right Voltage: 55
+[00:00:02.894] [LOG] Voltages: 25 55
+[00:00:02.904] [LOG] IMU Heading: -359.796545
+[00:00:02.904] [LOG] Heading: 0.003551
+[00:00:02.904] [LOG] Left Positions: 2.000000 2.000000 2.000000
+[00:00:02.904] [LOG] Right Positions: 5.000000 4.000000 4.000000
+[00:00:02.904] [LOG] Left: 36.436584, Right: 28.805132
+[00:00:02.904] [LOG] DeltaLeft: 0.043197, DeltaRight: 0.093593
+[00:00:02.904] [LOG] Forward displacement: 0.068395
+[00:00:02.904] [LOG] Delta theta: 0.003551
+[00:00:02.904] [LOG] DeltaX: -0.011846, DeltaY: 0.067361
+[00:00:02.904] [LOG] Pose: -23.408038 8.960252 1.746654
+[00:00:02.904] [LOG] Goal: -24.735338 -7.697017 1.740710
+[00:00:02.904] [LOG] Ramsete Output: 8.029184 0.540008
+[00:00:02.904] [LOG] MP Output: 46.260201 0.302107
+[00:00:02.904] [LOG] Left wheel velocities: 4.196039 4.159845
+[00:00:02.904] [LOG] Right wheel velocities: 11.862329 9.199483
+[00:00:02.904] [LOG] Velocity: 4.196039, Acceleration: 36.992653
+[00:00:02.904] [LOG] Velocity: 11.862329, Acceleration: -4.096242
+[00:00:02.904] [LOG] Left Feedforward: 21.360469, Right Feedforward: 23.216436
+[00:00:02.904] [LOG] Left Feedback: 0.325750, Right Feedback: 23.965615
+[00:00:02.904] [LOG] Left Voltage: 21, Right Voltage: 47
+[00:00:02.904] [LOG] Voltages: 21 47
+[00:00:02.914] [LOG] IMU Heading: -359.757645
+[00:00:02.914] [LOG] Heading: 0.004230
+[00:00:02.914] [LOG] Left Positions: 3.000000 3.000000 2.000000
+[00:00:02.914] [LOG] Right Positions: 6.000000 6.000000 5.000000
+[00:00:02.914] [LOG] Left: 36.494180, Right: 28.927523
+[00:00:02.914] [LOG] DeltaLeft: 0.057596, DeltaRight: 0.122391
+[00:00:02.914] [LOG] Forward displacement: 0.089994
+[00:00:02.914] [LOG] Delta theta: 0.004230
+[00:00:02.914] [LOG] DeltaX: -0.015932, DeltaY: 0.088572
+[00:00:02.914] [LOG] Pose: -23.423970 9.048824 1.750884
+[00:00:02.914] [LOG] Goal: -24.814357 -7.240381 1.743589
+[00:00:02.914] [LOG] Ramsete Output: 9.102046 0.511903
+[00:00:02.914] [LOG] MP Output: 46.426721 0.272435
+[00:00:02.914] [LOG] Left wheel velocities: 5.468398 5.759587
+[00:00:02.914] [LOG] Right wheel velocities: 12.735693 11.199483
+[00:00:02.914] [LOG] Velocity: 5.468398, Acceleration: 37.713572
+[00:00:02.914] [LOG] Velocity: 12.735693, Acceleration: -4.409675
+[00:00:02.914] [LOG] Left Feedforward: 23.930608, Right Feedforward: 24.738129
+[00:00:02.914] [LOG] Left Feedback: -2.620695, Right Feedback: 13.825888
+[00:00:02.914] [LOG] Left Voltage: 21, Right Voltage: 38
+[00:00:02.914] [LOG] Voltages: 21 38
+[00:00:02.924] [LOG] IMU Heading: -359.786248
+[00:00:02.924] [LOG] Heading: 0.003731
+[00:00:02.924] [LOG] Left Positions: 3.000000 3.000000 3.000000
+[00:00:02.924] [LOG] Right Positions: 2.000000 4.000000 5.000000
+[00:00:02.924] [LOG] Left: 36.558976, Right: 29.006718
+[00:00:02.924] [LOG] DeltaLeft: 0.064795, DeltaRight: 0.079194
+[00:00:02.924] [LOG] Forward displacement: 0.071995
+[00:00:02.924] [LOG] Delta theta: 0.003731
+[00:00:02.924] [LOG] DeltaX: -0.013028, DeltaY: 0.070806
+[00:00:02.924] [LOG] Pose: -23.436997 9.119630 1.754615
+[00:00:02.924] [LOG] Goal: -24.894909 -6.782325 1.746166
+[00:00:02.924] [LOG] Ramsete Output: 10.210445 0.483096
+[00:00:02.924] [LOG] MP Output: 46.602969 0.242130
+[00:00:02.924] [LOG] Left wheel velocities: 6.781277 6.479535
+[00:00:02.924] [LOG] Right wheel velocities: 13.639613 9.199483
+[00:00:02.924] [LOG] Velocity: 6.781277, Acceleration: 39.136408
+[00:00:02.924] [LOG] Velocity: 13.639613, Acceleration: -3.886819
+[00:00:02.924] [LOG] Left Feedforward: 26.786285, Right Feedforward: 26.567239
+[00:00:02.924] [LOG] Left Feedback: 2.715681, Right Feedback: 39.961171
+[00:00:02.924] [LOG] Left Voltage: 29, Right Voltage: 66
+[00:00:02.924] [LOG] Voltages: 29 66
+[00:00:02.934] [LOG] IMU Heading: -359.794711
+[00:00:02.934] [LOG] Heading: 0.003583
+[00:00:02.934] [LOG] Left Positions: 3.000000 3.000000 3.000000
+[00:00:02.934] [LOG] Right Positions: 5.000000 6.000000 5.000000
+[00:00:02.934] [LOG] Left: 36.623771, Right: 29.121909
+[00:00:02.934] [LOG] DeltaLeft: 0.064795, DeltaRight: 0.115192
+[00:00:02.934] [LOG] Forward displacement: 0.089994
+[00:00:02.934] [LOG] Delta theta: 0.003583
+[00:00:02.934] [LOG] DeltaX: -0.016608, DeltaY: 0.088448
+[00:00:02.934] [LOG] Pose: -23.453605 9.208078 1.758198
+[00:00:02.934] [LOG] Goal: -24.976891 -6.322672 1.748435
+[00:00:02.934] [LOG] Ramsete Output: 11.272097 0.453057
+[00:00:02.934] [LOG] MP Output: 46.783640 0.211199
+[00:00:02.934] [LOG] Left wheel velocities: 8.056160 6.479535
+[00:00:02.934] [LOG] Right wheel velocities: 14.488035 11.199483
+[00:00:02.934] [LOG] Velocity: 8.056160, Acceleration: 40.023347
+[00:00:02.934] [LOG] Velocity: 14.488035, Acceleration: -3.889040
+[00:00:02.934] [LOG] Left Feedforward: 29.410899, Right Feedforward: 28.136153
+[00:00:02.934] [LOG] Left Feedback: 14.189624, Right Feedback: 29.596969
+[00:00:02.934] [LOG] Left Voltage: 43, Right Voltage: 57
+[00:00:02.934] [LOG] Voltages: 43 57
+[00:00:02.944] [LOG] IMU Heading: -359.781029
+[00:00:02.944] [LOG] Heading: 0.003822
+[00:00:02.944] [LOG] Left Positions: 5.000000 4.000000 4.000000
+[00:00:02.944] [LOG] Right Positions: 7.000000 6.000000 6.000000
+[00:00:02.944] [LOG] Left: 36.717364, Right: 29.258700
+[00:00:02.944] [LOG] DeltaLeft: 0.093593, DeltaRight: 0.136790
+[00:00:02.944] [LOG] Forward displacement: 0.115192
+[00:00:02.944] [LOG] Delta theta: 0.003822
+[00:00:02.944] [LOG] DeltaX: -0.021677, DeltaY: 0.113134
+[00:00:02.944] [LOG] Pose: -23.475282 9.321212 1.762020
+[00:00:02.944] [LOG] Goal: -25.060173 -5.861381 1.750389
+[00:00:02.944] [LOG] Ramsete Output: 12.271628 0.421150
+[00:00:02.944] [LOG] MP Output: 46.960272 0.179643
+[00:00:02.944] [LOG] Left wheel velocities: 9.282175 8.479535
+[00:00:02.944] [LOG] Right wheel velocities: 15.261081 13.199483
+[00:00:02.944] [LOG] Velocity: 9.282175, Acceleration: 40.062054
+[00:00:02.944] [LOG] Velocity: 15.261081, Acceleration: -4.735803
+[00:00:02.944] [LOG] Left Feedforward: 31.690640, Right Feedforward: 29.312260
+[00:00:02.944] [LOG] Left Feedback: 7.223759, Right Feedback: 18.554384
+[00:00:02.944] [LOG] Left Voltage: 38, Right Voltage: 47
+[00:00:02.944] [LOG] Voltages: 38 47
+[00:00:02.954] [LOG] IMU Heading: -359.770879
+[00:00:02.954] [LOG] Heading: 0.003999
+[00:00:02.954] [LOG] Left Positions: 3.000000 5.000000 4.000000
+[00:00:02.954] [LOG] Right Positions: 7.000000 8.000000 7.000000
+[00:00:02.954] [LOG] Left: 36.803758, Right: 29.417088
+[00:00:02.954] [LOG] DeltaLeft: 0.086394, DeltaRight: 0.158389
+[00:00:02.954] [LOG] Forward displacement: 0.122391
+[00:00:02.954] [LOG] Delta theta: 0.003999
+[00:00:02.954] [LOG] DeltaX: -0.023502, DeltaY: 0.120113
+[00:00:02.954] [LOG] Pose: -23.498784 9.441325 1.766019
+[00:00:02.954] [LOG] Goal: -25.144600 -5.398514 1.752024
+[00:00:02.954] [LOG] Ramsete Output: 13.254586 0.387585
+[00:00:02.954] [LOG] MP Output: 47.147115 0.147555
+[00:00:02.954] [LOG] Left wheel velocities: 10.503386 8.639380
+[00:00:02.954] [LOG] Right wheel velocities: 16.005786 15.199483
+[00:00:02.954] [LOG] Velocity: 10.503386, Acceleration: 41.461977
+[00:00:02.954] [LOG] Velocity: 16.005786, Acceleration: -4.093288
+[00:00:02.954] [LOG] Left Feedforward: 34.369858, Right Feedforward: 30.882717
+[00:00:02.954] [LOG] Left Feedback: 16.776058, Right Feedback: 7.256722
+[00:00:02.954] [LOG] Left Voltage: 51, Right Voltage: 38
+[00:00:02.954] [LOG] Voltages: 51 38
+[00:00:02.964] [LOG] IMU Heading: -359.778934
+[00:00:02.964] [LOG] Heading: 0.003858
+[00:00:02.964] [LOG] Left Positions: 6.000000 6.000000 6.000000
+[00:00:02.964] [LOG] Right Positions: 7.000000 6.000000 7.000000
+[00:00:02.964] [LOG] Left: 36.933349, Right: 29.561078
+[00:00:02.964] [LOG] DeltaLeft: 0.129591, DeltaRight: 0.143990
+[00:00:02.964] [LOG] Forward displacement: 0.136790
+[00:00:02.964] [LOG] Delta theta: 0.003858
+[00:00:02.964] [LOG] DeltaX: -0.026794, DeltaY: 0.134140
+[00:00:02.964] [LOG] Pose: -23.525578 9.575466 1.769877
+[00:00:02.964] [LOG] Goal: -25.230056 -4.933900 1.753333
+[00:00:02.964] [LOG] Ramsete Output: 14.198394 0.352734
+[00:00:02.964] [LOG] MP Output: 47.333531 0.114916
+[00:00:02.964] [LOG] Left wheel velocities: 11.694578 10.639380
+[00:00:02.964] [LOG] Right wheel velocities: 16.702210 14.398966
+[00:00:02.964] [LOG] Velocity: 11.694578, Acceleration: 41.809836
+[00:00:02.964] [LOG] Velocity: 16.702210, Acceleration: -4.526557
+[00:00:02.964] [LOG] Left Feedforward: 36.677920, Right Feedforward: 32.041122
+[00:00:02.964] [LOG] Left Feedback: 9.496784, Right Feedback: 20.729196
+[00:00:02.964] [LOG] Left Voltage: 46, Right Voltage: 52
+[00:00:02.964] [LOG] Voltages: 46 52
+[00:00:02.974] [LOG] IMU Heading: -359.790895
+[00:00:02.974] [LOG] Heading: 0.003650
+[00:00:02.974] [LOG] Left Positions: 6.000000 7.000000 6.000000
+[00:00:02.974] [LOG] Right Positions: 7.000000 8.000000 7.000000
+[00:00:02.974] [LOG] Left: 37.070139, Right: 29.719467
+[00:00:02.974] [LOG] DeltaLeft: 0.136790, DeltaRight: 0.158389
+[00:00:02.974] [LOG] Forward displacement: 0.147589
+[00:00:02.974] [LOG] Delta theta: 0.003650
+[00:00:02.974] [LOG] DeltaX: -0.029452, DeltaY: 0.144621
+[00:00:02.974] [LOG] Pose: -23.555031 9.720086 1.773527
+[00:00:02.974] [LOG] Goal: -25.316383 -4.467567 1.754313
+[00:00:02.974] [LOG] Ramsete Output: 15.111436 0.316721
+[00:00:02.974] [LOG] MP Output: 47.521609 0.081755
+[00:00:02.974] [LOG] Left wheel velocities: 12.863253 12.639380
+[00:00:02.974] [LOG] Right wheel velocities: 17.359618 15.838863
+[00:00:02.974] [LOG] Velocity: 12.863253, Acceleration: 42.346253
+[00:00:02.974] [LOG] Velocity: 17.359618, Acceleration: -4.730705
+[00:00:02.974] [LOG] Left Feedforward: 39.000895, Right Feedforward: 33.196082
+[00:00:02.974] [LOG] Left Feedback: 2.014863, Right Feedback: 13.686795
+[00:00:02.974] [LOG] Left Voltage: 41, Right Voltage: 46
+[00:00:02.974] [LOG] Voltages: 41 46
+[00:00:02.984] [LOG] IMU Heading: -359.862017
+[00:00:02.984] [LOG] Heading: 0.002408
+[00:00:02.984] [LOG] Left Positions: 6.000000 5.000000 5.000000
+[00:00:02.984] [LOG] Right Positions: 7.000000 7.000000 8.000000
+[00:00:02.984] [LOG] Left: 37.185331, Right: 29.877855
+[00:00:02.984] [LOG] DeltaLeft: 0.115192, DeltaRight: 0.158389
+[00:00:02.984] [LOG] Forward displacement: 0.136790
+[00:00:02.984] [LOG] Delta theta: 0.002408
+[00:00:02.984] [LOG] DeltaX: -0.027703, DeltaY: 0.133955
+[00:00:02.984] [LOG] Pose: -23.582734 9.854042 1.775935
+[00:00:02.984] [LOG] Goal: -25.403439 -3.999437 1.755001
+[00:00:02.984] [LOG] Ramsete Output: 16.040712 0.278251
+[00:00:02.984] [LOG] MP Output: 47.722255 0.044995
+[00:00:02.984] [LOG] Left wheel velocities: 14.065601 11.519173
+[00:00:02.984] [LOG] Right wheel velocities: 18.015823 15.838863
+[00:00:02.984] [LOG] Velocity: 14.065601, Acceleration: 46.157604
+[00:00:02.984] [LOG] Velocity: 18.015823, Acceleration: -6.028448
+[00:00:02.984] [LOG] Left Feedforward: 42.368644, Right Feedforward: 34.020739
+[00:00:02.984] [LOG] Left Feedback: 22.917856, Right Feedback: 19.592643
+[00:00:02.984] [LOG] Left Voltage: 65, Right Voltage: 53
+[00:00:02.984] [LOG] Voltages: 65 53
+[00:00:02.994] [LOG] IMU Heading: -359.962945
+[00:00:02.994] [LOG] Heading: 0.000647
+[00:00:02.994] [LOG] Left Positions: 6.000000 6.000000 6.000000
+[00:00:02.994] [LOG] Right Positions: 7.000000 7.000000 7.000000
+[00:00:02.994] [LOG] Left: 37.314921, Right: 30.029044
+[00:00:02.994] [LOG] DeltaLeft: 0.129591, DeltaRight: 0.151189
+[00:00:02.994] [LOG] Forward displacement: 0.140390
+[00:00:02.994] [LOG] Delta theta: 0.000647
+[00:00:02.994] [LOG] DeltaX: -0.028598, DeltaY: 0.137446
+[00:00:02.994] [LOG] Pose: -23.611332 9.991488 1.776582
+[00:00:02.994] [LOG] Goal: -25.491102 -3.529305 1.755278
+[00:00:02.994] [LOG] Ramsete Output: 16.937501 0.244026
+[00:00:02.994] [LOG] MP Output: 47.917939 0.010789
+[00:00:02.994] [LOG] Left wheel velocities: 15.205331 12.959070
+[00:00:02.994] [LOG] Right wheel velocities: 18.669670 15.118915
+[00:00:02.994] [LOG] Velocity: 15.205331, Acceleration: 43.848982
+[00:00:02.994] [LOG] Velocity: 18.669670, Acceleration: -4.712198
+[00:00:02.994] [LOG] Left Feedforward: 43.784557, Right Feedforward: 35.625230
+[00:00:02.994] [LOG] Left Feedback: 20.216355, Right Feedback: 31.956795
+[00:00:02.994] [LOG] Left Voltage: 64, Right Voltage: 67
+[00:00:02.994] [LOG] Voltages: 64 67
+[00:00:03.004] [LOG] IMU Heading: -0.016392
+[00:00:03.004] [LOG] Heading: -0.000286
+[00:00:03.004] [LOG] Left Positions: 8.000000 9.000000 8.000000
+[00:00:03.004] [LOG] Right Positions: 8.000000 8.000000 7.000000
+[00:00:03.004] [LOG] Left: 37.494908, Right: 30.194632
+[00:00:03.004] [LOG] DeltaLeft: 0.179987, DeltaRight: 0.165588
+[00:00:03.004] [LOG] Forward displacement: 0.172788
+[00:00:03.004] [LOG] Delta theta: -0.000286
+[00:00:03.004] [LOG] DeltaX: -0.035307, DeltaY: 0.169142
+[00:00:03.004] [LOG] Pose: -23.646638 10.160630 1.776295
+[00:00:03.004] [LOG] Goal: -25.579183 -3.057279 1.755214
+[00:00:03.004] [LOG] Ramsete Output: 17.639936 0.208704
+[00:00:03.004] [LOG] MP Output: 47.828987 -0.023776
+[00:00:03.004] [LOG] Left wheel velocities: 16.158491 14.959070
+[00:00:03.004] [LOG] Right wheel velocities: 19.121381 16.558811
+[00:00:03.004] [LOG] Velocity: 16.158491, Acceleration: 15.640466
+[00:00:03.004] [LOG] Velocity: 19.121381, Acceleration: -33.430930
+[00:00:03.004] [LOG] Left Feedforward: 37.085348, Right Feedforward: 27.845277
+[00:00:03.004] [LOG] Left Feedback: 10.794790, Right Feedback: 23.063130
+[00:00:03.004] [LOG] Left Voltage: 47, Right Voltage: 50
+[00:00:03.004] [LOG] Voltages: 47 50
+[00:00:03.014] [LOG] IMU Heading: -0.006318
+[00:00:03.014] [LOG] Heading: -0.000110
+[00:00:03.014] [LOG] Left Positions: 8.000000 7.000000 7.000000
+[00:00:03.014] [LOG] Right Positions: 9.000000 10.000000 9.000000
+[00:00:03.014] [LOG] Left: 37.653297, Right: 30.396218
+[00:00:03.014] [LOG] DeltaLeft: 0.158389, DeltaRight: 0.201586
+[00:00:03.014] [LOG] Forward displacement: 0.179987
+[00:00:03.014] [LOG] Delta theta: -0.000110
+[00:00:03.014] [LOG] DeltaX: -0.036727, DeltaY: 0.176200
+[00:00:03.014] [LOG] Pose: -23.683366 10.336830 1.776185
+[00:00:03.014] [LOG] Goal: -25.666737 -2.587528 1.754804
+[00:00:03.014] [LOG] Ramsete Output: 18.264616 0.171776
+[00:00:03.014] [LOG] MP Output: 47.631410 -0.058295
+[00:00:03.014] [LOG] Left wheel velocities: 17.045300 15.838863
+[00:00:03.014] [LOG] Right wheel velocities: 19.483933 18.558811
+[00:00:03.014] [LOG] Velocity: 17.045300, Acceleration: 4.745069
+[00:00:03.014] [LOG] Velocity: 19.483933, Acceleration: -44.260404
+[00:00:03.014] [LOG] Left Feedforward: 35.457326, Right Feedforward: 25.267155
+[00:00:03.014] [LOG] Left Feedback: 10.857934, Right Feedback: 8.326094
+[00:00:03.014] [LOG] Left Voltage: 46, Right Voltage: 33
+[00:00:03.014] [LOG] Voltages: 46 33
+[00:00:03.024] [LOG] IMU Heading: -0.008485
+[00:00:03.024] [LOG] Heading: -0.000148
+[00:00:03.024] [LOG] Left Positions: 8.000000 8.000000 8.000000
+[00:00:03.024] [LOG] Right Positions: 9.000000 8.000000 7.000000
+[00:00:03.024] [LOG] Left: 37.826085, Right: 30.569006
+[00:00:03.024] [LOG] DeltaLeft: 0.172788, DeltaRight: 0.172788
+[00:00:03.024] [LOG] Forward displacement: 0.172788
+[00:00:03.024] [LOG] Delta theta: -0.000148
+[00:00:03.024] [LOG] DeltaX: -0.035240, DeltaY: 0.169156
+[00:00:03.024] [LOG] Pose: -23.718605 10.505986 1.776037
+[00:00:03.024] [LOG] Goal: -25.753569 -2.120203 1.754046
+[00:00:03.024] [LOG] Ramsete Output: 18.883410 0.134136
+[00:00:03.024] [LOG] MP Output: 47.435376 -0.092746
+[00:00:03.024] [LOG] Left wheel velocities: 17.931273 17.278760
+[00:00:03.024] [LOG] Right wheel velocities: 19.835547 17.278760
+[00:00:03.024] [LOG] Velocity: 17.931273, Acceleration: 4.850491
+[00:00:03.024] [LOG] Velocity: 19.835547, Acceleration: -44.057250
+[00:00:03.024] [LOG] Left Feedforward: 37.128003, Right Feedforward: 25.978586
+[00:00:03.024] [LOG] Left Feedback: 5.872622, Right Feedback: 23.011082
+[00:00:03.024] [LOG] Left Voltage: 43, Right Voltage: 48
+[00:00:03.024] [LOG] Voltages: 43 48
+[00:00:03.034] [LOG] IMU Heading: -0.010789
+[00:00:03.034] [LOG] Heading: -0.000188
+[00:00:03.034] [LOG] Left Positions: 8.000000 8.000000 8.000000
+[00:00:03.034] [LOG] Right Positions: 7.000000 7.000000 8.000000
+[00:00:03.034] [LOG] Left: 37.998872, Right: 30.727394
+[00:00:03.034] [LOG] DeltaLeft: 0.172788, DeltaRight: 0.158389
+[00:00:03.034] [LOG] Forward displacement: 0.165588
+[00:00:03.034] [LOG] Delta theta: -0.000188
+[00:00:03.034] [LOG] DeltaX: -0.033747, DeltaY: 0.162113
+[00:00:03.034] [LOG] Pose: -23.752353 10.668099 1.775849
+[00:00:03.034] [LOG] Goal: -25.839624 -1.654714 1.752937
+[00:00:03.034] [LOG] Ramsete Output: 19.498304 0.095771
+[00:00:03.034] [LOG] MP Output: 47.240595 -0.127133
+[00:00:03.034] [LOG] Left wheel velocities: 18.818491 17.278760
+[00:00:03.034] [LOG] Right wheel velocities: 20.178116 15.838863
+[00:00:03.034] [LOG] Velocity: 18.818491, Acceleration: 4.931374
+[00:00:03.034] [LOG] Velocity: 20.178116, Acceleration: -43.887515
+[00:00:03.034] [LOG] Left Feedforward: 38.793621, Right Feedforward: 26.663260
+[00:00:03.034] [LOG] Left Feedback: 13.857583, Right Feedback: 39.053279
+[00:00:03.034] [LOG] Left Voltage: 52, Right Voltage: 65
+[00:00:03.034] [LOG] Voltages: 52 65
+[00:00:03.044] [LOG] IMU Heading: -359.988902
+[00:00:03.044] [LOG] Heading: 0.000194
+[00:00:03.044] [LOG] Left Positions: 8.000000 8.000000 8.000000
+[00:00:03.044] [LOG] Right Positions: 8.000000 9.000000 9.000000
+[00:00:03.044] [LOG] Left: 38.171660, Right: 30.914581
+[00:00:03.044] [LOG] DeltaLeft: 0.172788, DeltaRight: 0.187187
+[00:00:03.044] [LOG] Forward displacement: 0.179987
+[00:00:03.044] [LOG] Delta theta: 0.000194
+[00:00:03.044] [LOG] DeltaX: -0.036649, DeltaY: 0.176216
+[00:00:03.044] [LOG] Pose: -23.789002 10.844315 1.776043
+[00:00:03.044] [LOG] Goal: -25.924751 -1.191025 1.751622
+[00:00:03.044] [LOG] Ramsete Output: 20.067731 0.059487
+[00:00:03.044] [LOG] MP Output: 47.047008 -0.158290
+[00:00:03.044] [LOG] Left wheel velocities: 19.645470 17.278760
+[00:00:03.044] [LOG] Right wheel velocities: 20.489991 17.838863
+[00:00:03.044] [LOG] Velocity: 19.645470, Acceleration: 2.757394
+[00:00:03.044] [LOG] Velocity: 20.489991, Acceleration: -41.474814
+[00:00:03.044] [LOG] Left Feedforward: 39.671338, Right Feedforward: 27.964038
+[00:00:03.044] [LOG] Left Feedback: 21.300397, Right Feedback: 23.860149
+[00:00:03.044] [LOG] Left Voltage: 60, Right Voltage: 51
+[00:00:03.044] [LOG] Voltages: 60 51
+[00:00:03.054] [LOG] IMU Heading: -359.968863
+[00:00:03.054] [LOG] Heading: 0.000543
+[00:00:03.054] [LOG] Left Positions: 10.000000 8.000000 8.000000
+[00:00:03.054] [LOG] Right Positions: 11.000000 10.000000 9.000000
+[00:00:03.054] [LOG] Left: 38.358846, Right: 31.130565
+[00:00:03.054] [LOG] DeltaLeft: 0.187187, DeltaRight: 0.215984
+[00:00:03.054] [LOG] Forward displacement: 0.201586
+[00:00:03.054] [LOG] Delta theta: 0.000543
+[00:00:03.054] [LOG] DeltaX: -0.041085, DeltaY: 0.197354
+[00:00:03.054] [LOG] Pose: -23.830086 11.041670 1.776586
+[00:00:03.054] [LOG] Goal: -26.008799 -0.729100 1.749834
+[00:00:03.054] [LOG] Ramsete Output: 20.566324 0.018299
+[00:00:03.054] [LOG] MP Output: 46.854538 -0.192578
+[00:00:03.054] [LOG] Left wheel velocities: 20.436430 18.718656
+[00:00:03.054] [LOG] Right wheel velocities: 20.696218 19.838863
+[00:00:03.054] [LOG] Velocity: 20.436430, Acceleration: 5.091255
+[00:00:03.054] [LOG] Velocity: 20.696218, Acceleration: -43.585328
+[00:00:03.054] [LOG] Left Feedforward: 41.834773, Right Feedforward: 27.712405
+[00:00:03.054] [LOG] Left Feedback: 15.459967, Right Feedback: 7.716196
+[00:00:03.054] [LOG] Left Voltage: 57, Right Voltage: 35
+[00:00:03.054] [LOG] Voltages: 57 35
+[00:00:03.064] [LOG] IMU Heading: -359.960331
+[00:00:03.064] [LOG] Heading: 0.000692
+[00:00:03.064] [LOG] Left Positions: 10.000000 10.000000 9.000000
+[00:00:03.064] [LOG] Right Positions: 8.000000 8.000000 8.000000
+[00:00:03.064] [LOG] Left: 38.567631, Right: 31.303353
+[00:00:03.064] [LOG] DeltaLeft: 0.208785, DeltaRight: 0.172788
+[00:00:03.064] [LOG] Forward displacement: 0.190786
+[00:00:03.064] [LOG] Delta theta: 0.000692
+[00:00:03.064] [LOG] DeltaX: -0.038985, DeltaY: 0.186761
+[00:00:03.064] [LOG] Pose: -23.869072 11.228430 1.777278
+[00:00:03.064] [LOG] Goal: -26.091621 -0.268906 1.747688
+[00:00:03.064] [LOG] Ramsete Output: 21.069646 -0.024045
+[00:00:03.064] [LOG] MP Output: 46.654142 -0.226799
+[00:00:03.064] [LOG] Left wheel velocities: 21.240325 20.718656
+[00:00:03.064] [LOG] Right wheel velocities: 20.898967 17.838863
+[00:00:03.064] [LOG] Velocity: 21.240325, Acceleration: 4.251665
+[00:00:03.064] [LOG] Velocity: 20.898967, Acceleration: -44.330923
+[00:00:03.064] [LOG] Left Feedforward: 43.070101, Right Feedforward: 27.863811
+[00:00:03.064] [LOG] Left Feedback: 4.695021, Right Feedback: 27.540933
+[00:00:03.064] [LOG] Left Voltage: 47, Right Voltage: 55
+[00:00:03.064] [LOG] Voltages: 47 55
+[00:00:03.074] [LOG] IMU Heading: -359.971206
+[00:00:03.074] [LOG] Heading: 0.000503
+[00:00:03.074] [LOG] Left Positions: 9.000000 9.000000 9.000000
+[00:00:03.074] [LOG] Right Positions: 7.000000 7.000000 9.000000
+[00:00:03.074] [LOG] Left: 38.762017, Right: 31.468941
+[00:00:03.074] [LOG] DeltaLeft: 0.194386, DeltaRight: 0.165588
+[00:00:03.074] [LOG] Forward displacement: 0.179987
+[00:00:03.074] [LOG] Delta theta: 0.000503
+[00:00:03.074] [LOG] DeltaX: -0.036901, DeltaY: 0.176164
+[00:00:03.074] [LOG] Pose: -23.905972 11.404594 1.777781
+[00:00:03.074] [LOG] Goal: -26.173048 0.189459 1.745180
+[00:00:03.074] [LOG] Ramsete Output: 21.582726 -0.067006
+[00:00:03.074] [LOG] MP Output: 46.463682 -0.261054
+[00:00:03.074] [LOG] Left wheel velocities: 22.058359 19.438605
+[00:00:03.074] [LOG] Right wheel velocities: 21.107094 16.558811
+[00:00:03.074] [LOG] Velocity: 22.058359, Acceleration: 5.269569
+[00:00:03.074] [LOG] Velocity: 21.107094, Acceleration: -43.361424
+[00:00:03.074] [LOG] Left Feedforward: 44.888834, Right Feedforward: 28.539697
+[00:00:03.074] [LOG] Left Feedback: 23.577787, Right Feedback: 40.934546
+[00:00:03.074] [LOG] Left Voltage: 68, Right Voltage: 69
+[00:00:03.074] [LOG] Voltages: 68 69
+[00:00:03.084] [LOG] IMU Heading: -0.016839
+[00:00:03.084] [LOG] Heading: -0.000294
+[00:00:03.084] [LOG] Left Positions: 9.000000 9.000000 9.000000
+[00:00:03.084] [LOG] Right Positions: 9.000000 10.000000 10.000000
+[00:00:03.084] [LOG] Left: 38.956403, Right: 31.677726
+[00:00:03.084] [LOG] DeltaLeft: 0.194386, DeltaRight: 0.208785
+[00:00:03.084] [LOG] Forward displacement: 0.201586
+[00:00:03.084] [LOG] Delta theta: -0.000294
+[00:00:03.084] [LOG] DeltaX: -0.041428, DeltaY: 0.197283
+[00:00:03.084] [LOG] Pose: -23.947400 11.601877 1.777487
+[00:00:03.084] [LOG] Goal: -26.252970 0.646208 1.742584
+[00:00:03.084] [LOG] Ramsete Output: 22.029151 -0.105648
+[00:00:03.084] [LOG] MP Output: 46.274011 -0.292103
+[00:00:03.084] [LOG] Left wheel velocities: 22.779072 19.438605
+[00:00:03.084] [LOG] Right wheel velocities: 21.279230 18.558811
+[00:00:03.084] [LOG] Velocity: 22.779072, Acceleration: 3.072009
+[00:00:03.084] [LOG] Velocity: 21.279230, Acceleration: -41.006356
+[00:00:03.084] [LOG] Left Feedforward: 45.562886, Right Feedforward: 29.564669
+[00:00:03.084] [LOG] Left Feedback: 30.064207, Right Feedback: 24.483772
+[00:00:03.084] [LOG] Left Voltage: 75, Right Voltage: 54
+[00:00:03.084] [LOG] Voltages: 75 54
+[00:00:03.094] [LOG] IMU Heading: -0.072251
+[00:00:03.094] [LOG] Heading: -0.001261
+[00:00:03.094] [LOG] Left Positions: 11.000000 11.000000 11.000000
+[00:00:03.094] [LOG] Right Positions: 11.000000 12.000000 10.000000
+[00:00:03.094] [LOG] Left: 39.193986, Right: 31.915309
+[00:00:03.094] [LOG] DeltaLeft: 0.237583, DeltaRight: 0.237583
+[00:00:03.094] [LOG] Forward displacement: 0.237583
+[00:00:03.094] [LOG] Delta theta: -0.001261
+[00:00:03.094] [LOG] DeltaX: -0.048611, DeltaY: 0.232557
+[00:00:03.094] [LOG] Pose: -23.996011 11.834434 1.776226
+[00:00:03.094] [LOG] Goal: -26.331239 1.101323 1.739378
+[00:00:03.094] [LOG] Ramsete Output: 22.358195 -0.147369
+[00:00:03.094] [LOG] MP Output: 46.085029 -0.326403
+[00:00:03.094] [LOG] Left wheel velocities: 23.404264 21.438605
+[00:00:03.094] [LOG] Right wheel velocities: 21.312126 20.558811
+[00:00:03.094] [LOG] Velocity: 23.404264, Acceleration: 5.449157
+[00:00:03.094] [LOG] Velocity: 21.312126, Acceleration: -43.245436
+[00:00:03.094] [LOG] Left Feedforward: 47.432635, Right Feedforward: 28.953803
+[00:00:03.094] [LOG] Left Feedback: 17.690931, Right Feedback: 6.779835
+[00:00:03.094] [LOG] Left Voltage: 65, Right Voltage: 35
+[00:00:03.094] [LOG] Voltages: 65 35
+[00:00:03.104] [LOG] IMU Heading: -0.092075
+[00:00:03.104] [LOG] Heading: -0.001607
+[00:00:03.104] [LOG] Left Positions: 12.000000 12.000000 11.000000
+[00:00:03.104] [LOG] Right Positions: 10.000000 9.000000 10.000000
+[00:00:03.104] [LOG] Left: 39.445968, Right: 32.124094
+[00:00:03.104] [LOG] DeltaLeft: 0.251982, DeltaRight: 0.208785
+[00:00:03.104] [LOG] Forward displacement: 0.230383
+[00:00:03.104] [LOG] Delta theta: -0.001607
+[00:00:03.104] [LOG] DeltaX: -0.046814, DeltaY: 0.225577
+[00:00:03.104] [LOG] Pose: -24.042825 12.060011 1.774619
+[00:00:03.104] [LOG] Goal: -26.407716 1.554830 1.735803
+[00:00:03.104] [LOG] Ramsete Output: 22.690454 -0.189503
+[00:00:03.104] [LOG] MP Output: 45.905852 -0.360843
+[00:00:03.104] [LOG] Left wheel velocities: 24.035608 23.438605
+[00:00:03.104] [LOG] Right wheel velocities: 21.345300 20.878501
+[00:00:03.104] [LOG] Velocity: 24.035608, Acceleration: 6.528835
+[00:00:03.104] [LOG] Velocity: 21.345300, Acceleration: -42.364364
+[00:00:03.104] [LOG] Left Feedforward: 48.924526, Right Feedforward: 29.279495
+[00:00:03.104] [LOG] Left Feedback: 5.373034, Right Feedback: 4.201188
+[00:00:03.104] [LOG] Left Voltage: 54, Right Voltage: 33
+[00:00:03.104] [LOG] Voltages: 54 33
+[00:00:03.114] [LOG] IMU Heading: -0.042761
+[00:00:03.114] [LOG] Heading: -0.000746
+[00:00:03.114] [LOG] Left Positions: 10.000000 11.000000 11.000000
+[00:00:03.114] [LOG] Right Positions: 8.000000 8.000000 9.000000
+[00:00:03.114] [LOG] Left: 39.676352, Right: 32.304081
+[00:00:03.114] [LOG] DeltaLeft: 0.230383, DeltaRight: 0.179987
+[00:00:03.114] [LOG] Forward displacement: 0.205185
+[00:00:03.114] [LOG] Delta theta: -0.000746
+[00:00:03.114] [LOG] DeltaX: -0.041532, DeltaY: 0.200938
+[00:00:03.114] [LOG] Pose: -24.084357 12.260948 1.773873
+[00:00:03.114] [LOG] Goal: -26.482287 2.006888 1.732602
+[00:00:03.114] [LOG] Ramsete Output: 23.095355 -0.225810
+[00:00:03.114] [LOG] MP Output: 45.723565 -0.388795
+[00:00:03.114] [LOG] Left wheel velocities: 24.698225 23.038346
+[00:00:03.114] [LOG] Right wheel velocities: 21.492484 18.878501
+[00:00:03.114] [LOG] Velocity: 24.698225, Acceleration: 1.612651
+[00:00:03.114] [LOG] Velocity: 21.492484, Acceleration: -38.069952
+[00:00:03.114] [LOG] Left Feedforward: 48.675511, Right Feedforward: 30.840111
+[00:00:03.114] [LOG] Left Feedback: 14.938908, Right Feedback: 23.525850
+[00:00:03.114] [LOG] Left Voltage: 63, Right Voltage: 54
+[00:00:03.114] [LOG] Voltages: 63 54
+[00:00:03.124] [LOG] IMU Heading: -0.019240
+[00:00:03.124] [LOG] Heading: -0.000336
+[00:00:03.124] [LOG] Left Positions: 11.000000 11.000000 13.000000
+[00:00:03.124] [LOG] Right Positions: 8.000000 8.000000 9.000000
+[00:00:03.124] [LOG] Left: 39.928334, Right: 32.484068
+[00:00:03.124] [LOG] DeltaLeft: 0.251982, DeltaRight: 0.179987
+[00:00:03.124] [LOG] Forward displacement: 0.215984
+[00:00:03.124] [LOG] Delta theta: -0.000336
+[00:00:03.124] [LOG] DeltaX: -0.043560, DeltaY: 0.211546
+[00:00:03.124] [LOG] Pose: -24.127918 12.472495 1.773537
+[00:00:03.124] [LOG] Goal: -26.554798 2.457417 1.728350
+[00:00:03.124] [LOG] Ramsete Output: 23.438683 -0.272135
+[00:00:03.124] [LOG] MP Output: 45.532308 -0.423309
+[00:00:03.124] [LOG] Left wheel velocities: 25.370383 25.038346
+[00:00:03.124] [LOG] Right wheel velocities: 21.506983 17.998708
+[00:00:03.124] [LOG] Velocity: 25.370383, Acceleration: 5.373321
+[00:00:03.124] [LOG] Velocity: 21.506983, Acceleration: -43.624642
+[00:00:03.124] [LOG] Left Feedforward: 51.047204, Right Feedforward: 29.200527
+[00:00:03.124] [LOG] Left Feedback: 2.988328, Right Feedback: 31.574479
+[00:00:03.124] [LOG] Left Voltage: 54, Right Voltage: 60
+[00:00:03.124] [LOG] Voltages: 54 60
+[00:00:03.134] [LOG] IMU Heading: -0.057004
+[00:00:03.134] [LOG] Heading: -0.000995
+[00:00:03.134] [LOG] Left Positions: 14.000000 13.000000 12.000000
+[00:00:03.134] [LOG] Right Positions: 11.000000 11.000000 11.000000
+[00:00:03.134] [LOG] Left: 40.209113, Right: 32.721651
+[00:00:03.134] [LOG] DeltaLeft: 0.280780, DeltaRight: 0.237583
+[00:00:03.134] [LOG] Forward displacement: 0.259181
+[00:00:03.134] [LOG] Delta theta: -0.000995
+[00:00:03.134] [LOG] DeltaX: -0.052187, DeltaY: 0.253873
+[00:00:03.134] [LOG] Pose: -24.180105 12.726368 1.772542
+[00:00:03.134] [LOG] Goal: -26.625097 2.906313 1.724158
+[00:00:03.134] [LOG] Ramsete Output: 23.672529 -0.314019
+[00:00:03.134] [LOG] MP Output: 45.342389 -0.454646
+[00:00:03.134] [LOG] Left wheel velocities: 25.901534 27.038346
+[00:00:03.134] [LOG] Right wheel velocities: 21.443524 19.998708
+[00:00:03.134] [LOG] Velocity: 25.901534, Acceleration: 3.252068
+[00:00:03.134] [LOG] Velocity: 21.443524, Acceleration: -41.236015
+[00:00:03.134] [LOG] Left Feedforward: 51.393459, Right Feedforward: 29.799715
+[00:00:03.134] [LOG] Left Feedback: -10.231307, Right Feedback: 13.003346
+[00:00:03.134] [LOG] Left Voltage: 41, Right Voltage: 42
+[00:00:03.134] [LOG] Voltages: 41 42
+[00:00:03.144] [LOG] IMU Heading: -0.132502
+[00:00:03.144] [LOG] Heading: -0.002313
+[00:00:03.144] [LOG] Left Positions: 6.000000 6.000000 11.000000
+[00:00:03.144] [LOG] Right Positions: 12.000000 13.000000 13.000000
+[00:00:03.144] [LOG] Left: 40.374702, Right: 32.995231
+[00:00:03.144] [LOG] DeltaLeft: 0.165588, DeltaRight: 0.273580
+[00:00:03.144] [LOG] Forward displacement: 0.219584
+[00:00:03.144] [LOG] Delta theta: -0.002313
+[00:00:03.144] [LOG] DeltaX: -0.043751, DeltaY: 0.215181
+[00:00:03.144] [LOG] Pose: -24.223857 12.941549 1.770229
+[00:00:03.144] [LOG] Goal: -26.693062 3.353653 1.719185
+[00:00:03.144] [LOG] Ramsete Output: 23.965050 -0.358983
+[00:00:03.144] [LOG] MP Output: 45.154972 -0.489486
+[00:00:03.144] [LOG] Left wheel velocities: 26.513224 25.038346
+[00:00:03.144] [LOG] Right wheel velocities: 21.416877 21.998708
+[00:00:03.144] [LOG] Velocity: 26.513224, Acceleration: 5.989035
+[00:00:03.144] [LOG] Velocity: 21.416877, Acceleration: -43.472326
+[00:00:03.144] [LOG] Left Feedforward: 53.346174, Right Feedforward: 29.079525
+[00:00:03.144] [LOG] Left Feedback: 13.273898, Right Feedback: -5.236478
+[00:00:03.144] [LOG] Left Voltage: 66, Right Voltage: 23
+[00:00:03.144] [LOG] Voltages: 66 23
+[00:00:03.154] [LOG] IMU Heading: -0.175058
+[00:00:03.154] [LOG] Heading: -0.003055
+[00:00:03.154] [LOG] Left Positions: 11.000000 12.000000 11.000000
+[00:00:03.154] [LOG] Right Positions: 11.000000 11.000000 10.000000
+[00:00:03.154] [LOG] Left: 40.619484, Right: 33.225615
+[00:00:03.154] [LOG] DeltaLeft: 0.244782, DeltaRight: 0.230383
+[00:00:03.154] [LOG] Forward displacement: 0.237583
+[00:00:03.154] [LOG] Delta theta: -0.003055
+[00:00:03.154] [LOG] DeltaX: -0.046713, DeltaY: 0.232945
+[00:00:03.154] [LOG] Pose: -24.270569 13.174494 1.767174
+[00:00:03.154] [LOG] Goal: -26.758564 3.799476 1.714333
+[00:00:03.154] [LOG] Ramsete Output: 24.209700 -0.399096
+[00:00:03.154] [LOG] MP Output: 44.967488 -0.521143
+[00:00:03.154] [LOG] Left wheel velocities: 27.042604 24.478243
+[00:00:03.154] [LOG] Right wheel velocities: 21.376797 23.038346
+[00:00:03.154] [LOG] Velocity: 27.042604, Acceleration: 3.722153
+[00:00:03.154] [LOG] Velocity: 21.376797, Acceleration: -41.219099
+[00:00:03.154] [LOG] Left Feedforward: 53.645464, Right Feedforward: 29.681344
+[00:00:03.154] [LOG] Left Feedback: 23.079253, Right Feedback: -14.953946
+[00:00:03.154] [LOG] Left Voltage: 76, Right Voltage: 14
+[00:00:03.154] [LOG] Voltages: 76 14
+[00:00:03.164] [LOG] IMU Heading: -0.175566
+[00:00:03.164] [LOG] Heading: -0.003064
+[00:00:03.164] [LOG] Left Positions: 12.000000 11.000000 13.000000
+[00:00:03.164] [LOG] Right Positions: 8.000000 8.000000 7.000000
+[00:00:03.164] [LOG] Left: 40.878665, Right: 33.391203
+[00:00:03.164] [LOG] DeltaLeft: 0.259181, DeltaRight: 0.165588
+[00:00:03.164] [LOG] Forward displacement: 0.212385
+[00:00:03.164] [LOG] Delta theta: -0.003064
+[00:00:03.164] [LOG] DeltaX: -0.041121, DeltaY: 0.208366
+[00:00:03.164] [LOG] Pose: -24.311690 13.382860 1.764110
+[00:00:03.164] [LOG] Goal: -26.821475 4.243786 1.709163
+[00:00:03.164] [LOG] Ramsete Output: 24.497787 -0.440085
+[00:00:03.164] [LOG] MP Output: 44.770599 -0.552857
+[00:00:03.164] [LOG] Left wheel velocities: 27.621649 25.918139
+[00:00:03.164] [LOG] Right wheel velocities: 21.373926 21.038346
+[00:00:03.164] [LOG] Velocity: 27.621649, Acceleration: 2.822825
+[00:00:03.164] [LOG] Velocity: 21.373926, Acceleration: -42.200617
+[00:00:03.164] [LOG] Left Feedforward: 54.446898, Right Feedforward: 29.381578
+[00:00:03.164] [LOG] Left Feedback: 15.331583, Right Feedback: 3.020218
+[00:00:03.164] [LOG] Left Voltage: 69, Right Voltage: 32
+[00:00:03.164] [LOG] Voltages: 69 32
+[00:00:03.174] [LOG] IMU Heading: -0.141924
+[00:00:03.174] [LOG] Heading: -0.002477
+[00:00:03.174] [LOG] Left Positions: 15.000000 14.000000 14.000000
+[00:00:03.174] [LOG] Right Positions: 7.000000 7.000000 7.000000
+[00:00:03.174] [LOG] Left: 41.188243, Right: 33.542392
+[00:00:03.174] [LOG] DeltaLeft: 0.309578, DeltaRight: 0.151189
+[00:00:03.174] [LOG] Forward displacement: 0.230383
+[00:00:03.174] [LOG] Delta theta: -0.002477
+[00:00:03.174] [LOG] DeltaX: -0.043979, DeltaY: 0.226147
+[00:00:03.174] [LOG] Pose: -24.355669 13.609007 1.761633
+[00:00:03.174] [LOG] Goal: -26.881644 4.686446 1.703108
+[00:00:03.174] [LOG] Ramsete Output: 24.725622 -0.488232
+[00:00:03.174] [LOG] MP Output: 44.582612 -0.588335
+[00:00:03.174] [LOG] Left wheel velocities: 28.191246 27.918139
+[00:00:03.174] [LOG] Right wheel velocities: 21.259997 19.038346
+[00:00:03.174] [LOG] Velocity: 28.191246, Acceleration: 6.385290
+[00:00:03.174] [LOG] Velocity: 21.259997, Acceleration: -43.982516
+[00:00:03.174] [LOG] Left Feedforward: 56.569393, Right Feedforward: 28.636239
+[00:00:03.174] [LOG] Left Feedback: 2.457962, Right Feedback: 19.994857
+[00:00:03.174] [LOG] Left Voltage: 59, Right Voltage: 48
+[00:00:03.174] [LOG] Voltages: 59 48
+[00:00:03.184] [LOG] IMU Heading: -0.149293
+[00:00:03.184] [LOG] Heading: -0.002606
+[00:00:03.184] [LOG] Left Positions: 13.000000 13.000000 12.000000
+[00:00:03.184] [LOG] Right Positions: 7.000000 7.000000 7.000000
+[00:00:03.184] [LOG] Left: 41.461824, Right: 33.693581
+[00:00:03.184] [LOG] DeltaLeft: 0.273580, DeltaRight: 0.151189
+[00:00:03.184] [LOG] Forward displacement: 0.212385
+[00:00:03.184] [LOG] Delta theta: -0.002606
+[00:00:03.184] [LOG] DeltaX: -0.040013, DeltaY: 0.208581
+[00:00:03.184] [LOG] Pose: -24.395683 13.817588 1.759027
+[00:00:03.184] [LOG] Goal: -26.938969 5.127633 1.697264
+[00:00:03.184] [LOG] Ramsete Output: 24.999062 -0.532465
+[00:00:03.184] [LOG] MP Output: 44.394169 -0.620612
+[00:00:03.184] [LOG] Left wheel velocities: 28.778667 27.358036
+[00:00:03.184] [LOG] Right wheel velocities: 21.219457 17.038346
+[00:00:03.184] [LOG] Velocity: 28.778667, Acceleration: 4.066203
+[00:00:03.184] [LOG] Velocity: 21.219457, Acceleration: -41.754912
+[00:00:03.184] [LOG] Left Feedforward: 56.960395, Right Feedforward: 29.229522
+[00:00:03.184] [LOG] Left Feedback: 12.785679, Right Feedback: 37.629998
+[00:00:03.184] [LOG] Left Voltage: 69, Right Voltage: 66
+[00:00:03.184] [LOG] Voltages: 69 66
+[00:00:03.194] [LOG] IMU Heading: -0.232317
+[00:00:03.194] [LOG] Heading: -0.004055
+[00:00:03.194] [LOG] Left Positions: 11.000000 12.000000 12.000000
+[00:00:03.194] [LOG] Right Positions: 9.000000 5.000000 10.000000
+[00:00:03.194] [LOG] Left: 41.713805, Right: 33.866369
+[00:00:03.194] [LOG] DeltaLeft: 0.251982, DeltaRight: 0.172788
+[00:00:03.194] [LOG] Forward displacement: 0.212385
+[00:00:03.194] [LOG] Delta theta: -0.004055
+[00:00:03.194] [LOG] DeltaX: -0.039319, DeltaY: 0.208713
+[00:00:03.194] [LOG] Pose: -24.435001 14.026302 1.754972
+[00:00:03.194] [LOG] Goal: -26.993315 5.567294 1.691096
+[00:00:03.194] [LOG] Ramsete Output: 25.246262 -0.574896
+[00:00:03.194] [LOG] MP Output: 44.195747 -0.652997
+[00:00:03.194] [LOG] Left wheel velocities: 29.327052 25.358036
+[00:00:03.194] [LOG] Right wheel velocities: 21.165472 17.278760
+[00:00:03.194] [LOG] Velocity: 29.327052, Acceleration: 3.145825
+[00:00:03.194] [LOG] Velocity: 21.165472, Acceleration: -42.830251
+[00:00:03.194] [LOG] Left Feedforward: 57.698794, Right Feedforward: 28.807047
+[00:00:03.194] [LOG] Left Feedback: 35.721145, Right Feedback: 34.980407
+[00:00:03.194] [LOG] Left Voltage: 93, Right Voltage: 63
+[00:00:03.194] [LOG] Voltages: 93 63
+[00:00:03.204] [LOG] IMU Heading: -0.315123
+[00:00:03.204] [LOG] Heading: -0.005500
+[00:00:03.204] [LOG] Left Positions: 13.000000 20.000000 13.000000
+[00:00:03.204] [LOG] Right Positions: 14.000000 12.000000 14.000000
+[00:00:03.204] [LOG] Left: 42.044982, Right: 34.154348
+[00:00:03.204] [LOG] DeltaLeft: 0.331176, DeltaRight: 0.287979
+[00:00:03.204] [LOG] Forward displacement: 0.309578
+[00:00:03.204] [LOG] Delta theta: -0.005500
+[00:00:03.204] [LOG] DeltaX: -0.055858, DeltaY: 0.304496
+[00:00:03.204] [LOG] Pose: -24.490859 14.330798 1.749472
+[00:00:03.204] [LOG] Goal: -27.044539 6.005282 1.683934
+[00:00:03.204] [LOG] Ramsete Output: 25.221278 -0.620926
+[00:00:03.204] [LOG] MP Output: 43.996566 -0.689231
+[00:00:03.204] [LOG] Left wheel velocities: 29.628806 27.358036
+[00:00:03.204] [LOG] Right wheel velocities: 20.813750 19.278760
+[00:00:03.204] [LOG] Velocity: 29.628806, Acceleration: 5.802026
+[00:00:03.204] [LOG] Velocity: 20.813750, Acceleration: -45.638202
+[00:00:03.204] [LOG] Left Feedforward: 59.053899, Right Feedforward: 27.313977
+[00:00:03.204] [LOG] Left Feedback: 20.436929, Right Feedback: 13.814912
+[00:00:03.204] [LOG] Left Voltage: 79, Right Voltage: 41
+[00:00:03.204] [LOG] Voltages: 79 41
+[00:00:03.214] [LOG] IMU Heading: -0.351584
+[00:00:03.214] [LOG] Heading: -0.006136
+[00:00:03.214] [LOG] Left Positions: 16.000000 14.000000 14.000000
+[00:00:03.214] [LOG] Right Positions: 14.000000 14.000000 17.000000
+[00:00:03.214] [LOG] Left: 42.361759, Right: 34.478325
+[00:00:03.214] [LOG] DeltaLeft: 0.316777, DeltaRight: 0.323977
+[00:00:03.214] [LOG] Forward displacement: 0.320377
+[00:00:03.214] [LOG] Delta theta: -0.006136
+[00:00:03.214] [LOG] DeltaX: -0.055972, DeltaY: 0.315449
+[00:00:03.214] [LOG] Pose: -24.546831 14.646247 1.743336
+[00:00:03.214] [LOG] Goal: -27.092522 6.441628 1.677077
+[00:00:03.214] [LOG] Ramsete Output: 25.176500 -0.661759
+[00:00:03.214] [LOG] MP Output: 43.806071 -0.722360
+[00:00:03.214] [LOG] Left wheel velocities: 29.873872 29.358036
+[00:00:03.214] [LOG] Right wheel velocities: 20.479129 21.278760
+[00:00:03.214] [LOG] Velocity: 29.873872, Acceleration: 4.466297
+[00:00:03.214] [LOG] Velocity: 20.479129, Acceleration: -42.565240
+[00:00:03.214] [LOG] Left Feedforward: 59.106552, Right Feedforward: 27.616816
+[00:00:03.214] [LOG] Left Feedback: 4.642520, Right Feedback: -7.196677
+[00:00:03.214] [LOG] Left Voltage: 63, Right Voltage: 20
+[00:00:03.214] [LOG] Voltages: 63 20
+[00:00:03.224] [LOG] IMU Heading: -0.346503
+[00:00:03.224] [LOG] Heading: -0.006048
+[00:00:03.224] [LOG] Left Positions: 14.000000 13.000000 13.000000
+[00:00:03.224] [LOG] Right Positions: 12.000000 14.000000 9.000000
+[00:00:03.224] [LOG] Left: 42.649738, Right: 34.730307
+[00:00:03.224] [LOG] DeltaLeft: 0.287979, DeltaRight: 0.251982
+[00:00:03.224] [LOG] Forward displacement: 0.269981
+[00:00:03.224] [LOG] Delta theta: -0.006048
+[00:00:03.224] [LOG] DeltaX: -0.045547, DeltaY: 0.266110
+[00:00:03.224] [LOG] Pose: -24.592378 14.912358 1.737289
+[00:00:03.224] [LOG] Goal: -27.137154 6.876457 1.669887
+[00:00:03.224] [LOG] Ramsete Output: 25.238142 -0.703783
+[00:00:03.224] [LOG] MP Output: 43.604978 -0.755647
+[00:00:03.224] [LOG] Left wheel velocities: 30.233811 28.797933
+[00:00:03.224] [LOG] Right wheel velocities: 20.242472 23.278760
+[00:00:03.224] [LOG] Velocity: 30.233811, Acceleration: 3.518984
+[00:00:03.224] [LOG] Velocity: 20.242472, Acceleration: -43.737717
+[00:00:03.224] [LOG] Left Feedforward: 59.488246, Right Feedforward: 26.827259
+[00:00:03.224] [LOG] Left Feedback: 12.922909, Right Feedback: -27.326585
+[00:00:03.224] [LOG] Left Voltage: 72, Right Voltage: 0
+[00:00:03.224] [LOG] Voltages: 72 0
+[00:00:03.234] [LOG] IMU Heading: -0.343547
+[00:00:03.234] [LOG] Heading: -0.005996
+[00:00:03.234] [LOG] Left Positions: 13.000000 13.000000 14.000000
+[00:00:03.234] [LOG] Right Positions: 9.000000 8.000000 4.000000
+[00:00:03.234] [LOG] Left: 42.937718, Right: 34.881496
+[00:00:03.234] [LOG] DeltaLeft: 0.287979, DeltaRight: 0.151189
+[00:00:03.234] [LOG] Forward displacement: 0.219584
+[00:00:03.234] [LOG] Delta theta: -0.005996
+[00:00:03.234] [LOG] DeltaX: -0.035741, DeltaY: 0.216656
+[00:00:03.234] [LOG] Pose: -24.628119 15.129013 1.731293
+[00:00:03.234] [LOG] Goal: -27.178292 7.309557 1.661592
+[00:00:03.234] [LOG] Ramsete Output: 25.392896 -0.752910
+[00:00:03.234] [LOG] MP Output: 43.402776 -0.793020
+[00:00:03.234] [LOG] Left wheel velocities: 30.737285 28.797933
+[00:00:03.234] [LOG] Right wheel velocities: 20.048508 21.278760
+[00:00:03.234] [LOG] Velocity: 30.737285, Acceleration: 6.308227
+[00:00:03.234] [LOG] Velocity: 20.048508, Acceleration: -46.748629
+[00:00:03.234] [LOG] Left Feedforward: 61.256445, Right Feedforward: 25.565150
+[00:00:03.234] [LOG] Left Feedback: 17.454169, Right Feedback: -11.072268
+[00:00:03.234] [LOG] Left Voltage: 78, Right Voltage: 14
+[00:00:03.234] [LOG] Voltages: 78 14
+[00:00:03.244] [LOG] IMU Heading: -0.341501
+[00:00:03.244] [LOG] Heading: -0.005960
+[00:00:03.244] [LOG] Left Positions: 16.000000 8.000000 15.000000
+[00:00:03.244] [LOG] Right Positions: 7.000000 7.000000 7.000000
+[00:00:03.244] [LOG] Left: 43.218497, Right: 35.032685
+[00:00:03.244] [LOG] DeltaLeft: 0.280780, DeltaRight: 0.151189
+[00:00:03.244] [LOG] Forward displacement: 0.215984
+[00:00:03.244] [LOG] Delta theta: -0.005960
+[00:00:03.244] [LOG] DeltaX: -0.033880, DeltaY: 0.213310
+[00:00:03.244] [LOG] Pose: -24.662000 15.342324 1.725332
+[00:00:03.244] [LOG] Goal: -27.215818 7.740948 1.653696
+[00:00:03.244] [LOG] Ramsete Output: 25.566368 -0.797710
+[00:00:03.244] [LOG] MP Output: 43.199334 -0.827056
+[00:00:03.244] [LOG] Left wheel velocities: 31.228763 28.077984
+[00:00:03.244] [LOG] Right wheel velocities: 19.903973 19.278760
+[00:00:03.244] [LOG] Velocity: 31.228763, Acceleration: 3.815529
+[00:00:03.244] [LOG] Velocity: 19.903973, Acceleration: -44.503819
+[00:00:03.244] [LOG] Left Feedforward: 61.417871, Right Feedforward: 25.971205
+[00:00:03.244] [LOG] Left Feedback: 28.357009, Right Feedback: 5.626922
+[00:00:03.244] [LOG] Left Voltage: 89, Right Voltage: 31
+[00:00:03.244] [LOG] Voltages: 89 31
+[00:00:03.254] [LOG] IMU Heading: -0.328603
+[00:00:03.254] [LOG] Heading: -0.005735
+[00:00:03.254] [LOG] Left Positions: 17.000000 17.000000 16.000000
+[00:00:03.254] [LOG] Right Positions: 6.000000 6.000000 6.000000
+[00:00:03.254] [LOG] Left: 43.578472, Right: 35.162276
+[00:00:03.254] [LOG] DeltaLeft: 0.359974, DeltaRight: 0.129591
+[00:00:03.254] [LOG] Forward displacement: 0.244782
+[00:00:03.254] [LOG] Delta theta: -0.005735
+[00:00:03.254] [LOG] DeltaX: -0.036984, DeltaY: 0.241972
+[00:00:03.254] [LOG] Pose: -24.698983 15.584296 1.719597
+[00:00:03.254] [LOG] Goal: -27.249610 8.170600 1.645458
+[00:00:03.254] [LOG] Ramsete Output: 25.660608 -0.844301
+[00:00:03.254] [LOG] MP Output: 42.994549 -0.861477
+[00:00:03.254] [LOG] Left wheel velocities: 31.653720 30.077984
+[00:00:03.254] [LOG] Right wheel velocities: 19.667497 17.278760
+[00:00:03.254] [LOG] Velocity: 31.653720, Acceleration: 3.954564
+[00:00:03.254] [LOG] Velocity: 19.667497, Acceleration: -44.911650
+[00:00:03.254] [LOG] Left Feedforward: 62.245750, Right Feedforward: 25.411374
+[00:00:03.254] [LOG] Left Feedback: 14.181618, Right Feedback: 21.498637
+[00:00:03.254] [LOG] Left Voltage: 76, Right Voltage: 46
+[00:00:03.254] [LOG] Voltages: 76 46
+[00:00:03.264] [LOG] IMU Heading: -0.328878
+[00:00:03.264] [LOG] Heading: -0.005740
+[00:00:03.264] [LOG] Left Positions: 16.000000 17.000000 16.000000
+[00:00:03.264] [LOG] Right Positions: 7.000000 7.000000 6.000000
+[00:00:03.264] [LOG] Left: 43.931246, Right: 35.306265
+[00:00:03.264] [LOG] DeltaLeft: 0.352775, DeltaRight: 0.143990
+[00:00:03.264] [LOG] Forward displacement: 0.248382
+[00:00:03.264] [LOG] Delta theta: -0.005740
+[00:00:03.264] [LOG] DeltaX: -0.036118, DeltaY: 0.245742
+[00:00:03.264] [LOG] Pose: -24.735101 15.830038 1.713857
+[00:00:03.264] [LOG] Goal: -27.279548 8.598477 1.636878
+[00:00:03.264] [LOG] Ramsete Output: 25.735776 -0.892283
+[00:00:03.264] [LOG] MP Output: 42.788331 -0.896307
+[00:00:03.264] [LOG] Left wheel velocities: 32.069481 32.077984
+[00:00:03.264] [LOG] Right wheel velocities: 19.402071 15.278760
+[00:00:03.264] [LOG] Velocity: 32.069481, Acceleration: 4.102239
+[00:00:03.264] [LOG] Velocity: 19.402071, Acceleration: -45.345706
+[00:00:03.264] [LOG] Left Feedforward: 63.059211, Right Feedforward: 24.790119
+[00:00:03.264] [LOG] Left Feedback: -0.076531, Right Feedback: 37.109803
+[00:00:03.264] [LOG] Left Voltage: 62, Right Voltage: 61
+[00:00:03.264] [LOG] Voltages: 62 61
+[00:00:03.274] [LOG] IMU Heading: -0.358245
+[00:00:03.274] [LOG] Heading: -0.006253
+[00:00:03.274] [LOG] Left Positions: 15.000000 15.000000 17.000000
+[00:00:03.274] [LOG] Right Positions: 9.000000 13.000000 8.000000
+[00:00:03.274] [LOG] Left: 44.269622, Right: 35.522250
+[00:00:03.274] [LOG] DeltaLeft: 0.338376, DeltaRight: 0.215984
+[00:00:03.274] [LOG] Forward displacement: 0.277180
+[00:00:03.274] [LOG] Delta theta: -0.006253
+[00:00:03.274] [LOG] DeltaX: -0.038661, DeltaY: 0.274470
+[00:00:03.274] [LOG] Pose: -24.773762 16.104508 1.707604
+[00:00:03.274] [LOG] Goal: -27.305510 9.024538 1.627038
+[00:00:03.274] [LOG] Ramsete Output: 25.703222 -0.947172
+[00:00:03.274] [LOG] MP Output: 42.580595 -0.935582
+[00:00:03.274] [LOG] Left wheel velocities: 32.426546 33.837571
+[00:00:03.274] [LOG] Right wheel velocities: 18.979898 17.278760
+[00:00:03.274] [LOG] Velocity: 32.426546, Acceleration: 7.104741
+[00:00:03.274] [LOG] Velocity: 18.979898, Acceleration: -48.651996
+[00:00:03.274] [LOG] Left Feedforward: 64.620533, Right Feedforward: 23.017213
+[00:00:03.274] [LOG] Left Feedback: -12.699222, Right Feedback: 15.310247
+[00:00:03.274] [LOG] Left Voltage: 51, Right Voltage: 38
+[00:00:03.274] [LOG] Voltages: 51 38
+[00:00:03.284] [LOG] IMU Heading: -0.465038
+[00:00:03.284] [LOG] Heading: -0.008116
+[00:00:03.284] [LOG] Left Positions: 13.000000 14.000000 14.000000
+[00:00:03.284] [LOG] Right Positions: 12.000000 11.000000 12.000000
+[00:00:03.284] [LOG] Left: 44.564801, Right: 35.774232
+[00:00:03.284] [LOG] DeltaLeft: 0.295179, DeltaRight: 0.251982
+[00:00:03.284] [LOG] Forward displacement: 0.273580
+[00:00:03.284] [LOG] Delta theta: -0.008116
+[00:00:03.284] [LOG] DeltaX: -0.036211, DeltaY: 0.271173
+[00:00:03.284] [LOG] Pose: -24.809973 16.375680 1.699488
+[00:00:03.284] [LOG] Goal: -27.327378 9.448740 1.617725
+[00:00:03.284] [LOG] Ramsete Output: 25.681165 -0.993167
+[00:00:03.284] [LOG] MP Output: 42.371259 -0.971376
+[00:00:03.284] [LOG] Left wheel velocities: 32.730971 31.837571
+[00:00:03.284] [LOG] Right wheel velocities: 18.631359 19.278760
+[00:00:03.284] [LOG] Velocity: 32.730971, Acceleration: 4.474485
+[00:00:03.284] [LOG] Velocity: 18.631359, Acceleration: -46.341592
+[00:00:03.284] [LOG] Left Feedforward: 64.394643, Right Feedforward: 23.065536
+[00:00:03.284] [LOG] Left Feedback: 8.040606, Right Feedback: -5.826609
+[00:00:03.284] [LOG] Left Voltage: 72, Right Voltage: 17
+[00:00:03.284] [LOG] Voltages: 72 17
+[00:00:03.294] [LOG] IMU Heading: -0.499065
+[00:00:03.294] [LOG] Heading: -0.008710
+[00:00:03.294] [LOG] Left Positions: 14.000000 13.000000 14.000000
+[00:00:03.294] [LOG] Right Positions: 12.000000 13.000000 14.000000
+[00:00:03.294] [LOG] Left: 44.859980, Right: 36.055012
+[00:00:03.294] [LOG] DeltaLeft: 0.295179, DeltaRight: 0.280780
+[00:00:03.294] [LOG] Forward displacement: 0.287979
+[00:00:03.294] [LOG] Delta theta: -0.008710
+[00:00:03.294] [LOG] DeltaX: -0.035714, DeltaY: 0.285755
+[00:00:03.294] [LOG] Pose: -24.845687 16.661436 1.690778
+[00:00:03.294] [LOG] Goal: -27.345032 9.871034 1.608058
+[00:00:03.294] [LOG] Ramsete Output: 25.606904 -1.039215
+[00:00:03.294] [LOG] MP Output: 42.156084 -1.007558
+[00:00:03.294] [LOG] Left wheel velocities: 32.983571 29.837571
+[00:00:03.294] [LOG] Right wheel velocities: 18.230236 21.278760
+[00:00:03.294] [LOG] Velocity: 32.983571, Acceleration: 4.165157
+[00:00:03.294] [LOG] Velocity: 18.230236, Acceleration: -47.200201
+[00:00:03.294] [LOG] Left Feedforward: 64.769154, Right Feedforward: 22.065876
+[00:00:03.294] [LOG] Left Feedback: 28.314004, Right Feedback: -27.436712
+[00:00:03.294] [LOG] Left Voltage: 93, Right Voltage: -5
+[00:00:03.294] [LOG] Voltages: 93 -5
+[00:00:03.304] [LOG] IMU Heading: -0.463704
+[00:00:03.304] [LOG] Heading: -0.008093
+[00:00:03.304] [LOG] Left Positions: 16.000000 15.000000 15.000000
+[00:00:03.304] [LOG] Right Positions: 9.000000 9.000000 12.000000
+[00:00:03.304] [LOG] Left: 45.191156, Right: 36.270996
+[00:00:03.304] [LOG] DeltaLeft: 0.331176, DeltaRight: 0.215984
+[00:00:03.304] [LOG] Forward displacement: 0.273580
+[00:00:03.304] [LOG] Delta theta: -0.008093
+[00:00:03.304] [LOG] DeltaX: -0.031646, DeltaY: 0.271743
+[00:00:03.304] [LOG] Pose: -24.877333 16.933179 1.682684
+[00:00:03.304] [LOG] Goal: -27.358352 10.291303 1.598035
+[00:00:03.304] [LOG] Ramsete Output: 25.560419 -1.088068
+[00:00:03.304] [LOG] MP Output: 41.936834 -1.044184
+[00:00:03.304] [LOG] Left wheel velocities: 33.283861 31.837571
+[00:00:03.304] [LOG] Right wheel velocities: 17.836977 21.598449
+[00:00:03.304] [LOG] Velocity: 33.283861, Acceleration: 4.073275
+[00:00:03.304] [LOG] Velocity: 17.836977, Acceleration: -47.923286
+[00:00:03.304] [LOG] Left Feedforward: 65.297125, Right Feedforward: 21.121421
+[00:00:03.304] [LOG] Left Feedback: 13.016611, Right Feedback: -33.853256
+[00:00:03.304] [LOG] Left Voltage: 78, Right Voltage: -12
+[00:00:03.304] [LOG] Voltages: 78 -12
+[00:00:03.314] [LOG] IMU Heading: -0.416386
+[00:00:03.314] [LOG] Heading: -0.007267
+[00:00:03.314] [LOG] Left Positions: 18.000000 17.000000 18.000000
+[00:00:03.314] [LOG] Right Positions: 5.000000 6.000000 8.000000
+[00:00:03.314] [LOG] Left: 45.572728, Right: 36.407786
+[00:00:03.314] [LOG] DeltaLeft: 0.381573, DeltaRight: 0.136790
+[00:00:03.314] [LOG] Forward displacement: 0.259181
+[00:00:03.314] [LOG] Delta theta: -0.007267
+[00:00:03.314] [LOG] DeltaX: -0.028003, DeltaY: 0.257664
+[00:00:03.314] [LOG] Pose: -24.905336 17.190842 1.675417
+[00:00:03.314] [LOG] Goal: -27.367223 10.709473 1.587651
+[00:00:03.314] [LOG] Ramsete Output: 25.541674 -1.140260
+[00:00:03.314] [LOG] MP Output: 41.711357 -1.081218
+[00:00:03.314] [LOG] Left wheel velocities: 33.635592 33.837571
+[00:00:03.314] [LOG] Right wheel velocities: 17.447756 19.598449
+[00:00:03.314] [LOG] Velocity: 33.635592, Acceleration: 3.739924
+[00:00:03.314] [LOG] Velocity: 17.447756, Acceleration: -48.835331
+[00:00:03.314] [LOG] Left Feedforward: 65.847822, Right Feedforward: 20.127749
+[00:00:03.314] [LOG] Left Feedback: -1.817813, Right Feedback: -19.356245
+[00:00:03.314] [LOG] Left Voltage: 64, Right Voltage: 0
+[00:00:03.314] [LOG] Voltages: 64 0
+[00:00:03.324] [LOG] IMU Heading: -0.388652
+[00:00:03.324] [LOG] Heading: -0.006783
+[00:00:03.324] [LOG] Left Positions: 16.000000 17.000000 15.000000
+[00:00:03.324] [LOG] Right Positions: 3.000000 4.000000 4.000000
+[00:00:03.324] [LOG] Left: 45.918304, Right: 36.486981
+[00:00:03.324] [LOG] DeltaLeft: 0.345575, DeltaRight: 0.079194
+[00:00:03.324] [LOG] Forward displacement: 0.212385
+[00:00:03.324] [LOG] Delta theta: -0.006783
+[00:00:03.324] [LOG] DeltaX: -0.021463, DeltaY: 0.211297
+[00:00:03.324] [LOG] Pose: -24.926799 17.402139 1.668634
+[00:00:03.324] [LOG] Goal: -27.371532 11.125428 1.575808
+[00:00:03.324] [LOG] Ramsete Output: 25.616700 -1.203191
+[00:00:03.324] [LOG] MP Output: 41.494795 -1.123486
+[00:00:03.324] [LOG] Left wheel velocities: 34.157322 34.557519
+[00:00:03.324] [LOG] Right wheel velocities: 17.076079 17.598449
+[00:00:03.324] [LOG] Velocity: 34.157322, Acceleration: 8.347364
+[00:00:03.324] [LOG] Velocity: 17.076079, Acceleration: -51.659805
+[00:00:03.324] [LOG] Left Feedforward: 68.195255, Right Feedforward: 18.592805
+[00:00:03.324] [LOG] Left Feedback: -3.601775, Right Feedback: -4.701335
+[00:00:03.324] [LOG] Left Voltage: 64, Right Voltage: 13
+[00:00:03.324] [LOG] Voltages: 64 13
+[00:00:03.334] [LOG] IMU Heading: -0.447985
+[00:00:03.334] [LOG] Heading: -0.007819
+[00:00:03.334] [LOG] Left Positions: 14.000000 15.000000 16.000000
+[00:00:03.334] [LOG] Right Positions: 3.000000 5.000000 8.000000
+[00:00:03.334] [LOG] Left: 46.242280, Right: 36.602172
+[00:00:03.334] [LOG] DeltaLeft: 0.323977, DeltaRight: 0.115192
+[00:00:03.334] [LOG] Forward displacement: 0.219584
+[00:00:03.334] [LOG] Delta theta: -0.007819
+[00:00:03.334] [LOG] DeltaX: -0.020595, DeltaY: 0.218616
+[00:00:03.334] [LOG] Pose: -24.947393 17.620755 1.660815
+[00:00:03.334] [LOG] Goal: -27.371165 11.539281 1.564656
+[00:00:03.334] [LOG] Ramsete Output: 25.679539 -1.257840
+[00:00:03.334] [LOG] MP Output: 41.265119 -1.161706
+[00:00:03.334] [LOG] Left wheel velocities: 34.608075 32.557519
+[00:00:03.334] [LOG] Right wheel velocities: 16.751002 15.598449
+[00:00:03.334] [LOG] Velocity: 34.608075, Acceleration: 4.161821
+[00:00:03.334] [LOG] Velocity: 16.751002, Acceleration: -50.097034
+[00:00:03.334] [LOG] Left Feedforward: 67.773485, Right Feedforward: 18.460244
+[00:00:03.334] [LOG] Left Feedback: 18.455003, Right Feedback: 10.372974
+[00:00:03.334] [LOG] Left Voltage: 86, Right Voltage: 28
+[00:00:03.334] [LOG] Voltages: 86 28
+[00:00:03.344] [LOG] IMU Heading: -0.630252
+[00:00:03.344] [LOG] Heading: -0.011000
+[00:00:03.344] [LOG] Left Positions: 14.000000 14.000000 14.000000
+[00:00:03.344] [LOG] Right Positions: 6.000000 6.000000 9.000000
+[00:00:03.344] [LOG] Left: 46.544659, Right: 36.753362
+[00:00:03.344] [LOG] DeltaLeft: 0.302378, DeltaRight: 0.151189
+[00:00:03.344] [LOG] Forward displacement: 0.226784
+[00:00:03.344] [LOG] Delta theta: -0.011000
+[00:00:03.344] [LOG] DeltaX: -0.019145, DeltaY: 0.225973
+[00:00:03.344] [LOG] Pose: -24.966538 17.846728 1.649815
+[00:00:03.344] [LOG] Goal: -27.366012 11.950737 1.553132
+[00:00:03.344] [LOG] Ramsete Output: 25.703131 -1.306766
+[00:00:03.344] [LOG] MP Output: 41.033248 -1.200507
+[00:00:03.344] [LOG] Left wheel velocities: 34.978963 30.557519
+[00:00:03.344] [LOG] Right wheel velocities: 16.427298 15.118915
+[00:00:03.344] [LOG] Velocity: 34.978963, Acceleration: 4.355495
+[00:00:03.344] [LOG] Velocity: 16.427298, Acceleration: -50.729602
+[00:00:03.344] [LOG] Left Feedforward: 68.517731, Right Feedforward: 17.671620
+[00:00:03.344] [LOG] Left Feedback: 39.792998, Right Feedback: 11.775448
+[00:00:03.344] [LOG] Left Voltage: 108, Right Voltage: 29
+[00:00:03.344] [LOG] Voltages: 108 29
+[00:00:03.354] [LOG] IMU Heading: -0.779563
+[00:00:03.354] [LOG] Heading: -0.013606
+[00:00:03.354] [LOG] Left Positions: 17.000000 16.000000 17.000000
+[00:00:03.354] [LOG] Right Positions: 8.000000 9.000000 8.000000
+[00:00:03.354] [LOG] Left: 46.904633, Right: 36.933349
+[00:00:03.354] [LOG] DeltaLeft: 0.359974, DeltaRight: 0.179987
+[00:00:03.354] [LOG] Forward displacement: 0.269981
+[00:00:03.354] [LOG] Delta theta: -0.013606
+[00:00:03.354] [LOG] DeltaX: -0.019480, DeltaY: 0.269275
+[00:00:03.354] [LOG] Pose: -24.986018 18.116003 1.636209
+[00:00:03.354] [LOG] Goal: -27.355963 12.359801 1.541233
+[00:00:03.354] [LOG] Ramsete Output: 25.594477 -1.351082
+[00:00:03.354] [LOG] MP Output: 40.799125 -1.239914
+[00:00:03.354] [LOG] Left wheel velocities: 35.184879 32.557519
+[00:00:03.354] [LOG] Right wheel velocities: 16.004074 17.118915
+[00:00:03.354] [LOG] Velocity: 35.184879, Acceleration: 4.560030
+[00:00:03.354] [LOG] Velocity: 16.004074, Acceleration: -51.384761
+[00:00:03.354] [LOG] Left Feedforward: 68.960036, Right Feedforward: 16.692109
+[00:00:03.354] [LOG] Left Feedback: 23.646242, Right Feedback: -10.033563
+[00:00:03.354] [LOG] Left Voltage: 92, Right Voltage: 6
+[00:00:03.354] [LOG] Voltages: 92 6
+[00:00:03.364] [LOG] IMU Heading: -0.838929
+[00:00:03.364] [LOG] Heading: -0.014642
+[00:00:03.364] [LOG] Left Positions: 19.000000 17.000000 17.000000
+[00:00:03.364] [LOG] Right Positions: 10.000000 5.000000 4.000000
+[00:00:03.364] [LOG] Left: 47.286205, Right: 37.070139
+[00:00:03.364] [LOG] DeltaLeft: 0.381573, DeltaRight: 0.136790
+[00:00:03.364] [LOG] Forward displacement: 0.259181
+[00:00:03.364] [LOG] Delta theta: -0.014642
+[00:00:03.364] [LOG] DeltaX: -0.015048, DeltaY: 0.258742
+[00:00:03.364] [LOG] Pose: -25.001066 18.374745 1.621567
+[00:00:03.364] [LOG] Goal: -27.340911 12.766357 1.527705
+[00:00:03.364] [LOG] Ramsete Output: 25.474159 -1.403006
+[00:00:03.364] [LOG] MP Output: 40.562667 -1.284742
+[00:00:03.364] [LOG] Left wheel velocities: 35.433129 34.557519
+[00:00:03.364] [LOG] Right wheel velocities: 15.515189 15.118915
+[00:00:03.364] [LOG] Velocity: 35.433129, Acceleration: 8.174515
+[00:00:03.364] [LOG] Velocity: 15.515189, Acceleration: -55.466061
+[00:00:03.364] [LOG] Left Feedforward: 70.503644, Right Feedforward: 14.563281
+[00:00:03.364] [LOG] Left Feedback: 7.880490, Right Feedback: 3.566465
+[00:00:03.364] [LOG] Left Voltage: 78, Right Voltage: 18
+[00:00:03.364] [LOG] Voltages: 78 18
+[00:00:03.374] [LOG] IMU Heading: -0.857583
+[00:00:03.374] [LOG] Heading: -0.014968
+[00:00:03.374] [LOG] Left Positions: 16.000000 19.000000 9.000000
+[00:00:03.374] [LOG] Right Positions: 7.000000 9.000000 7.000000
+[00:00:03.374] [LOG] Left: 47.602983, Right: 37.235727
+[00:00:03.374] [LOG] DeltaLeft: 0.316777, DeltaRight: 0.165588
+[00:00:03.374] [LOG] Forward displacement: 0.241183
+[00:00:03.374] [LOG] Delta theta: -0.014968
+[00:00:03.374] [LOG] DeltaX: -0.010437, DeltaY: 0.240955
+[00:00:03.374] [LOG] Pose: -25.011502 18.615699 1.606599
+[00:00:03.374] [LOG] Goal: -27.320751 13.170312 1.515005
+[00:00:03.374] [LOG] Ramsete Output: 25.415706 -1.446851
+[00:00:03.374] [LOG] MP Output: 40.311965 -1.325145
+[00:00:03.374] [LOG] Left wheel velocities: 35.685906 32.557519
+[00:00:03.374] [LOG] Right wheel velocities: 15.145506 16.558811
+[00:00:03.374] [LOG] Velocity: 35.685906, Acceleration: 3.608619
+[00:00:03.374] [LOG] Velocity: 15.145506, Acceleration: -53.748921
+[00:00:03.374] [LOG] Left Feedforward: 69.601511, Right Feedforward: 14.394510
+[00:00:03.374] [LOG] Left Feedback: 28.155477, Right Feedback: -12.719744
+[00:00:03.374] [LOG] Left Voltage: 97, Right Voltage: 1
+[00:00:03.374] [LOG] Voltages: 97 1
+[00:00:03.384] [LOG] IMU Heading: -0.883817
+[00:00:03.384] [LOG] Heading: -0.015426
+[00:00:03.384] [LOG] Left Positions: 8.000000 16.000000 18.000000
+[00:00:03.384] [LOG] Right Positions: 7.000000 7.000000 7.000000
+[00:00:03.384] [LOG] Left: 47.905361, Right: 37.386916
+[00:00:03.384] [LOG] DeltaLeft: 0.302378, DeltaRight: 0.151189
+[00:00:03.384] [LOG] Forward displacement: 0.226784
+[00:00:03.384] [LOG] Delta theta: -0.015426
+[00:00:03.384] [LOG] DeltaX: -0.006370, DeltaY: 0.226692
+[00:00:03.384] [LOG] Pose: -25.017872 18.842391 1.591174
+[00:00:03.384] [LOG] Goal: -27.295391 13.571389 1.501917
+[00:00:03.384] [LOG] Ramsete Output: 25.396541 -1.491504
+[00:00:03.384] [LOG] MP Output: 40.070709 -1.366605
+[00:00:03.384] [LOG] Left wheel velocities: 35.983699 30.557519
+[00:00:03.384] [LOG] Right wheel velocities: 14.809382 15.118915
+[00:00:03.384] [LOG] Velocity: 35.983699, Acceleration: 5.304338
+[00:00:03.384] [LOG] Velocity: 14.809382, Acceleration: -53.555588
+[00:00:03.384] [LOG] Left Feedforward: 70.661145, Right Feedforward: 13.830680
+[00:00:03.384] [LOG] Left Feedback: 48.835621, Right Feedback: -2.785795
+[00:00:03.384] [LOG] Left Voltage: 119, Right Voltage: 11
+[00:00:03.384] [LOG] Voltages: 119 11
+[00:00:03.394] [LOG] IMU Heading: -0.957196
+[00:00:03.394] [LOG] Heading: -0.016706
+[00:00:03.394] [LOG] Left Positions: 20.000000 19.000000 17.000000
+[00:00:03.394] [LOG] Right Positions: 8.000000 7.000000 7.000000
+[00:00:03.394] [LOG] Left: 48.308532, Right: 37.545305
+[00:00:03.394] [LOG] DeltaLeft: 0.403171, DeltaRight: 0.158389
+[00:00:03.394] [LOG] Forward displacement: 0.280780
+[00:00:03.394] [LOG] Delta theta: -0.016706
+[00:00:03.394] [LOG] DeltaX: -0.003376, DeltaY: 0.280756
+[00:00:03.394] [LOG] Pose: -25.021248 19.123148 1.574468
+[00:00:03.394] [LOG] Goal: -27.264719 13.969721 1.487066
+[00:00:03.394] [LOG] Ramsete Output: 25.178490 -1.543432
+[00:00:03.394] [LOG] MP Output: 39.814706 -1.413465
+[00:00:03.394] [LOG] Left wheel velocities: 36.134251 32.557519
+[00:00:03.394] [LOG] Right wheel velocities: 14.222728 15.838863
+[00:00:03.394] [LOG] Velocity: 36.134251, Acceleration: 7.662626
+[00:00:03.394] [LOG] Velocity: 14.222728, Acceleration: -58.863242
+[00:00:03.394] [LOG] Left Feedforward: 71.647153, Right Feedforward: 11.153075
+[00:00:03.394] [LOG] Left Feedback: 32.190588, Right Feedback: -14.545210
+[00:00:03.394] [LOG] Left Voltage: 103, Right Voltage: -3
+[00:00:03.394] [LOG] Voltages: 103 -3
+[00:00:03.404] [LOG] IMU Heading: -0.991074
+[00:00:03.404] [LOG] Heading: -0.017297
+[00:00:03.404] [LOG] Left Positions: 19.000000 19.000000 20.000000
+[00:00:03.404] [LOG] Right Positions: 5.000000 6.000000 7.000000
+[00:00:03.404] [LOG] Left: 48.726102, Right: 37.674895
+[00:00:03.404] [LOG] DeltaLeft: 0.417570, DeltaRight: 0.129591
+[00:00:03.404] [LOG] Forward displacement: 0.273580
+[00:00:03.404] [LOG] Delta theta: -0.017297
+[00:00:03.404] [LOG] DeltaX: 0.001362, DeltaY: 0.273574
+[00:00:03.404] [LOG] Pose: -25.019886 19.396721 1.557170
+[00:00:03.404] [LOG] Goal: -27.228657 14.364954 1.473149
+[00:00:03.404] [LOG] Ramsete Output: 25.000539 -1.586223
+[00:00:03.404] [LOG] MP Output: 39.555959 -1.456011
+[00:00:03.404] [LOG] Left wheel velocities: 36.260040 34.557519
+[00:00:03.404] [LOG] Right wheel velocities: 13.741038 13.838863
+[00:00:03.404] [LOG] Velocity: 36.260040, Acceleration: 4.325346
+[00:00:03.404] [LOG] Velocity: 13.741038, Acceleration: -56.074717
+[00:00:03.404] [LOG] Left Feedforward: 70.878679, Right Feedforward: 11.098506
+[00:00:03.404] [LOG] Left Feedback: 15.322691, Right Feedback: -0.880421
+[00:00:03.404] [LOG] Left Voltage: 86, Right Voltage: 10
+[00:00:03.404] [LOG] Voltages: 86 10
+[00:00:03.414] [LOG] IMU Heading: -0.991900
+[00:00:03.414] [LOG] Heading: -0.017312
+[00:00:03.414] [LOG] Left Positions: 19.000000 17.000000 18.000000
+[00:00:03.414] [LOG] Right Positions: 5.000000 5.000000 5.000000
+[00:00:03.414] [LOG] Left: 49.114874, Right: 37.782888
+[00:00:03.414] [LOG] DeltaLeft: 0.388772, DeltaRight: 0.107992
+[00:00:03.414] [LOG] Forward displacement: 0.248382
+[00:00:03.414] [LOG] Delta theta: -0.017312
+[00:00:03.414] [LOG] DeltaX: 0.005534, DeltaY: 0.248317
+[00:00:03.414] [LOG] Pose: -25.014352 19.645039 1.539858
+[00:00:03.414] [LOG] Goal: -27.187109 14.757031 1.458830
+[00:00:03.414] [LOG] Ramsete Output: 24.887154 -1.630540
+[00:00:03.414] [LOG] MP Output: 39.294420 -1.499283
+[00:00:03.414] [LOG] Left wheel velocities: 36.461236 36.557519
+[00:00:03.414] [LOG] Right wheel velocities: 13.313073 11.838863
+[00:00:03.414] [LOG] Velocity: 36.461236, Acceleration: 4.561950
+[00:00:03.414] [LOG] Velocity: 13.313073, Acceleration: -56.869816
+[00:00:03.414] [LOG] Left Feedforward: 71.321871, Right Feedforward: 10.068241
+[00:00:03.414] [LOG] Left Feedback: -0.866551, Right Feedback: 13.267892
+[00:00:03.414] [LOG] Left Voltage: 70, Right Voltage: 23
+[00:00:03.414] [LOG] Voltages: 70 23
+[00:00:03.424] [LOG] IMU Heading: -1.054185
+[00:00:03.424] [LOG] Heading: -0.018399
+[00:00:03.424] [LOG] Left Positions: 19.000000 18.000000 17.000000
+[00:00:03.424] [LOG] Right Positions: 6.000000 6.000000 6.000000
+[00:00:03.424] [LOG] Left: 49.503646, Right: 37.912478
+[00:00:03.424] [LOG] DeltaLeft: 0.388772, DeltaRight: 0.129591
+[00:00:03.424] [LOG] Forward displacement: 0.259181
+[00:00:03.424] [LOG] Delta theta: -0.018399
+[00:00:03.424] [LOG] DeltaX: 0.010400, DeltaY: 0.258969
+[00:00:03.424] [LOG] Pose: -25.003952 19.904008 1.521459
+[00:00:03.424] [LOG] Goal: -27.139989 15.145825 1.442610
+[00:00:03.424] [LOG] Ramsete Output: 24.701007 -1.683900
+[00:00:03.424] [LOG] MP Output: 39.030017 -1.548810
+[00:00:03.424] [LOG] Left wheel velocities: 36.653851 38.557519
+[00:00:03.424] [LOG] Right wheel velocities: 12.748163 12.959070
+[00:00:03.424] [LOG] Velocity: 36.653851, Acceleration: 8.715600
+[00:00:03.424] [LOG] Velocity: 12.748163, Acceleration: -61.596143
+[00:00:03.424] [LOG] Left Feedforward: 72.924305, Right Feedforward: 7.605258
+[00:00:03.424] [LOG] Left Feedback: -17.133011, Right Feedback: -1.898161
+[00:00:03.424] [LOG] Left Voltage: 55, Right Voltage: 5
+[00:00:03.424] [LOG] Voltages: 55 5
+[00:00:03.434] [LOG] IMU Heading: -1.167063
+[00:00:03.434] [LOG] Heading: -0.020369
+[00:00:03.434] [LOG] Left Positions: 18.000000 16.000000 17.000000
+[00:00:03.434] [LOG] Right Positions: 7.000000 7.000000 6.000000
+[00:00:03.434] [LOG] Left: 49.870820, Right: 38.056468
+[00:00:03.434] [LOG] DeltaLeft: 0.367174, DeltaRight: 0.143990
+[00:00:03.434] [LOG] Forward displacement: 0.255582
+[00:00:03.434] [LOG] Delta theta: -0.020369
+[00:00:03.434] [LOG] DeltaX: 0.015203, DeltaY: 0.255125
+[00:00:03.434] [LOG] Pose: -24.988749 20.159132 1.501090
+[00:00:03.434] [LOG] Goal: -27.087212 15.531206 1.427432
+[00:00:03.434] [LOG] Ramsete Output: 24.546019 -1.723490
+[00:00:03.434] [LOG] MP Output: 38.762734 -1.593753
+[00:00:03.434] [LOG] Left wheel velocities: 36.779888 36.717364
+[00:00:03.434] [LOG] Right wheel velocities: 12.312150 14.398966
+[00:00:03.434] [LOG] Velocity: 36.779888, Acceleration: 5.173273
+[00:00:03.434] [LOG] Velocity: 12.312150, Acceleration: -58.629938
+[00:00:03.434] [LOG] Left Feedforward: 72.094775, Right Feedforward: 7.688497
+[00:00:03.434] [LOG] Left Feedback: 0.562717, Right Feedback: -18.781345
+[00:00:03.434] [LOG] Left Voltage: 72, Right Voltage: -11
+[00:00:03.434] [LOG] Voltages: 72 -11
+[00:00:03.444] [LOG] IMU Heading: -1.250920
+[00:00:03.444] [LOG] Heading: -0.021833
+[00:00:03.444] [LOG] Left Positions: 16.000000 15.000000 15.000000
+[00:00:03.444] [LOG] Right Positions: 5.000000 6.000000 4.000000
+[00:00:03.444] [LOG] Left: 50.201996, Right: 38.164460
+[00:00:03.444] [LOG] DeltaLeft: 0.331176, DeltaRight: 0.107992
+[00:00:03.444] [LOG] Forward displacement: 0.219584
+[00:00:03.444] [LOG] Delta theta: -0.021833
+[00:00:03.444] [LOG] DeltaX: 0.017684, DeltaY: 0.218867
+[00:00:03.444] [LOG] Pose: -24.971065 20.377999 1.479258
+[00:00:03.444] [LOG] Goal: -27.028699 15.913034 1.411837
+[00:00:03.444] [LOG] Ramsete Output: 24.481303 -1.759908
+[00:00:03.444] [LOG] MP Output: 38.479110 -1.638948
+[00:00:03.444] [LOG] Left wheel velocities: 36.973676 34.717364
+[00:00:03.444] [LOG] Right wheel velocities: 11.988930 12.398966
+[00:00:03.444] [LOG] Velocity: 36.973676, Acceleration: 3.719009
+[00:00:03.444] [LOG] Velocity: 11.988930, Acceleration: -60.443797
+[00:00:03.444] [LOG] Left Feedforward: 72.017004, Right Feedforward: 6.546382
+[00:00:03.444] [LOG] Left Feedback: 20.306811, Right Feedback: -3.690326
+[00:00:03.444] [LOG] Left Voltage: 92, Right Voltage: 2
+[00:00:03.444] [LOG] Voltages: 92 2
+[00:00:03.454] [LOG] IMU Heading: -1.203936
+[00:00:03.454] [LOG] Heading: -0.021013
+[00:00:03.454] [LOG] Left Positions: 17.000000 17.000000 16.000000
+[00:00:03.454] [LOG] Right Positions: 3.000000 2.000000 3.000000
+[00:00:03.454] [LOG] Left: 50.561970, Right: 38.222056
+[00:00:03.454] [LOG] DeltaLeft: 0.359974, DeltaRight: 0.057596
+[00:00:03.454] [LOG] Forward displacement: 0.208785
+[00:00:03.454] [LOG] Delta theta: -0.021013
+[00:00:03.454] [LOG] DeltaX: 0.021268, DeltaY: 0.207695
+[00:00:03.454] [LOG] Pose: -24.949797 20.585694 1.458245
+[00:00:03.454] [LOG] Goal: -26.964408 16.290968 1.394194
+[00:00:03.454] [LOG] Ramsete Output: 24.423655 -1.811943
+[00:00:03.454] [LOG] MP Output: 38.205838 -1.691479
+[00:00:03.454] [LOG] Left wheel velocities: 37.285390 35.997416
+[00:00:03.454] [LOG] Right wheel velocities: 11.561921 10.398966
+[00:00:03.454] [LOG] Velocity: 37.285390, Acceleration: 9.960609
+[00:00:03.454] [LOG] Velocity: 11.561921, Acceleration: -64.614969
+[00:00:03.454] [LOG] Left Feedforward: 74.466154, Right Feedforward: 4.505063
+[00:00:03.454] [LOG] Left Feedback: 11.591764, Right Feedback: 10.466594
+[00:00:03.454] [LOG] Left Voltage: 86, Right Voltage: 14
+[00:00:03.454] [LOG] Voltages: 86 14
+[00:00:03.464] [LOG] IMU Heading: -1.088704
+[00:00:03.464] [LOG] Heading: -0.019001
+[00:00:03.464] [LOG] Left Positions: 18.000000 17.000000 19.000000
+[00:00:03.464] [LOG] Right Positions: 2.000000 2.000000 3.000000
+[00:00:03.464] [LOG] Left: 50.950742, Right: 38.272453
+[00:00:03.464] [LOG] DeltaLeft: 0.388772, DeltaRight: 0.050396
+[00:00:03.464] [LOG] Forward displacement: 0.219584
+[00:00:03.464] [LOG] Delta theta: -0.019001
+[00:00:03.464] [LOG] DeltaX: 0.026734, DeltaY: 0.217947
+[00:00:03.464] [LOG] Pose: -24.923063 20.803642 1.439243
+[00:00:03.464] [LOG] Goal: -26.894225 16.665118 1.377706
+[00:00:03.464] [LOG] Ramsete Output: 24.359223 -1.859758
+[00:00:03.464] [LOG] MP Output: 37.915567 -1.738493
+[00:00:03.464] [LOG] Left wheel velocities: 37.560364 37.997416
+[00:00:03.464] [LOG] Right wheel velocities: 11.158082 8.398966
+[00:00:03.464] [LOG] Velocity: 37.560364, Acceleration: 4.344610
+[00:00:03.464] [LOG] Velocity: 11.158082, Acceleration: -62.398909
+[00:00:03.464] [LOG] Left Feedforward: 73.290056, Right Feedforward: 4.422780
+[00:00:03.464] [LOG] Left Feedback: -3.933467, Right Feedback: 24.832045
+[00:00:03.464] [LOG] Left Voltage: 69, Right Voltage: 29
+[00:00:03.464] [LOG] Voltages: 69 29
+[00:00:03.474] [LOG] IMU Heading: -1.078233
+[00:00:03.474] [LOG] Heading: -0.018819
+[00:00:03.474] [LOG] Left Positions: 18.000000 18.000000 16.000000
+[00:00:03.474] [LOG] Right Positions: 3.000000 4.000000 4.000000
+[00:00:03.474] [LOG] Left: 51.325115, Right: 38.351647
+[00:00:03.474] [LOG] DeltaLeft: 0.374373, DeltaRight: 0.079194
+[00:00:03.474] [LOG] Forward displacement: 0.226784
+[00:00:03.474] [LOG] Delta theta: -0.018819
+[00:00:03.474] [LOG] DeltaX: 0.031862, DeltaY: 0.224531
+[00:00:03.474] [LOG] Pose: -24.891201 21.028173 1.420425
+[00:00:03.474] [LOG] Goal: -26.818138 17.035056 1.359066
+[00:00:03.474] [LOG] Ramsete Output: 24.235188 -1.922086
+[00:00:03.474] [LOG] MP Output: 37.621849 -1.792645
+[00:00:03.474] [LOG] Left wheel velocities: 37.878754 37.437312
+[00:00:03.474] [LOG] Right wheel velocities: 10.591621 7.919431
+[00:00:03.474] [LOG] Velocity: 37.878754, Acceleration: 9.067425
+[00:00:03.474] [LOG] Velocity: 10.591621, Acceleration: -67.810959
+[00:00:03.474] [LOG] Left Feedforward: 75.295923, Right Feedforward: 1.751211
+[00:00:03.474] [LOG] Left Feedback: 3.972977, Right Feedback: 24.049706
+[00:00:03.474] [LOG] Left Voltage: 79, Right Voltage: 25
+[00:00:03.474] [LOG] Voltages: 79 25
+[00:00:03.484] [LOG] IMU Heading: -1.192290
+[00:00:03.484] [LOG] Heading: -0.020809
+[00:00:03.484] [LOG] Left Positions: 15.000000 15.000000 18.000000
+[00:00:03.484] [LOG] Right Positions: 6.000000 6.000000 6.000000
+[00:00:03.484] [LOG] Left: 51.670691, Right: 38.481238
+[00:00:03.484] [LOG] DeltaLeft: 0.345575, DeltaRight: 0.129591
+[00:00:03.484] [LOG] Forward displacement: 0.237583
+[00:00:03.484] [LOG] Delta theta: -0.020809
+[00:00:03.484] [LOG] DeltaX: 0.038033, DeltaY: 0.234515
+[00:00:03.484] [LOG] Pose: -24.853169 21.262687 1.399615
+[00:00:03.484] [LOG] Goal: -26.736081 17.400680 1.341657
+[00:00:03.484] [LOG] Ramsete Output: 24.094087 -1.968170
+[00:00:03.484] [LOG] MP Output: 37.311797 -1.841014
+[00:00:03.484] [LOG] Left wheel velocities: 38.064769 35.437312
+[00:00:03.484] [LOG] Right wheel velocities: 10.123405 9.919431
+[00:00:03.484] [LOG] Velocity: 38.064769, Acceleration: 3.328563
+[00:00:03.484] [LOG] Velocity: 10.123405, Acceleration: -65.339025
+[00:00:03.484] [LOG] Left Feedforward: 73.918392, Right Feedforward: 1.626592
+[00:00:03.484] [LOG] Left Feedback: 23.647111, Right Feedback: 1.835762
+[00:00:03.484] [LOG] Left Voltage: 97, Right Voltage: 3
+[00:00:03.484] [LOG] Voltages: 97 3
+[00:00:03.494] [LOG] IMU Heading: -1.317123
+[00:00:03.494] [LOG] Heading: -0.022988
+[00:00:03.494] [LOG] Left Positions: 16.000000 16.000000 18.000000
+[00:00:03.494] [LOG] Right Positions: 6.000000 6.000000 7.000000
+[00:00:03.494] [LOG] Left: 52.030665, Right: 38.618028
+[00:00:03.494] [LOG] DeltaLeft: 0.359974, DeltaRight: 0.136790
+[00:00:03.494] [LOG] Forward displacement: 0.248382
+[00:00:03.494] [LOG] Delta theta: -0.022988
+[00:00:03.494] [LOG] DeltaX: 0.045120, DeltaY: 0.244244
+[00:00:03.494] [LOG] Pose: -24.808048 21.506931 1.376627
+[00:00:03.494] [LOG] Goal: -26.648049 17.761641 1.323799
+[00:00:03.494] [LOG] Ramsete Output: 23.916339 -2.010151
+[00:00:03.494] [LOG] MP Output: 37.008902 -1.890882
+[00:00:03.494] [LOG] Left wheel velocities: 38.185017 35.997416
+[00:00:03.494] [LOG] Right wheel velocities: 9.647662 11.919431
+[00:00:03.494] [LOG] Velocity: 38.185017, Acceleration: 5.108165
+[00:00:03.494] [LOG] Velocity: 9.647662, Acceleration: -65.687087
+[00:00:03.494] [LOG] Left Feedforward: 74.674731, Right Feedforward: 0.642048
+[00:00:03.494] [LOG] Left Feedback: 19.688409, Right Feedback: -20.445926
+[00:00:03.494] [LOG] Left Voltage: 94, Right Voltage: -19
+[00:00:03.494] [LOG] Voltages: 94 -19
+[00:00:03.504] [LOG] IMU Heading: -1.309955
+[00:00:03.504] [LOG] Heading: -0.022863
+[00:00:03.504] [LOG] Left Positions: 18.000000 19.000000 18.000000
+[00:00:03.504] [LOG] Right Positions: 4.000000 4.000000 4.000000
+[00:00:03.504] [LOG] Left: 52.426636, Right: 38.704421
+[00:00:03.504] [LOG] DeltaLeft: 0.395972, DeltaRight: 0.086394
+[00:00:03.504] [LOG] Forward displacement: 0.241183
+[00:00:03.504] [LOG] Delta theta: -0.022863
+[00:00:03.504] [LOG] DeltaX: 0.049238, DeltaY: 0.236098
+[00:00:03.504] [LOG] Pose: -24.758811 21.743029 1.353764
+[00:00:03.504] [LOG] Goal: -26.553935 18.118030 1.303630
+[00:00:03.504] [LOG] Ramsete Output: 23.722171 -2.067587
+[00:00:03.504] [LOG] MP Output: 36.700665 -1.948495
+[00:00:03.504] [LOG] Left wheel velocities: 38.398547 37.997416
+[00:00:03.504] [LOG] Right wheel velocities: 9.045795 9.919431
+[00:00:03.504] [LOG] Velocity: 38.398547, Acceleration: 10.071753
+[00:00:03.504] [LOG] Velocity: 9.045795, Acceleration: -71.719122
+[00:00:03.504] [LOG] Left Feedforward: 76.558837, Right Feedforward: -2.281017
+[00:00:03.504] [LOG] Left Feedback: 3.610178, Right Feedback: -7.862732
+[00:00:03.504] [LOG] Left Voltage: 80, Right Voltage: -10
+[00:00:03.504] [LOG] Voltages: 80 -10
+[00:00:03.514] [LOG] IMU Heading: -1.210603
+[00:00:03.514] [LOG] Heading: -0.021129
+[00:00:03.514] [LOG] Left Positions: 19.000000 18.000000 19.000000
+[00:00:03.514] [LOG] Right Positions: 1.000000 0.000000 0.000000
+[00:00:03.514] [LOG] Left: 52.829807, Right: 38.711621
+[00:00:03.514] [LOG] DeltaLeft: 0.403171, DeltaRight: 0.007199
+[00:00:03.514] [LOG] Forward displacement: 0.205185
+[00:00:03.514] [LOG] Delta theta: -0.021129
+[00:00:03.514] [LOG] DeltaX: 0.046296, DeltaY: 0.199890
+[00:00:03.514] [LOG] Pose: -24.712514 21.942919 1.332635
+[00:00:03.514] [LOG] Goal: -26.453740 18.469518 1.284806
+[00:00:03.514] [LOG] Ramsete Output: 23.673935 -2.119152
+[00:00:03.514] [LOG] MP Output: 36.379633 -2.000119
+[00:00:03.514] [LOG] Left wheel velocities: 38.716334 39.997416
+[00:00:03.514] [LOG] Right wheel velocities: 8.631535 7.919431
+[00:00:03.514] [LOG] Velocity: 38.716334, Acceleration: 4.541048
+[00:00:03.514] [LOG] Velocity: 8.631535, Acceleration: -68.747424
+[00:00:03.514] [LOG] Left Feedforward: 75.487533, Right Feedforward: -2.155887
+[00:00:03.514] [LOG] Left Feedback: -11.529735, Right Feedback: 6.408932
+[00:00:03.514] [LOG] Left Voltage: 63, Right Voltage: 4
+[00:00:03.514] [LOG] Voltages: 63 4
+[00:00:03.524] [LOG] IMU Heading: -1.201102
+[00:00:03.524] [LOG] Heading: -0.020963
+[00:00:03.524] [LOG] Left Positions: 18.000000 18.000000 18.000000
+[00:00:03.524] [LOG] Right Positions: 1.000000 1.000000 2.000000
+[00:00:03.524] [LOG] Left: 53.218580, Right: 38.740419
+[00:00:03.524] [LOG] DeltaLeft: 0.388772, DeltaRight: 0.028798
+[00:00:03.524] [LOG] Forward displacement: 0.208785
+[00:00:03.524] [LOG] Delta theta: -0.020963
+[00:00:03.524] [LOG] DeltaX: 0.051379, DeltaY: 0.202361
+[00:00:03.524] [LOG] Pose: -24.661136 22.145280 1.311672
+[00:00:03.524] [LOG] Goal: -26.347475 18.815788 1.263554
+[00:00:03.524] [LOG] Ramsete Output: 23.570721 -2.187332
+[00:00:03.524] [LOG] MP Output: 36.045294 -2.059569
+[00:00:03.524] [LOG] Left wheel velocities: 39.097084 38.877209
+[00:00:03.524] [LOG] Right wheel velocities: 8.044358 5.919431
+[00:00:03.524] [LOG] Velocity: 39.097084, Acceleration: 8.765579
+[00:00:03.524] [LOG] Velocity: 8.044358, Acceleration: -75.633471
+[00:00:03.524] [LOG] Left Feedforward: 77.459279, Right Feedforward: -5.307979
+[00:00:03.524] [LOG] Left Feedback: 1.978875, Right Feedback: 19.124337
+[00:00:03.524] [LOG] Left Voltage: 79, Right Voltage: 13
+[00:00:03.524] [LOG] Voltages: 79 13
+[00:00:03.534] [LOG] IMU Heading: -1.317762
+[00:00:03.534] [LOG] Heading: -0.022999
+[00:00:03.534] [LOG] Left Positions: 16.000000 16.000000 17.000000
+[00:00:03.534] [LOG] Right Positions: 2.000000 3.000000 3.000000
+[00:00:03.534] [LOG] Left: 53.571354, Right: 38.798015
+[00:00:03.534] [LOG] DeltaLeft: 0.352775, DeltaRight: 0.057596
+[00:00:03.534] [LOG] Forward displacement: 0.205185
+[00:00:03.534] [LOG] Delta theta: -0.022999
+[00:00:03.534] [LOG] DeltaX: 0.054852, DeltaY: 0.197713
+[00:00:03.534] [LOG] Pose: -24.606284 22.342993 1.288673
+[00:00:03.534] [LOG] Goal: -26.235160 19.156546 1.243727
+[00:00:03.534] [LOG] Ramsete Output: 23.516409 -2.238203
+[00:00:03.534] [LOG] MP Output: 35.717048 -2.113817
+[00:00:03.534] [LOG] Left wheel velocities: 39.403872 36.877209
+[00:00:03.534] [LOG] Right wheel velocities: 7.628947 5.759587
+[00:00:03.534] [LOG] Velocity: 39.403872, Acceleration: 5.682634
+[00:00:03.534] [LOG] Velocity: 7.628947, Acceleration: -71.331746
+[00:00:03.534] [LOG] Left Feedforward: 77.101953, Right Feedforward: -4.785972
+[00:00:03.534] [LOG] Left Feedback: 22.739962, Right Feedback: 16.824241
+[00:00:03.534] [LOG] Left Voltage: 99, Right Voltage: 12
+[00:00:03.534] [LOG] Voltages: 99 12
+[00:00:03.544] [LOG] IMU Heading: -1.469329
+[00:00:03.544] [LOG] Heading: -0.025645
+[00:00:03.544] [LOG] Left Positions: 16.000000 16.000000 17.000000
+[00:00:03.544] [LOG] Right Positions: 5.000000 5.000000 4.000000
+[00:00:03.544] [LOG] Left: 53.924129, Right: 38.898808
+[00:00:03.544] [LOG] DeltaLeft: 0.352775, DeltaRight: 0.100793
+[00:00:03.544] [LOG] Forward displacement: 0.226784
+[00:00:03.544] [LOG] Delta theta: -0.025645
+[00:00:03.544] [LOG] DeltaX: 0.065922, DeltaY: 0.216985
+[00:00:03.544] [LOG] Pose: -24.540363 22.559978 1.263028
+[00:00:03.544] [LOG] Goal: -26.116732 19.491770 1.221347
+[00:00:03.544] [LOG] Ramsete Output: 23.341539 -2.297381
+[00:00:03.544] [LOG] MP Output: 35.374123 -2.176455
+[00:00:03.544] [LOG] Left wheel velocities: 39.649063 35.277468
+[00:00:03.544] [LOG] Right wheel velocities: 7.034014 7.759587
+[00:00:03.544] [LOG] Velocity: 39.649063, Acceleration: 10.169862
+[00:00:03.544] [LOG] Velocity: 7.034014, Acceleration: -78.754902
+[00:00:03.544] [LOG] Left Feedforward: 78.901726, Right Feedforward: -8.113545
+[00:00:03.544] [LOG] Left Feedback: 39.344363, Right Feedback: -6.530154
+[00:00:03.544] [LOG] Left Voltage: 118, Right Voltage: -14
+[00:00:03.544] [LOG] Voltages: 118 -14
+[00:00:03.554] [LOG] IMU Heading: -1.513055
+[00:00:03.554] [LOG] Heading: -0.026408
+[00:00:03.554] [LOG] Left Positions: 21.000000 20.000000 18.000000
+[00:00:03.554] [LOG] Right Positions: 5.000000 4.000000 3.000000
+[00:00:03.554] [LOG] Left: 54.348898, Right: 38.985201
+[00:00:03.554] [LOG] DeltaLeft: 0.424770, DeltaRight: 0.086394
+[00:00:03.554] [LOG] Forward displacement: 0.255582
+[00:00:03.554] [LOG] Delta theta: -0.026408
+[00:00:03.554] [LOG] DeltaX: 0.080631, DeltaY: 0.242522
+[00:00:03.554] [LOG] Pose: -24.459732 22.802499 1.236620
+[00:00:03.554] [LOG] Goal: -25.992265 19.821044 1.198356
+[00:00:03.554] [LOG] Ramsete Output: 23.050871 -2.356700
+[00:00:03.554] [LOG] MP Output: 35.015321 -2.240288
+[00:00:03.554] [LOG] Left wheel velocities: 39.779456 37.277468
+[00:00:03.554] [LOG] Right wheel velocities: 6.322286 8.639380
+[00:00:03.554] [LOG] Velocity: 39.779456, Acceleration: 9.430609
+[00:00:03.554] [LOG] Velocity: 6.322286, Acceleration: -81.191077
+[00:00:03.554] [LOG] Left Feedforward: 78.921176, Right Feedforward: -10.161094
+[00:00:03.554] [LOG] Left Feedback: 22.517894, Right Feedback: -20.853844
+[00:00:03.554] [LOG] Left Voltage: 101, Right Voltage: -31
+[00:00:03.554] [LOG] Voltages: 101 -31
+[00:00:03.564] [LOG] IMU Heading: -1.443257
+[00:00:03.564] [LOG] Heading: -0.025190
+[00:00:03.564] [LOG] Left Positions: 9.000000 18.000000 18.000000
+[00:00:03.564] [LOG] Right Positions: 1.000000 1.000000 1.000000
+[00:00:03.564] [LOG] Left: 54.672875, Right: 39.006800
+[00:00:03.564] [LOG] DeltaLeft: 0.323977, DeltaRight: 0.021598
+[00:00:03.564] [LOG] Forward displacement: 0.172788
+[00:00:03.564] [LOG] Delta theta: -0.025190
+[00:00:03.564] [LOG] DeltaX: 0.058722, DeltaY: 0.162498
+[00:00:03.564] [LOG] Pose: -24.401009 22.964998 1.211431
+[00:00:03.564] [LOG] Goal: -25.861830 20.144034 1.176910
+[00:00:03.564] [LOG] Ramsete Output: 23.089543 -2.407369
+[00:00:03.564] [LOG] MP Output: 34.651408 -2.297853
+[00:00:03.564] [LOG] Left wheel velocities: 40.177795 35.277468
+[00:00:03.564] [LOG] Right wheel velocities: 6.001290 6.639380
+[00:00:03.564] [LOG] Velocity: 40.177795, Acceleration: 4.469996
+[00:00:03.564] [LOG] Velocity: 6.001290, Acceleration: -77.252606
+[00:00:03.564] [LOG] Left Feedforward: 78.169920, Right Feedforward: -9.573396
+[00:00:03.564] [LOG] Left Feedback: 44.102950, Right Feedback: -5.742811
+[00:00:03.564] [LOG] Left Voltage: 122, Right Voltage: -15
+[00:00:03.564] [LOG] Voltages: 122 -15
+[00:00:03.574] [LOG] IMU Heading: -1.366819
+[00:00:03.574] [LOG] Heading: -0.023855
+[00:00:03.574] [LOG] Left Positions: 19.000000 18.000000 17.000000
+[00:00:03.574] [LOG] Right Positions: -1.000000 -2.000000 -1.000000
+[00:00:03.574] [LOG] Left: 55.061647, Right: 38.978002
+[00:00:03.574] [LOG] DeltaLeft: 0.388772, DeltaRight: -0.028798
+[00:00:03.574] [LOG] Forward displacement: 0.179987
+[00:00:03.574] [LOG] Delta theta: -0.023855
+[00:00:03.574] [LOG] DeltaX: 0.065302, DeltaY: 0.167719
+[00:00:03.574] [LOG] Pose: -24.335708 23.132716 1.187575
+[00:00:03.574] [LOG] Goal: -25.725448 20.460556 1.152705
+[00:00:03.574] [LOG] Ramsete Output: 23.067780 -2.482945
+[00:00:03.574] [LOG] MP Output: 34.282042 -2.365567
+[00:00:03.574] [LOG] Left wheel velocities: 40.692491 37.277468
+[00:00:03.574] [LOG] Right wheel velocities: 5.443068 4.639380
+[00:00:03.574] [LOG] Velocity: 40.692491, Acceleration: 11.128719
+[00:00:03.574] [LOG] Velocity: 5.443068, Acceleration: -85.001797
+[00:00:03.574] [LOG] Left Feedforward: 81.119724, Right Feedforward: -12.930863
+[00:00:03.574] [LOG] Left Feedback: 30.735211, Right Feedback: 7.233196
+[00:00:03.574] [LOG] Left Voltage: 111, Right Voltage: -5
+[00:00:03.574] [LOG] Voltages: 111 -5
+[00:00:03.584] [LOG] IMU Heading: -1.404713
+[00:00:03.584] [LOG] Heading: -0.024517
+[00:00:03.584] [LOG] Left Positions: 18.000000 18.000000 19.000000
+[00:00:03.584] [LOG] Right Positions: -1.000000 0.000000 1.000000
+[00:00:03.584] [LOG] Left: 55.457619, Right: 38.978002
+[00:00:03.584] [LOG] DeltaLeft: 0.395972, DeltaRight: 0.000000
+[00:00:03.584] [LOG] Forward displacement: 0.197986
+[00:00:03.584] [LOG] Delta theta: -0.024517
+[00:00:03.584] [LOG] DeltaX: 0.076272, DeltaY: 0.182699
+[00:00:03.584] [LOG] Pose: -24.259435 23.315415 1.163058
+[00:00:03.584] [LOG] Goal: -25.583170 20.770365 1.130124
+[00:00:03.584] [LOG] Ramsete Output: 23.003737 -2.542023
+[00:00:03.584] [LOG] MP Output: 33.895097 -2.425883
+[00:00:03.584] [LOG] Left wheel velocities: 41.047809 39.277468
+[00:00:03.584] [LOG] Right wheel velocities: 4.959665 2.639380
+[00:00:03.584] [LOG] Velocity: 41.047809, Acceleration: 4.119925
+[00:00:03.584] [LOG] Velocity: 4.959665, Acceleration: -81.508942
+[00:00:03.584] [LOG] Left Feedforward: 79.674424, Right Feedforward: -12.777302
+[00:00:03.584] [LOG] Left Feedback: 15.933071, Right Feedback: 20.882570
+[00:00:03.584] [LOG] Left Voltage: 95, Right Voltage: 8
+[00:00:03.584] [LOG] Voltages: 95 8
+[00:00:03.594] [LOG] IMU Heading: -1.523202
+[00:00:03.594] [LOG] Heading: -0.026585
+[00:00:03.594] [LOG] Left Positions: 18.000000 18.000000 16.000000
+[00:00:03.594] [LOG] Right Positions: 1.000000 1.000000 0.000000
+[00:00:03.594] [LOG] Left: 55.831992, Right: 38.992401
+[00:00:03.594] [LOG] DeltaLeft: 0.374373, DeltaRight: 0.014399
+[00:00:03.594] [LOG] Forward displacement: 0.194386
+[00:00:03.594] [LOG] Delta theta: -0.026585
+[00:00:03.594] [LOG] DeltaX: 0.079443, DeltaY: 0.177405
+[00:00:03.594] [LOG] Pose: -24.179992 23.492820 1.136473
+[00:00:03.594] [LOG] Goal: -25.435093 21.073148 1.104632
+[00:00:03.594] [LOG] Ramsete Output: 22.907236 -2.614610
+[00:00:03.594] [LOG] MP Output: 33.488483 -2.496284
+[00:00:03.594] [LOG] Left wheel velocities: 41.466547 37.437312
+[00:00:03.594] [LOG] Right wheel velocities: 4.347925 1.439897
+[00:00:03.594] [LOG] Velocity: 41.466547, Acceleration: 9.311077
+[00:00:03.594] [LOG] Velocity: 4.347925, Acceleration: -90.633938
+[00:00:03.594] [LOG] Left Feedforward: 82.006434, Right Feedforward: -16.646519
+[00:00:03.594] [LOG] Left Feedback: 36.263108, Right Feedback: 26.172259
+[00:00:03.594] [LOG] Left Voltage: 118, Right Voltage: 9
+[00:00:03.594] [LOG] Voltages: 118 9
+[00:00:03.604] [LOG] IMU Heading: -1.646343
+[00:00:03.604] [LOG] Heading: -0.028734
+[00:00:03.604] [LOG] Left Positions: 18.000000 16.000000 18.000000
+[00:00:03.604] [LOG] Right Positions: 2.000000 3.000000 2.000000
+[00:00:03.604] [LOG] Left: 56.206365, Right: 39.042797
+[00:00:03.604] [LOG] DeltaLeft: 0.374373, DeltaRight: 0.050396
+[00:00:03.604] [LOG] Forward displacement: 0.212385
+[00:00:03.604] [LOG] Delta theta: -0.028734
+[00:00:03.604] [LOG] DeltaX: 0.092126, DeltaY: 0.191356
+[00:00:03.604] [LOG] Pose: -24.087866 23.684176 1.107739
+[00:00:03.604] [LOG] Goal: -25.281413 21.368435 1.078430
+[00:00:03.604] [LOG] Ramsete Output: 22.748197 -2.685396
+[00:00:03.604] [LOG] MP Output: 33.091263 -2.570613
+[00:00:03.604] [LOG] Left wheel velocities: 41.809971 37.437312
+[00:00:03.604] [LOG] Right wheel velocities: 3.686423 3.439897
+[00:00:03.604] [LOG] Velocity: 41.809971, Acceleration: 13.039257
+[00:00:03.604] [LOG] Velocity: 3.686423, Acceleration: -92.483208
+[00:00:03.604] [LOG] Left Feedforward: 83.760223, Right Feedforward: -18.425080
+[00:00:03.604] [LOG] Left Feedback: 39.353925, Right Feedback: 2.218734
+[00:00:03.604] [LOG] Left Voltage: 123, Right Voltage: -16
+[00:00:03.604] [LOG] Voltages: 123 -16
+[00:00:03.614] [LOG] IMU Heading: -1.659534
+[00:00:03.614] [LOG] Heading: -0.028964
+[00:00:03.614] [LOG] Left Positions: 18.000000 18.000000 20.000000
+[00:00:03.614] [LOG] Right Positions: 2.000000 2.000000 2.000000
+[00:00:03.614] [LOG] Left: 56.609536, Right: 39.085994
+[00:00:03.614] [LOG] DeltaLeft: 0.403171, DeltaRight: 0.043197
+[00:00:03.614] [LOG] Forward displacement: 0.223184
+[00:00:03.614] [LOG] Delta theta: -0.028964
+[00:00:03.614] [LOG] DeltaX: 0.102571, DeltaY: 0.198209
+[00:00:03.614] [LOG] Pose: -23.985295 23.882385 1.078775
+[00:00:03.614] [LOG] Goal: -25.122099 21.656225 1.053971
+[00:00:03.614] [LOG] Ramsete Output: 22.560366 -2.738479
+[00:00:03.614] [LOG] MP Output: 32.666289 -2.636184
+[00:00:03.614] [LOG] Left wheel velocities: 41.998940 39.437312
+[00:00:03.614] [LOG] Right wheel velocities: 3.121791 4.319690
+[00:00:03.614] [LOG] Velocity: 41.998940, Acceleration: 4.046983
+[00:00:03.614] [LOG] Velocity: 3.121791, Acceleration: -89.041744
+[00:00:03.614] [LOG] Left Feedforward: 81.412134, Right Feedforward: -18.437209
+[00:00:03.614] [LOG] Left Feedback: 23.054647, Right Feedback: -10.781086
+[00:00:03.614] [LOG] Left Voltage: 104, Right Voltage: -29
+[00:00:03.614] [LOG] Voltages: 104 -29
+[00:00:03.624] [LOG] IMU Heading: -1.614458
+[00:00:03.624] [LOG] Heading: -0.028178
+[00:00:03.624] [LOG] Left Positions: 18.000000 19.000000 17.000000
+[00:00:03.624] [LOG] Right Positions: 1.000000 0.000000 0.000000
+[00:00:03.624] [LOG] Left: 56.998308, Right: 39.093194
+[00:00:03.624] [LOG] DeltaLeft: 0.388772, DeltaRight: 0.007199
+[00:00:03.624] [LOG] Forward displacement: 0.197986
+[00:00:03.624] [LOG] Delta theta: -0.028178
+[00:00:03.624] [LOG] DeltaX: 0.095976, DeltaY: 0.173160
+[00:00:03.624] [LOG] Pose: -23.889319 24.055545 1.050597
+[00:00:03.624] [LOG] Goal: -24.957464 21.935905 1.026335
+[00:00:03.624] [LOG] Ramsete Output: 22.423584 -2.819218
+[00:00:03.624] [LOG] MP Output: 32.222826 -2.713738
+[00:00:03.624] [LOG] Left wheel velocities: 42.435268 38.877209
+[00:00:03.624] [LOG] Right wheel velocities: 2.411900 2.319690
+[00:00:03.624] [LOG] Velocity: 42.435268, Acceleration: 10.704093
+[00:00:03.624] [LOG] Velocity: 2.411900, Acceleration: -99.396814
+[00:00:03.624] [LOG] Left Feedforward: 84.216473, Right Feedforward: -22.857029
+[00:00:03.624] [LOG] Left Feedback: 32.022529, Right Feedback: 0.829891
+[00:00:03.624] [LOG] Left Voltage: 116, Right Voltage: -22
+[00:00:03.624] [LOG] Voltages: 116 -22
+[00:00:03.634] [LOG] IMU Heading: -1.591992
+[00:00:03.634] [LOG] Heading: -0.027786
+[00:00:03.634] [LOG] Left Positions: 19.000000 18.000000 19.000000
+[00:00:03.634] [LOG] Right Positions: -1.000000 -2.000000 0.000000
+[00:00:03.634] [LOG] Left: 57.401479, Right: 39.071595
+[00:00:03.634] [LOG] DeltaLeft: 0.403171, DeltaRight: -0.021598
+[00:00:03.634] [LOG] Forward displacement: 0.190786
+[00:00:03.634] [LOG] Delta theta: -0.027786
+[00:00:03.634] [LOG] DeltaX: 0.097118, DeltaY: 0.164210
+[00:00:03.634] [LOG] Pose: -23.792200 24.219755 1.022812
+[00:00:03.634] [LOG] Goal: -24.787698 22.207154 0.997899
+[00:00:03.634] [LOG] Ramsete Output: 22.308347 -2.908102
+[00:00:03.634] [LOG] MP Output: 31.770192 -2.794669
+[00:00:03.634] [LOG] Left wheel velocities: 42.950960 40.317106
+[00:00:03.634] [LOG] Right wheel velocities: 1.665735 0.319690
+[00:00:03.634] [LOG] Velocity: 42.950960, Acceleration: 12.183480
+[00:00:03.634] [LOG] Velocity: 1.665735, Acceleration: -102.710292
+[00:00:03.634] [LOG] Left Feedforward: 85.614319, Right Feedforward: -25.231479
+[00:00:03.634] [LOG] Left Feedback: 23.704684, Right Feedback: 12.114402
+[00:00:03.634] [LOG] Left Voltage: 109, Right Voltage: -13
+[00:00:03.634] [LOG] Voltages: 109 -13
+[00:00:03.644] [LOG] IMU Heading: -1.632976
+[00:00:03.644] [LOG] Heading: -0.028501
+[00:00:03.644] [LOG] Left Positions: 18.000000 20.000000 17.000000
+[00:00:03.644] [LOG] Right Positions: -1.000000 0.000000 0.000000
+[00:00:03.644] [LOG] Left: 57.797451, Right: 39.064396
+[00:00:03.644] [LOG] DeltaLeft: 0.395972, DeltaRight: -0.007199
+[00:00:03.644] [LOG] Forward displacement: 0.194386
+[00:00:03.644] [LOG] Delta theta: -0.028501
+[00:00:03.644] [LOG] DeltaX: 0.103619, DeltaY: 0.164458
+[00:00:03.644] [LOG] Pose: -23.688581 24.384213 0.994311
+[00:00:03.644] [LOG] Goal: -24.612959 22.469730 0.971320
+[00:00:03.644] [LOG] Ramsete Output: 22.205242 -2.977591
+[00:00:03.644] [LOG] MP Output: 31.307941 -2.867599
+[00:00:03.644] [LOG] Left wheel velocities: 43.341111 39.597157
+[00:00:03.644] [LOG] Right wheel velocities: 1.069373 -0.719948
+[00:00:03.644] [LOG] Velocity: 43.341111, Acceleration: 5.543131
+[00:00:03.644] [LOG] Velocity: 1.069373, Acceleration: -97.993358
+[00:00:03.644] [LOG] Left Feedforward: 84.343994, Right Feedforward: -24.919667
+[00:00:03.644] [LOG] Left Feedback: 33.695579, Right Feedback: 16.103893
+[00:00:03.644] [LOG] Left Voltage: 118, Right Voltage: -8
+[00:00:03.644] [LOG] Voltages: 118 -8
+[00:00:03.654] [LOG] IMU Heading: -1.714741
+[00:00:03.654] [LOG] Heading: -0.029928
+[00:00:03.654] [LOG] Left Positions: 18.000000 17.000000 20.000000
+[00:00:03.654] [LOG] Right Positions: 0.000000 0.000000 0.000000
+[00:00:03.654] [LOG] Left: 58.193422, Right: 39.064396
+[00:00:03.654] [LOG] DeltaLeft: 0.395972, DeltaRight: 0.000000
+[00:00:03.654] [LOG] Forward displacement: 0.197986
+[00:00:03.654] [LOG] Delta theta: -0.029928
+[00:00:03.654] [LOG] DeltaX: 0.110386, DeltaY: 0.164349
+[00:00:03.654] [LOG] Pose: -23.578195 24.548561 0.964383
+[00:00:03.654] [LOG] Goal: -24.433449 22.723345 0.941243
+[00:00:03.654] [LOG] Ramsete Output: 22.012447 -3.066835
+[00:00:03.654] [LOG] MP Output: 30.789119 -2.951323
+[00:00:03.654] [LOG] Left wheel velocities: 43.781795 39.597157
+[00:00:03.654] [LOG] Right wheel velocities: 0.243098 0.000000
+[00:00:03.654] [LOG] Velocity: 43.781795, Acceleration: 7.547309
+[00:00:03.654] [LOG] Velocity: 0.243098, Acceleration: -111.311543
+[00:00:03.654] [LOG] Left Feedforward: 85.760514, Right Feedforward: -30.443731
+[00:00:03.654] [LOG] Left Feedback: 37.661743, Right Feedback: 2.187883
+[00:00:03.654] [LOG] Left Voltage: 123, Right Voltage: -28
+[00:00:03.654] [LOG] Voltages: 123 -28
+[00:00:03.664] [LOG] IMU Heading: -1.756924
+[00:00:03.664] [LOG] Heading: -0.030664
+[00:00:03.664] [LOG] Left Positions: 18.000000 19.000000 18.000000
+[00:00:03.664] [LOG] Right Positions: 0.000000 0.000000 0.000000
+[00:00:03.664] [LOG] Left: 58.589394, Right: 39.064396
+[00:00:03.664] [LOG] DeltaLeft: 0.395972, DeltaRight: 0.000000
+[00:00:03.664] [LOG] Forward displacement: 0.197986
+[00:00:03.664] [LOG] Delta theta: -0.030664
+[00:00:03.664] [LOG] DeltaX: 0.115313, DeltaY: 0.160929
+[00:00:03.664] [LOG] Pose: -23.462882 24.709490 0.933719
+[00:00:03.664] [LOG] Goal: -24.249813 22.967168 0.910236
+[00:00:03.664] [LOG] Ramsete Output: 21.840739 -3.165897
+[00:00:03.664] [LOG] MP Output: 30.306046 -3.043827
+[00:00:03.664] [LOG] Left wheel velocities: 44.313261 39.597157
+[00:00:03.664] [LOG] Right wheel velocities: -0.631784 0.000000
+[00:00:03.664] [LOG] Velocity: 44.313261, Acceleration: 17.355248
+[00:00:03.664] [LOG] Velocity: -0.631784, Acceleration: -113.969863
+[00:00:03.664] [LOG] Left Feedforward: 89.686108, Right Feedforward: -37.859759
+[00:00:03.664] [LOG] Left Feedback: 42.444934, Right Feedback: -5.686056
+[00:00:03.664] [LOG] Left Voltage: 132, Right Voltage: -43
+[00:00:03.664] [LOG] Voltages: 127 -43
+[00:00:03.674] [LOG] IMU Heading: -1.777243
+[00:00:03.674] [LOG] Heading: -0.031019
+[00:00:03.674] [LOG] Left Positions: 21.000000 19.000000 18.000000
+[00:00:03.674] [LOG] Right Positions: -1.000000 0.000000 -1.000000
+[00:00:03.674] [LOG] Left: 59.006964, Right: 39.049997
+[00:00:03.674] [LOG] DeltaLeft: 0.417570, DeltaRight: -0.014399
+[00:00:03.674] [LOG] Forward displacement: 0.201586
+[00:00:03.674] [LOG] Delta theta: -0.031019
+[00:00:03.674] [LOG] DeltaX: 0.122407, DeltaY: 0.160156
+[00:00:03.674] [LOG] Pose: -23.340475 24.869647 0.902700
+[00:00:03.674] [LOG] Goal: -24.061689 23.201739 0.881194
+[00:00:03.674] [LOG] Ramsete Output: 21.641413 -3.239585
+[00:00:03.674] [LOG] MP Output: 29.762065 -3.122284
+[00:00:03.674] [LOG] Left wheel velocities: 44.636996 41.597157
+[00:00:03.674] [LOG] Right wheel velocities: -1.354171 -1.439897
+[00:00:03.674] [LOG] Velocity: 44.636996, Acceleration: 1.293103
+[00:00:03.674] [LOG] Velocity: -1.354171, Acceleration: -110.089293
+[00:00:03.674] [LOG] Left Feedforward: 85.466373, Right Feedforward: -38.032003
+[00:00:03.674] [LOG] Left Feedback: 27.358547, Right Feedback: 0.771535
+[00:00:03.674] [LOG] Left Voltage: 112, Right Voltage: -37
+[00:00:03.674] [LOG] Voltages: 112 -37
+[00:00:03.684] [LOG] IMU Heading: -1.808803
+[00:00:03.684] [LOG] Heading: -0.031570
+[00:00:03.684] [LOG] Left Positions: 19.000000 20.000000 20.000000
+[00:00:03.684] [LOG] Right Positions: -1.000000 -2.000000 -2.000000
+[00:00:03.684] [LOG] Left: 59.431734, Right: 39.013999
+[00:00:03.684] [LOG] DeltaLeft: 0.424770, DeltaRight: -0.035997
+[00:00:03.684] [LOG] Forward displacement: 0.194386
+[00:00:03.684] [LOG] Delta theta: -0.031570
+[00:00:03.684] [LOG] DeltaX: 0.122809, DeltaY: 0.150668
+[00:00:03.684] [LOG] Pose: -23.217666 25.020314 0.871131
+[00:00:03.684] [LOG] Goal: -23.870052 23.425921 0.848253
+[00:00:03.684] [LOG] Ramsete Output: 21.425392 -3.346901
+[00:00:03.684] [LOG] MP Output: 29.205161 -3.218593
+[00:00:03.684] [LOG] Left wheel velocities: 45.182732 42.476951
+[00:00:03.684] [LOG] Right wheel velocities: -2.331948 -3.439897
+[00:00:03.684] [LOG] Velocity: 45.182732, Acceleration: 12.672977
+[00:00:03.684] [LOG] Velocity: -2.331948, Acceleration: -124.053880
+[00:00:03.684] [LOG] Left Feedforward: 89.889947, Right Feedforward: -44.030268
+[00:00:03.684] [LOG] Left Feedback: 24.352033, Right Feedback: 9.971535
+[00:00:03.684] [LOG] Left Voltage: 114, Right Voltage: -34
+[00:00:03.684] [LOG] Voltages: 114 -34
+[00:00:03.694] [LOG] IMU Heading: -1.846543
+[00:00:03.694] [LOG] Heading: -0.032228
+[00:00:03.694] [LOG] Left Positions: 18.000000 19.000000 19.000000
+[00:00:03.694] [LOG] Right Positions: -3.000000 -2.000000 -2.000000
+[00:00:03.694] [LOG] Left: 59.834905, Right: 38.963603
+[00:00:03.694] [LOG] DeltaLeft: 0.403171, DeltaRight: -0.050396
+[00:00:03.694] [LOG] Forward displacement: 0.176387
+[00:00:03.694] [LOG] Delta theta: -0.032228
+[00:00:03.694] [LOG] DeltaX: 0.115741, DeltaY: 0.133093
+[00:00:03.694] [LOG] Pose: -23.101925 25.153407 0.838903
+[00:00:03.694] [LOG] Goal: -23.675098 23.639638 0.817344
+[00:00:03.694] [LOG] Ramsete Output: 21.263511 -3.422362
+[00:00:03.694] [LOG] MP Output: 28.564789 -3.296586
+[00:00:03.694] [LOG] Left wheel velocities: 45.556500 40.476951
+[00:00:03.694] [LOG] Right wheel velocities: -3.029477 -5.039638
+[00:00:03.694] [LOG] Velocity: 45.556500, Acceleration: -8.675696
+[00:00:03.694] [LOG] Velocity: -3.029477, Acceleration: -119.398620
+[00:00:03.694] [LOG] Left Feedforward: 84.176817, Right Feedforward: -43.924119
+[00:00:03.694] [LOG] Left Feedback: 45.715946, Right Feedback: 18.091449
+[00:00:03.694] [LOG] Left Voltage: 129, Right Voltage: -25
+[00:00:03.694] [LOG] Voltages: 127 -25
+[00:00:03.704] [LOG] IMU Heading: -1.904473
+[00:00:03.704] [LOG] Heading: -0.033239
+[00:00:03.704] [LOG] Left Positions: 21.000000 19.000000 19.000000
+[00:00:03.704] [LOG] Right Positions: -1.000000 -2.000000 -1.000000
+[00:00:03.704] [LOG] Left: 60.259674, Right: 38.934805
+[00:00:03.704] [LOG] DeltaLeft: 0.424770, DeltaRight: -0.028798
+[00:00:03.704] [LOG] Forward displacement: 0.197986
+[00:00:03.704] [LOG] Delta theta: -0.033239
+[00:00:03.704] [LOG] DeltaX: 0.134733, DeltaY: 0.145058
+[00:00:03.704] [LOG] Pose: -22.967192 25.298465 0.805663
+[00:00:03.704] [LOG] Goal: -23.477756 23.842074 0.782212
+[00:00:03.704] [LOG] Ramsete Output: 21.003959 -3.542991
+[00:00:03.704] [LOG] MP Output: 27.987624 -3.403354
+[00:00:03.704] [LOG] Left wheel velocities: 46.153208 42.476951
+[00:00:03.704] [LOG] Right wheel velocities: -4.145289 -3.039638
+[00:00:03.704] [LOG] Velocity: 46.153208, Acceleration: 18.070903
+[00:00:03.704] [LOG] Velocity: -4.145289, Acceleration: -133.503878
+[00:00:03.704] [LOG] Left Feedforward: 93.304705, Right Feedforward: -50.219948
+[00:00:03.704] [LOG] Left Feedback: 33.086312, Right Feedback: -9.950858
+[00:00:03.704] [LOG] Left Voltage: 126, Right Voltage: -60
+[00:00:03.704] [LOG] Voltages: 126 -60
+[00:00:03.714] [LOG] IMU Heading: -1.953514
+[00:00:03.714] [LOG] Heading: -0.034095
+[00:00:03.714] [LOG] Left Positions: 18.000000 19.000000 19.000000
+[00:00:03.714] [LOG] Right Positions: -2.000000 -2.000000 -2.000000
+[00:00:03.714] [LOG] Left: 60.662845, Right: 38.891608
+[00:00:03.714] [LOG] DeltaLeft: 0.403171, DeltaRight: -0.043197
+[00:00:03.714] [LOG] Forward displacement: 0.179987
+[00:00:03.714] [LOG] Delta theta: -0.034095
+[00:00:03.714] [LOG] DeltaX: 0.126854, DeltaY: 0.127673
+[00:00:03.714] [LOG] Executing action with 11 parameters
+[00:00:03.714] [LOG] Action: 0.000000
+[00:00:03.714] [LOG] Action: 0.000000
+[00:00:03.714] [LOG] Action: 0.000000
+[00:00:03.714] [LOG] Action: 0.000000
+[00:00:03.714] [LOG] Action: 0.000000
+[00:00:03.714] [LOG] Action: 0.000000
+[00:00:03.714] [LOG] Action: 0.000000
+[00:00:03.714] [LOG] Action: 0.000000
+[00:00:03.714] [LOG] Action: 0.000000
+[00:00:03.714] [LOG] Action: 0.000000
+[00:00:03.714] [LOG] Action: 0.000000
+[00:00:03.724] [LOG] IMU Heading: -1.999775
+[00:00:03.724] [LOG] Heading: -0.034903
+[00:00:03.724] [LOG] Left Positions: 20.000000 19.000000 20.000000
+[00:00:03.724] [LOG] Right Positions: -4.000000 -4.000000 -4.000000
+[00:00:03.724] [LOG] Left: 61.087615, Right: 38.805214
+[00:00:03.724] [LOG] DeltaLeft: 0.424770, DeltaRight: -0.086394
+[00:00:03.724] [LOG] Forward displacement: 0.169188
+[00:00:03.724] [LOG] Delta theta: -0.034903
+[00:00:03.724] [LOG] DeltaX: 0.123311, DeltaY: 0.115828
+[00:00:03.724] [LOG] Pose: -22.717027 25.541966 0.736665
+[00:00:03.724] [LOG] Goal: -23.277784 24.033692 0.746114
+[00:00:03.724] [LOG] Ramsete Output: 20.218885 -3.492276
+[00:00:03.724] [LOG] MP Output: 27.521882 -3.514274
+[00:00:03.724] [LOG] Left wheel velocities: 45.008141 42.476951
+[00:00:03.724] [LOG] Right wheel velocities: -4.570372 -6.319690
+[00:00:03.724] [LOG] Velocity: 45.008141, Acceleration: 32.160274
+[00:00:03.724] [LOG] Velocity: -4.570372, Acceleration: -125.308819
+[00:00:03.724] [LOG] Left Feedforward: 95.413144, Right Feedforward: -48.547834
+[00:00:03.724] [LOG] Left Feedback: 22.780715, Right Feedback: 15.743863
+[00:00:03.724] [LOG] Left Voltage: 118, Right Voltage: -32
+[00:00:03.724] [LOG] Voltages: 118 -32
+[00:00:03.734] [LOG] IMU Heading: -2.006538
+[00:00:03.734] [LOG] Heading: -0.035021
+[00:00:03.734] [LOG] Left Positions: 21.000000 21.000000 20.000000
+[00:00:03.734] [LOG] Right Positions: -5.000000 -5.000000 -5.000000
+[00:00:03.734] [LOG] Left: 61.533983, Right: 38.697222
+[00:00:03.734] [LOG] DeltaLeft: 0.446368, DeltaRight: -0.107992
+[00:00:03.734] [LOG] Forward displacement: 0.169188
+[00:00:03.734] [LOG] Delta theta: -0.035021
+[00:00:03.734] [LOG] DeltaX: 0.127284, DeltaY: 0.111447
+[00:00:03.734] [LOG] Pose: -22.589743 25.653412 0.701645
+[00:00:03.734] [LOG] Goal: -23.074303 24.215433 0.709054
+[00:00:03.734] [LOG] Ramsete Output: 20.392684 -3.584231
+[00:00:03.734] [LOG] MP Output: 27.164683 -3.595344
+[00:00:03.734] [LOG] Left wheel velocities: 45.834671 44.476951
+[00:00:03.734] [LOG] Right wheel velocities: -5.049303 -8.319690
+[00:00:03.734] [LOG] Velocity: 45.834671, Acceleration: 21.825796
+[00:00:03.734] [LOG] Velocity: -5.049303, Acceleration: -93.265526
+[00:00:03.734] [LOG] Left Feedforward: 93.841879, Right Feedforward: -39.820868
+[00:00:03.734] [LOG] Left Feedback: 12.219479, Right Feedback: 29.433484
+[00:00:03.734] [LOG] Left Voltage: 106, Right Voltage: -10
+[00:00:03.734] [LOG] Voltages: 106 -10
+[00:00:03.744] [LOG] IMU Heading: -2.012536
+[00:00:03.744] [LOG] Heading: -0.035125
+[00:00:03.744] [LOG] Left Positions: 17.000000 16.000000 18.000000
+[00:00:03.744] [LOG] Right Positions: -3.000000 -3.000000 -3.000000
+[00:00:03.744] [LOG] Left: 61.901156, Right: 38.632427
+[00:00:03.744] [LOG] DeltaLeft: 0.367174, DeltaRight: -0.064795
+[00:00:03.744] [LOG] Forward displacement: 0.151189
+[00:00:03.744] [LOG] Delta theta: -0.035125
+[00:00:03.744] [LOG] DeltaX: 0.117166, DeltaY: 0.095541
+[00:00:03.744] [LOG] Pose: -22.472577 25.748953 0.666519
+[00:00:03.744] [LOG] Goal: -22.866775 24.387836 0.674774
+[00:00:03.744] [LOG] Ramsete Output: 20.869838 -3.627761
+[00:00:03.744] [LOG] MP Output: 26.945958 -3.642594
+[00:00:03.744] [LOG] Left wheel velocities: 46.620811 42.476951
+[00:00:03.744] [LOG] Right wheel velocities: -4.881134 -6.479535
+[00:00:03.744] [LOG] Velocity: 46.620811, Acceleration: 11.667192
+[00:00:03.744] [LOG] Velocity: -4.881134, Acceleration: -55.412196
+[00:00:03.744] [LOG] Left Feedforward: 92.248657, Right Feedforward: -28.153757
+[00:00:03.744] [LOG] Left Feedback: 37.294739, Right Feedback: 14.385604
+[00:00:03.744] [LOG] Left Voltage: 129, Right Voltage: -13
+[00:00:03.744] [LOG] Voltages: 127 -13
+[00:00:03.754] [LOG] IMU Heading: -2.065413
+[00:00:03.754] [LOG] Heading: -0.036048
+[00:00:03.754] [LOG] Left Positions: 18.000000 19.000000 18.000000
+[00:00:03.754] [LOG] Right Positions: 0.000000 0.000000 0.000000
+[00:00:03.754] [LOG] Left: 62.297128, Right: 38.632427
+[00:00:03.754] [LOG] DeltaLeft: 0.395972, DeltaRight: 0.000000
+[00:00:03.754] [LOG] Forward displacement: 0.197986
+[00:00:03.754] [LOG] Delta theta: -0.036048
+[00:00:03.754] [LOG] DeltaX: 0.157785, DeltaY: 0.119574
+[00:00:03.754] [LOG] Pose: -22.314793 25.868528 0.630471
+[00:00:03.754] [LOG] Goal: -22.654302 24.551677 0.636748
+[00:00:03.754] [LOG] Ramsete Output: 21.288335 -3.668584
+[00:00:03.754] [LOG] MP Output: 26.873068 -3.672006
+[00:00:03.754] [LOG] Left wheel velocities: 47.329085 40.476951
+[00:00:03.754] [LOG] Right wheel velocities: -4.752414 -4.479535
+[00:00:03.754] [LOG] Velocity: 47.329085, Acceleration: 13.588697
+[00:00:03.754] [LOG] Velocity: -4.752414, Acceleration: -28.166785
+[00:00:03.754] [LOG] Left Feedforward: 94.135416, Right Feedforward: -19.742002
+[00:00:03.754] [LOG] Left Feedback: 61.669206, Right Feedback: -2.455916
+[00:00:03.754] [LOG] Left Voltage: 155, Right Voltage: -22
+[00:00:03.754] [LOG] Voltages: 127 -22
+[00:00:03.764] [LOG] IMU Heading: -2.078964
+[00:00:03.764] [LOG] Heading: -0.036285
+[00:00:03.764] [LOG] Left Positions: 20.000000 22.000000 19.000000
+[00:00:03.764] [LOG] Right Positions: 0.000000 0.000000 -1.000000
+[00:00:03.764] [LOG] Left: 62.736296, Right: 38.625227
+[00:00:03.764] [LOG] DeltaLeft: 0.439168, DeltaRight: -0.007199
+[00:00:03.764] [LOG] Forward displacement: 0.215984
+[00:00:03.764] [LOG] Delta theta: -0.036285
+[00:00:03.764] [LOG] DeltaX: 0.176733, DeltaY: 0.124136
+[00:00:03.764] [LOG] Pose: -22.138060 25.992663 0.594186
+[00:00:03.764] [LOG] Goal: -22.435962 24.707636 0.598740
+[00:00:03.764] [LOG] Ramsete Output: 21.763131 -3.674142
+[00:00:03.764] [LOG] MP Output: 26.893373 -3.667156
+[00:00:03.764] [LOG] Left wheel velocities: 47.843329 42.476951
+[00:00:03.764] [LOG] Right wheel velocities: -4.317068 -2.479535
+[00:00:03.764] [LOG] Velocity: 47.843329, Acceleration: -1.412094
+[00:00:03.764] [LOG] Velocity: -4.317068, Acceleration: 5.473075
+[00:00:03.764] [LOG] Left Feedforward: 90.586531, Right Feedforward: -8.844653
+[00:00:03.764] [LOG] Left Feedback: 48.297409, Right Feedback: -16.537797
+[00:00:03.764] [LOG] Left Voltage: 138, Right Voltage: -25
+[00:00:03.764] [LOG] Voltages: 127 -25
+[00:00:03.774] [LOG] IMU Heading: -2.053539
+[00:00:03.774] [LOG] Heading: -0.035841
+[00:00:03.774] [LOG] Left Positions: 24.000000 23.000000 22.000000
+[00:00:03.774] [LOG] Right Positions: -1.000000 -2.000000 -1.000000
+[00:00:03.774] [LOG] Left: 63.233061, Right: 38.596429
+[00:00:03.774] [LOG] DeltaLeft: 0.496764, DeltaRight: -0.028798
+[00:00:03.774] [LOG] Forward displacement: 0.233983
+[00:00:03.774] [LOG] Delta theta: -0.035841
+[00:00:03.774] [LOG] DeltaX: 0.196185, DeltaY: 0.127490
+[00:00:03.774] [LOG] Pose: -21.941874 26.120153 0.558345
+[00:00:03.774] [LOG] Goal: -22.211492 24.855870 0.564497
+[00:00:03.774] [LOG] Ramsete Output: 22.296640 -3.640262
+[00:00:03.774] [LOG] MP Output: 27.036251 -3.640286
+[00:00:03.774] [LOG] Left wheel velocities: 48.136347 44.476951
+[00:00:03.774] [LOG] Right wheel velocities: -3.543066 -2.879793
+[00:00:03.774] [LOG] Velocity: 48.136347, Acceleration: -4.785389
+[00:00:03.774] [LOG] Velocity: -3.543066, Acceleration: 33.361030
+[00:00:03.774] [LOG] Left Feedforward: 90.116625, Right Feedforward: 0.953636
+[00:00:03.774] [LOG] Left Feedback: 32.934566, Right Feedback: -5.969458
+[00:00:03.774] [LOG] Left Voltage: 123, Right Voltage: -5
+[00:00:03.774] [LOG] Voltages: 123 -5
+[00:00:03.784] [LOG] IMU Heading: -2.001473
+[00:00:03.784] [LOG] Heading: -0.034932
+[00:00:03.784] [LOG] Left Positions: 24.000000 23.000000 23.000000
+[00:00:03.784] [LOG] Right Positions: -2.000000 -1.000000 -2.000000
+[00:00:03.784] [LOG] Left: 63.737024, Right: 38.560432
+[00:00:03.784] [LOG] DeltaLeft: 0.503964, DeltaRight: -0.035997
+[00:00:03.784] [LOG] Forward displacement: 0.233983
+[00:00:03.784] [LOG] Delta theta: -0.034932
+[00:00:03.784] [LOG] DeltaX: 0.200573, DeltaY: 0.120469
+[00:00:03.784] [LOG] Pose: -21.741301 26.240622 0.523413
+[00:00:03.784] [LOG] Goal: -21.980052 24.996906 0.527473
+[00:00:03.784] [LOG] Ramsete Output: 23.002259 -3.598810
+[00:00:03.784] [LOG] MP Output: 27.314685 -3.586184
+[00:00:03.784] [LOG] Left wheel velocities: 48.547731 46.476951
+[00:00:03.784] [LOG] Right wheel velocities: -2.543213 -3.599742
+[00:00:03.784] [LOG] Velocity: 48.547731, Acceleration: -10.560176
+[00:00:03.784] [LOG] Velocity: -2.543213, Acceleration: 66.247128
+[00:00:03.784] [LOG] Left Feedforward: 89.145249, Right Feedforward: 12.669195
+[00:00:03.784] [LOG] Left Feedback: 18.637023, Right Feedback: 9.508761
+[00:00:03.784] [LOG] Left Voltage: 107, Right Voltage: 22
+[00:00:03.784] [LOG] Voltages: 107 22
+[00:00:03.794] [LOG] IMU Heading: -2.008389
+[00:00:03.794] [LOG] Heading: -0.035053
+[00:00:03.794] [LOG] Left Positions: 21.000000 19.000000 11.000000
+[00:00:03.794] [LOG] Right Positions: 0.000000 0.000000 0.000000
+[00:00:03.794] [LOG] Left: 64.104198, Right: 38.560432
+[00:00:03.794] [LOG] DeltaLeft: 0.367174, DeltaRight: 0.000000
+[00:00:03.794] [LOG] Forward displacement: 0.183587
+[00:00:03.794] [LOG] Delta theta: -0.035053
+[00:00:03.794] [LOG] DeltaX: 0.160583, DeltaY: 0.088958
+[00:00:03.794] [LOG] Pose: -21.580718 26.329581 0.488360
+[00:00:03.794] [LOG] Goal: -21.740692 25.131253 0.491407
+[00:00:03.794] [LOG] Ramsete Output: 24.131178 -3.529621
+[00:00:03.794] [LOG] MP Output: 27.724792 -3.510012
+[00:00:03.794] [LOG] Left wheel velocities: 49.185526 44.476951
+[00:00:03.794] [LOG] Right wheel velocities: -0.923170 -1.599742
+[00:00:03.794] [LOG] Velocity: 49.185526, Acceleration: -13.058348
+[00:00:03.794] [LOG] Velocity: -0.923170, Acceleration: 95.079712
+[00:00:03.794] [LOG] Left Feedforward: 89.575719, Right Feedforward: 24.316050
+[00:00:03.794] [LOG] Left Feedback: 42.377178, Right Feedback: 6.089148
+[00:00:03.794] [LOG] Left Voltage: 131, Right Voltage: 30
+[00:00:03.794] [LOG] Voltages: 127 30
+[00:00:03.804] [LOG] IMU Heading: -2.067021
+[00:00:03.804] [LOG] Heading: -0.036076
+[00:00:03.804] [LOG] Left Positions: 20.000000 17.000000 22.000000
+[00:00:03.804] [LOG] Right Positions: 2.000000 2.000000 3.000000
+[00:00:03.804] [LOG] Left: 64.528968, Right: 38.610828
+[00:00:03.804] [LOG] DeltaLeft: 0.424770, DeltaRight: 0.050396
+[00:00:03.804] [LOG] Forward displacement: 0.237583
+[00:00:03.804] [LOG] Delta theta: -0.036076
+[00:00:03.804] [LOG] DeltaX: 0.211775, DeltaY: 0.107660
+[00:00:03.804] [LOG] Pose: -21.368942 26.437241 0.452284
+[00:00:03.804] [LOG] Goal: -21.492522 25.259300 0.456550
+[00:00:03.804] [LOG] Ramsete Output: 25.095578 -3.424050
+[00:00:03.804] [LOG] MP Output: 28.212135 -3.408688
+[00:00:03.804] [LOG] Left wheel velocities: 49.400547 42.476951
+[00:00:03.804] [LOG] Right wheel velocities: 0.790608 0.400258
+[00:00:03.804] [LOG] Velocity: 49.400547, Acceleration: -23.188798
+[00:00:03.804] [LOG] Velocity: 0.790608, Acceleration: 120.657240
+[00:00:03.804] [LOG] Left Feedforward: 86.934373, Right Feedforward: 40.159797
+[00:00:03.804] [LOG] Left Feedback: 62.312368, Right Feedback: 3.513147
+[00:00:03.804] [LOG] Left Voltage: 149, Right Voltage: 43
+[00:00:03.804] [LOG] Voltages: 127 43
+[00:00:03.814] [LOG] IMU Heading: -2.106255
+[00:00:03.814] [LOG] Heading: -0.036761
+[00:00:03.814] [LOG] Left Positions: 19.000000 22.000000 18.000000
+[00:00:03.814] [LOG] Right Positions: 4.000000 5.000000 6.000000
+[00:00:03.814] [LOG] Left: 64.953737, Right: 38.718820
+[00:00:03.814] [LOG] DeltaLeft: 0.424770, DeltaRight: 0.107992
+[00:00:03.814] [LOG] Forward displacement: 0.266381
+[00:00:03.814] [LOG] Delta theta: -0.036761
+[00:00:03.814] [LOG] DeltaX: 0.241682, DeltaY: 0.111984
+[00:00:03.814] [LOG] Pose: -21.127260 26.549226 0.415522
+[00:00:03.814] [LOG] Goal: -21.235341 25.381059 0.423107
+[00:00:03.814] [LOG] Ramsete Output: 26.060395 -3.292981
+[00:00:03.814] [LOG] MP Output: 28.816773 -3.291504
+[00:00:03.814] [LOG] Left wheel velocities: 49.434998 42.476951
+[00:00:03.814] [LOG] Right wheel velocities: 2.685792 2.400258
+[00:00:03.814] [LOG] Velocity: 49.434998, Acceleration: -22.716995
+[00:00:03.814] [LOG] Velocity: 2.685792, Acceleration: 143.644788
+[00:00:03.814] [LOG] Left Feedforward: 87.139648, Right Feedforward: 50.562151
+[00:00:03.814] [LOG] Left Feedback: 62.622429, Right Feedback: 2.569799
+[00:00:03.814] [LOG] Left Voltage: 149, Right Voltage: 53
+[00:00:03.814] [LOG] Voltages: 127 53
+[00:00:03.824] [LOG] IMU Heading: -2.013536
+[00:00:03.824] [LOG] Heading: -0.035143
+[00:00:03.824] [LOG] Left Positions: 21.000000 20.000000 19.000000
+[00:00:03.824] [LOG] Right Positions: 8.000000 7.000000 9.000000
+[00:00:03.824] [LOG] Left: 65.385706, Right: 38.891608
+[00:00:03.824] [LOG] DeltaLeft: 0.431969, DeltaRight: 0.172788
+[00:00:03.824] [LOG] Forward displacement: 0.302378
+[00:00:03.824] [LOG] Delta theta: -0.035143
+[00:00:03.824] [LOG] DeltaX: 0.278735, DeltaY: 0.117175
+[00:00:03.824] [LOG] Pose: -20.848525 26.666400 0.380380
+[00:00:03.824] [LOG] Goal: -20.968179 25.496913 0.391236
+[00:00:03.824] [LOG] Ramsete Output: 26.850612 -3.135093
+[00:00:03.824] [LOG] MP Output: 29.385680 -3.146039
+[00:00:03.824] [LOG] Left wheel velocities: 49.104476 43.196899
+[00:00:03.824] [LOG] Right wheel velocities: 4.596749 4.400258
+[00:00:03.824] [LOG] Velocity: 49.104476, Acceleration: -46.365009
+[00:00:03.824] [LOG] Velocity: 4.596749, Acceleration: 160.146360
+[00:00:03.824] [LOG] Left Feedforward: 79.433777, Right Feedforward: 59.047893
+[00:00:03.824] [LOG] Left Feedback: 53.168189, Right Feedback: 1.768412
+[00:00:03.824] [LOG] Left Voltage: 132, Right Voltage: 60
+[00:00:03.824] [LOG] Voltages: 127 60
+[00:00:03.834] [LOG] IMU Heading: -1.844888
+[00:00:03.834] [LOG] Heading: -0.032199
+[00:00:03.834] [LOG] Left Positions: 21.000000 21.000000 22.000000
+[00:00:03.834] [LOG] Right Positions: 9.000000 9.000000 4.000000
+[00:00:03.834] [LOG] Left: 65.846473, Right: 39.049997
+[00:00:03.834] [LOG] DeltaLeft: 0.460767, DeltaRight: 0.158389
+[00:00:03.834] [LOG] Forward displacement: 0.309578
+[00:00:03.834] [LOG] Delta theta: -0.032199
+[00:00:03.834] [LOG] DeltaX: 0.289251, DeltaY: 0.110291
+[00:00:03.834] [LOG] Pose: -20.559274 26.776691 0.348180
+[00:00:03.834] [LOG] Goal: -20.692474 25.606263 0.361045
+[00:00:03.834] [LOG] Ramsete Output: 27.267033 -2.928358
+[00:00:03.834] [LOG] MP Output: 29.568172 -2.944493
+[00:00:03.834] [LOG] Left wheel velocities: 48.053427 45.196899
+[00:00:03.834] [LOG] Right wheel velocities: 6.480639 6.400258
+[00:00:03.834] [LOG] Velocity: 48.053427, Acceleration: -124.814315
+[00:00:03.834] [LOG] Velocity: 6.480639, Acceleration: 161.312716
+[00:00:03.834] [LOG] Left Feedforward: 53.954545, Right Feedforward: 62.882998
+[00:00:03.834] [LOG] Left Feedback: 25.708748, Right Feedback: 0.723430
+[00:00:03.834] [LOG] Left Voltage: 79, Right Voltage: 63
+[00:00:03.834] [LOG] Voltages: 79 63
+[00:00:03.844] [LOG] IMU Heading: -1.686720
+[00:00:03.844] [LOG] Heading: -0.029439
+[00:00:03.844] [LOG] Left Positions: 20.000000 21.000000 21.000000
+[00:00:03.844] [LOG] Right Positions: 11.000000 6.000000 7.000000
+[00:00:03.844] [LOG] Left: 66.292841, Right: 39.222784
+[00:00:03.844] [LOG] DeltaLeft: 0.446368, DeltaRight: 0.172788
+[00:00:03.844] [LOG] Forward displacement: 0.309578
+[00:00:03.844] [LOG] Delta theta: -0.029439
+[00:00:03.844] [LOG] DeltaX: 0.292514, DeltaY: 0.101326
+[00:00:03.844] [LOG] Pose: -20.266760 26.878017 0.318741
+[00:00:03.844] [LOG] Goal: -20.413706 25.707374 0.332601
+[00:00:03.844] [LOG] Ramsete Output: 27.471447 -2.702090
+[00:00:03.844] [LOG] MP Output: 29.542924 -2.718086
+[00:00:03.844] [LOG] Left wheel velocities: 46.651719 44.636796
+[00:00:03.844] [LOG] Right wheel velocities: 8.291174 8.400258
+[00:00:03.844] [LOG] Velocity: 46.651719, Acceleration: -163.235069
+[00:00:03.844] [LOG] Velocity: 8.291174, Acceleration: 158.185464
+[00:00:03.844] [LOG] Left Feedforward: 39.835160, Right Feedforward: 65.294311
+[00:00:03.844] [LOG] Left Feedback: 18.134311, Right Feedback: -0.981759
+[00:00:03.844] [LOG] Left Voltage: 57, Right Voltage: 64
+[00:00:03.844] [LOG] Voltages: 57 64
+[00:00:03.854] [LOG] IMU Heading: -1.613297
+[00:00:03.854] [LOG] Heading: -0.028157
+[00:00:03.854] [LOG] Left Positions: 15.000000 16.000000 19.000000
+[00:00:03.854] [LOG] Right Positions: 9.000000 9.000000 8.000000
+[00:00:03.854] [LOG] Left: 66.652815, Right: 39.409971
+[00:00:03.854] [LOG] DeltaLeft: 0.359974, DeltaRight: 0.187187
+[00:00:03.854] [LOG] Forward displacement: 0.273580
+[00:00:03.854] [LOG] Delta theta: -0.028157
+[00:00:03.854] [LOG] DeltaX: 0.260973, DeltaY: 0.082064
+[00:00:03.854] [LOG] Pose: -20.005787 26.960080 0.290584
+[00:00:03.854] [LOG] Goal: -20.133469 25.800433 0.305933
+[00:00:03.854] [LOG] Ramsete Output: 27.983506 -2.494306
+[00:00:03.854] [LOG] MP Output: 29.723951 -2.511747
+[00:00:03.854] [LOG] Left wheel velocities: 45.688861 42.636796
+[00:00:03.854] [LOG] Right wheel velocities: 10.278150 10.400258
+[00:00:03.854] [LOG] Velocity: 45.688861, Acceleration: -128.363735
+[00:00:03.854] [LOG] Velocity: 10.278150, Acceleration: 164.569184
+[00:00:03.854] [LOG] Left Feedforward: 48.515272, Right Feedforward: 70.885333
+[00:00:03.854] [LOG] Left Feedback: 27.468590, Right Feedback: -1.098975
+[00:00:03.854] [LOG] Left Voltage: 75, Right Voltage: 69
+[00:00:03.854] [LOG] Voltages: 75 69
+[00:00:03.864] [LOG] IMU Heading: -1.570105
+[00:00:03.864] [LOG] Heading: -0.027404
+[00:00:03.864] [LOG] Left Positions: 13.000000 14.000000 17.000000
+[00:00:03.864] [LOG] Right Positions: 7.000000 7.000000 9.000000
+[00:00:03.864] [LOG] Left: 66.969592, Right: 39.575559
+[00:00:03.864] [LOG] DeltaLeft: 0.316777, DeltaRight: 0.165588
+[00:00:03.864] [LOG] Forward displacement: 0.241183
+[00:00:03.864] [LOG] Delta theta: -0.027404
+[00:00:03.864] [LOG] DeltaX: 0.231989, DeltaY: 0.065927
+[00:00:03.864] [LOG] Pose: -19.773797 27.026007 0.263181
+[00:00:03.864] [LOG] Goal: -19.848229 25.887228 0.283228
+[00:00:03.864] [LOG] Ramsete Output: 28.760454 -2.313042
+[00:00:03.864] [LOG] MP Output: 30.096623 -2.343531
+[00:00:03.864] [LOG] Left wheel velocities: 45.179142 40.636796
+[00:00:03.864] [LOG] Right wheel velocities: 12.341765 12.400258
+[00:00:03.864] [LOG] Velocity: 45.179142, Acceleration: -82.137326
+[00:00:03.864] [LOG] Velocity: 12.341765, Acceleration: 156.671734
+[00:00:03.864] [LOG] Left Feedforward: 61.440216, Right Feedforward: 72.333786
+[00:00:03.864] [LOG] Left Feedback: 40.881121, Right Feedback: -0.526441
+[00:00:03.864] [LOG] Left Voltage: 102, Right Voltage: 71
+[00:00:03.864] [LOG] Voltages: 102 71
+[00:00:03.874] [LOG] IMU Heading: -1.490955
+[00:00:03.874] [LOG] Heading: -0.026022
+[00:00:03.874] [LOG] Left Positions: 15.000000 18.000000 17.000000
+[00:00:03.874] [LOG] Right Positions: 7.000000 8.000000 6.000000
+[00:00:03.874] [LOG] Left: 67.329567, Right: 39.726748
+[00:00:03.874] [LOG] DeltaLeft: 0.359974, DeltaRight: 0.151189
+[00:00:03.874] [LOG] Forward displacement: 0.255582
+[00:00:03.874] [LOG] Delta theta: -0.026022
+[00:00:03.874] [LOG] DeltaX: 0.247619, DeltaY: 0.063272
+[00:00:03.874] [LOG] Pose: -19.526179 27.089280 0.237159
+[00:00:03.874] [LOG] Goal: -19.556498 25.968586 0.259917
+[00:00:03.874] [LOG] Ramsete Output: 29.438376 -2.122499
+[00:00:03.874] [LOG] MP Output: 30.437470 -2.157054
+[00:00:03.874] [LOG] Left wheel velocities: 44.504536 38.636796
+[00:00:03.874] [LOG] Right wheel velocities: 14.372216 14.400258
+[00:00:03.874] [LOG] Velocity: 44.504536, Acceleration: -98.282999
+[00:00:03.874] [LOG] Velocity: 14.372216, Acceleration: 166.452281
+[00:00:03.874] [LOG] Left Feedforward: 55.348491, Right Feedforward: 79.024284
+[00:00:03.874] [LOG] Left Feedback: 52.809660, Right Feedback: -0.252380
+[00:00:03.874] [LOG] Left Voltage: 108, Right Voltage: 78
+[00:00:03.874] [LOG] Voltages: 108 78
+[00:00:03.884] [LOG] IMU Heading: -1.321284
+[00:00:03.884] [LOG] Heading: -0.023061
+[00:00:03.884] [LOG] Left Positions: 20.000000 20.000000 19.000000
+[00:00:03.884] [LOG] Right Positions: 7.000000 3.000000 8.000000
+[00:00:03.884] [LOG] Left: 67.754336, Right: 39.856339
+[00:00:03.884] [LOG] DeltaLeft: 0.424770, DeltaRight: 0.129591
+[00:00:03.884] [LOG] Forward displacement: 0.277180
+[00:00:03.884] [LOG] Delta theta: -0.023061
+[00:00:03.884] [LOG] DeltaX: 0.270149, DeltaY: 0.062009
+[00:00:03.884] [LOG] Pose: -19.256030 27.151289 0.214098
+[00:00:03.884] [LOG] Goal: -19.259909 26.044411 0.238302
+[00:00:03.884] [LOG] Ramsete Output: 30.168571 -1.954011
+[00:00:03.884] [LOG] MP Output: 30.939607 -1.988048
+[00:00:03.884] [LOG] Left wheel velocities: 44.038745 40.636796
+[00:00:03.884] [LOG] Right wheel velocities: 16.298397 12.959070
+[00:00:03.884] [LOG] Velocity: 44.038745, Acceleration: -69.751484
+[00:00:03.884] [LOG] Velocity: 16.298397, Acceleration: 170.178998
+[00:00:03.884] [LOG] Left Feedforward: 63.046233, Right Feedforward: 83.705733
+[00:00:03.884] [LOG] Left Feedback: 30.617546, Right Feedback: 30.053941
+[00:00:03.884] [LOG] Left Voltage: 93, Right Voltage: 113
+[00:00:03.884] [LOG] Voltages: 93 113
+[00:00:03.894] [LOG] IMU Heading: -1.113750
+[00:00:03.894] [LOG] Heading: -0.019439
+[00:00:03.894] [LOG] Left Positions: 24.000000 24.000000 22.000000
+[00:00:03.894] [LOG] Right Positions: 8.000000 9.000000 9.000000
+[00:00:03.894] [LOG] Left: 68.258300, Right: 40.043525
+[00:00:03.894] [LOG] DeltaLeft: 0.503964, DeltaRight: 0.187187
+[00:00:03.894] [LOG] Forward displacement: 0.345575
+[00:00:03.894] [LOG] Delta theta: -0.019439
+[00:00:03.894] [LOG] DeltaX: 0.338378, DeltaY: 0.070136
+[00:00:03.894] [LOG] Pose: -18.917653 27.221425 0.194659
+[00:00:03.894] [LOG] Goal: -18.956292 26.115589 0.220070
+[00:00:03.894] [LOG] Ramsete Output: 30.661033 -1.809376
+[00:00:03.894] [LOG] MP Output: 31.433015 -1.842557
+[00:00:03.894] [LOG] Left wheel velocities: 43.504547 42.636796
+[00:00:03.894] [LOG] Right wheel velocities: 17.817518 14.959070
+[00:00:03.894] [LOG] Velocity: 43.504547, Acceleration: -53.933555
+[00:00:03.894] [LOG] Velocity: 17.817518, Acceleration: 152.615042
+[00:00:03.894] [LOG] Left Feedforward: 66.803345, Right Feedforward: 81.246922
+[00:00:03.894] [LOG] Left Feedback: 7.809763, Right Feedback: 25.726039
+[00:00:03.894] [LOG] Left Voltage: 74, Right Voltage: 106
+[00:00:03.894] [LOG] Voltages: 74 106
+[00:00:03.904] [LOG] IMU Heading: -0.980921
+[00:00:03.904] [LOG] Heading: -0.017120
+[00:00:03.904] [LOG] Left Positions: 24.000000 22.000000 21.000000
+[00:00:03.904] [LOG] Right Positions: 11.000000 10.000000 10.000000
+[00:00:03.904] [LOG] Left: 68.740665, Right: 40.266709
+[00:00:03.904] [LOG] DeltaLeft: 0.482365, DeltaRight: 0.223184
+[00:00:03.904] [LOG] Forward displacement: 0.352775
+[00:00:03.904] [LOG] Delta theta: -0.017120
+[00:00:03.904] [LOG] DeltaX: 0.346679, DeltaY: 0.065272
+[00:00:03.904] [LOG] Pose: -18.570974 27.286697 0.177539
+[00:00:03.904] [LOG] Goal: -18.646631 26.182166 0.201502
+[00:00:03.904] [LOG] Ramsete Output: 31.221245 -1.667094
+[00:00:03.904] [LOG] MP Output: 32.002133 -1.691365
+[00:00:03.904] [LOG] Left wheel velocities: 43.054795 44.636796
+[00:00:03.904] [LOG] Right wheel velocities: 19.387696 16.959070
+[00:00:03.904] [LOG] Velocity: 43.054795, Acceleration: -50.408568
+[00:00:03.904] [LOG] Velocity: 19.387696, Acceleration: 164.232169
+[00:00:03.904] [LOG] Left Feedforward: 67.028800, Right Feedforward: 87.636888
+[00:00:03.904] [LOG] Left Feedback: -14.238010, Right Feedback: 21.857638
+[00:00:03.904] [LOG] Left Voltage: 52, Right Voltage: 109
+[00:00:03.904] [LOG] Voltages: 52 109
+[00:00:03.914] [LOG] IMU Heading: -0.869027
+[00:00:03.914] [LOG] Heading: -0.015167
+[00:00:03.914] [LOG] Left Positions: 20.000000 15.000000 20.000000
+[00:00:03.914] [LOG] Right Positions: 11.000000 11.000000 12.000000
+[00:00:03.914] [LOG] Left: 69.136637, Right: 40.511492
+[00:00:03.914] [LOG] DeltaLeft: 0.395972, DeltaRight: 0.244782
+[00:00:03.914] [LOG] Forward displacement: 0.320377
+[00:00:03.914] [LOG] Delta theta: -0.015167
+[00:00:03.914] [LOG] DeltaX: 0.315758, DeltaY: 0.054187
+[00:00:03.914] [LOG] Pose: -18.255215 27.340884 0.162371
+[00:00:03.914] [LOG] Goal: -18.329912 26.244628 0.185908
+[00:00:03.914] [LOG] Ramsete Output: 31.983369 -1.549525
+[00:00:03.914] [LOG] MP Output: 32.680825 -1.568987
+[00:00:03.914] [LOG] Left wheel velocities: 42.982379 42.636796
+[00:00:03.914] [LOG] Right wheel velocities: 20.984358 18.959070
+[00:00:03.914] [LOG] Velocity: 42.982379, Acceleration: -18.998431
+[00:00:03.914] [LOG] Velocity: 20.984358, Acceleration: 154.736851
+[00:00:03.914] [LOG] Left Feedforward: 76.317872, Right Feedforward: 87.742117
+[00:00:03.914] [LOG] Left Feedback: 3.110253, Right Feedback: 18.227593
+[00:00:03.914] [LOG] Left Voltage: 79, Right Voltage: 105
+[00:00:03.914] [LOG] Voltages: 79 105
+[00:00:03.924] [LOG] IMU Heading: -0.799844
+[00:00:03.924] [LOG] Heading: -0.013960
+[00:00:03.924] [LOG] Left Positions: 14.000000 15.000000 16.000000
+[00:00:03.924] [LOG] Right Positions: 13.000000 13.000000 12.000000
+[00:00:03.924] [LOG] Left: 69.460614, Right: 40.785072
+[00:00:03.924] [LOG] DeltaLeft: 0.323977, DeltaRight: 0.273580
+[00:00:03.924] [LOG] Forward displacement: 0.298779
+[00:00:03.924] [LOG] Delta theta: -0.013960
+[00:00:03.924] [LOG] DeltaX: 0.295176, DeltaY: 0.046241
+[00:00:03.924] [LOG] Pose: -17.960039 27.387125 0.148412
+[00:00:03.924] [LOG] Goal: -18.005020 26.303401 0.171470
+[00:00:03.924] [LOG] Ramsete Output: 32.826364 -1.438344
+[00:00:03.924] [LOG] MP Output: 33.375234 -1.453294
+[00:00:03.924] [LOG] Left wheel velocities: 43.036173 40.636796
+[00:00:03.924] [LOG] Right wheel velocities: 22.616554 20.959070
+[00:00:03.924] [LOG] Velocity: 43.036173, Acceleration: -12.682035
+[00:00:03.924] [LOG] Velocity: 22.616554, Acceleration: 151.563882
+[00:00:03.924] [LOG] Left Feedforward: 78.312310, Right Feedforward: 89.809789
+[00:00:03.924] [LOG] Left Feedback: 21.594398, Right Feedback: 14.917358
+[00:00:03.924] [LOG] Left Voltage: 99, Right Voltage: 104
+[00:00:03.924] [LOG] Voltages: 99 104
+[00:00:03.934] [LOG] IMU Heading: -0.726647
+[00:00:03.934] [LOG] Heading: -0.012682
+[00:00:03.934] [LOG] Left Positions: 8.000000 9.000000 18.000000
+[00:00:03.934] [LOG] Right Positions: 13.000000 13.000000 7.000000
+[00:00:03.934] [LOG] Left: 69.712595, Right: 41.022655
+[00:00:03.934] [LOG] DeltaLeft: 0.251982, DeltaRight: 0.237583
+[00:00:03.934] [LOG] Forward displacement: 0.244782
+[00:00:03.934] [LOG] Delta theta: -0.012682
+[00:00:03.934] [LOG] DeltaX: 0.242315, DeltaY: 0.034659
+[00:00:03.934] [LOG] Pose: -17.717725 27.421784 0.135729
+[00:00:03.934] [LOG] Goal: -17.672366 26.358596 0.156843
+[00:00:03.934] [LOG] Ramsete Output: 33.851886 -1.325262
+[00:00:03.934] [LOG] MP Output: 34.110147 -1.332132
+[00:00:03.934] [LOG] Left wheel velocities: 43.259006 38.636796
+[00:00:03.934] [LOG] Right wheel velocities: 24.444767 22.959070
+[00:00:03.934] [LOG] Velocity: 43.259006, Acceleration: -12.513241
+[00:00:03.934] [LOG] Velocity: 24.444767, Acceleration: 159.495795
+[00:00:03.934] [LOG] Left Feedforward: 78.775189, Right Feedforward: 95.571557
+[00:00:03.934] [LOG] Left Feedback: 41.599894, Right Feedback: 13.371274
+[00:00:03.934] [LOG] Left Voltage: 120, Right Voltage: 108
+[00:00:03.934] [LOG] Voltages: 120 108
+[00:00:03.944] [LOG] IMU Heading: -0.594746
+[00:00:03.944] [LOG] Heading: -0.010380
+[00:00:03.944] [LOG] Left Positions: 23.000000 21.000000 19.000000
+[00:00:03.944] [LOG] Right Positions: 14.000000 19.000000 13.000000
+[00:00:03.944] [LOG] Left: 70.166163, Right: 41.353831
+[00:00:03.944] [LOG] DeltaLeft: 0.453567, DeltaRight: 0.331176
+[00:00:03.944] [LOG] Forward displacement: 0.392372
+[00:00:03.944] [LOG] Delta theta: -0.010380
+[00:00:03.944] [LOG] DeltaX: 0.389032, DeltaY: 0.051074
+[00:00:03.944] [LOG] Pose: -17.328693 27.472858 0.125349
+[00:00:03.944] [LOG] Goal: -17.331521 26.410469 0.144615
+[00:00:03.944] [LOG] Ramsete Output: 34.538794 -1.232548
+[00:00:03.944] [LOG] MP Output: 34.878981 -1.232533
+[00:00:03.944] [LOG] Left wheel velocities: 43.287806 40.636796
+[00:00:03.944] [LOG] Right wheel velocities: 25.789783 24.959070
+[00:00:03.944] [LOG] Velocity: 43.287806, Acceleration: 6.185441
+[00:00:03.944] [LOG] Velocity: 25.789783, Acceleration: 147.581445
+[00:00:03.944] [LOG] Left Feedforward: 84.438073, Right Feedforward: 94.485532
+[00:00:03.944] [LOG] Left Feedback: 23.859092, Right Feedback: 7.476418
+[00:00:03.944] [LOG] Left Voltage: 108, Right Voltage: 101
+[00:00:03.944] [LOG] Voltages: 108 101
+[00:00:03.954] [LOG] IMU Heading: -0.447364
+[00:00:03.954] [LOG] Heading: -0.007808
+[00:00:03.954] [LOG] Left Positions: 21.000000 20.000000 18.000000
+[00:00:03.954] [LOG] Right Positions: 14.000000 14.000000 13.000000
+[00:00:03.954] [LOG] Left: 70.590932, Right: 41.649010
+[00:00:03.954] [LOG] DeltaLeft: 0.424770, DeltaRight: 0.295179
+[00:00:03.954] [LOG] Forward displacement: 0.359974
+[00:00:03.954] [LOG] Delta theta: -0.007808
+[00:00:03.954] [LOG] DeltaX: 0.357322, DeltaY: 0.043610
+[00:00:03.954] [LOG] Pose: -16.971371 27.516468 0.117541
+[00:00:03.954] [LOG] Goal: -16.982263 26.459222 0.132258
+[00:00:03.954] [LOG] Ramsete Output: 35.304818 -1.139985
+[00:00:03.954] [LOG] MP Output: 35.630501 -1.126910
+[00:00:03.954] [LOG] Left wheel velocities: 43.396785 42.476951
+[00:00:03.954] [LOG] Right wheel velocities: 27.212850 26.959070
+[00:00:03.954] [LOG] Velocity: 43.396785, Acceleration: 0.176877
+[00:00:03.954] [LOG] Velocity: 27.212850, Acceleration: 150.127124
+[00:00:03.954] [LOG] Left Feedforward: 82.837115, Right Feedforward: 97.881910
+[00:00:03.954] [LOG] Left Feedback: 8.278509, Right Feedback: 2.284023
+[00:00:03.954] [LOG] Left Voltage: 91, Right Voltage: 100
+[00:00:03.954] [LOG] Voltages: 91 100
+[00:00:03.964] [LOG] IMU Heading: -0.352631
+[00:00:03.964] [LOG] Heading: -0.006155
+[00:00:03.964] [LOG] Left Positions: 20.000000 20.000000 18.000000
+[00:00:03.964] [LOG] Right Positions: 13.000000 13.000000 13.000000
+[00:00:03.964] [LOG] Left: 71.008502, Right: 41.929790
+[00:00:03.964] [LOG] DeltaLeft: 0.417570, DeltaRight: 0.280780
+[00:00:03.964] [LOG] Forward displacement: 0.349175
+[00:00:03.964] [LOG] Delta theta: -0.006155
+[00:00:03.964] [LOG] DeltaX: 0.346889, DeltaY: 0.039881
+[00:00:03.964] [LOG] Pose: -16.624482 27.556349 0.111386
+[00:00:03.964] [LOG] Goal: -16.625088 26.504957 0.121950
+[00:00:03.964] [LOG] Ramsete Output: 36.234012 -1.067797
+[00:00:03.964] [LOG] MP Output: 36.511672 -1.043360
+[00:00:03.964] [LOG] Left wheel velocities: 43.813565 41.757002
+[00:00:03.964] [LOG] Right wheel velocities: 28.654459 28.077984
+[00:00:03.964] [LOG] Velocity: 43.813565, Acceleration: 28.810764
+[00:00:03.964] [LOG] Velocity: 28.654459, Acceleration: 147.423330
+[00:00:03.964] [LOG] Left Feedforward: 92.198324, Right Feedforward: 99.737748
+[00:00:03.964] [LOG] Left Feedback: 18.509061, Right Feedback: 5.188270
+[00:00:03.964] [LOG] Left Voltage: 110, Right Voltage: 104

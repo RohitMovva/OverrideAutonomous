@@ -19,10 +19,8 @@ Robot::Robot(pros::MotorGroup *leftDrivetrain,
              DrivetrainController *driveController,
              RamseteController *ramseteController,
              std::unique_ptr<ILocalization> localization,
-             EnhancedDigitalOut *littleWill,
-             EnhancedDigitalOut *wing,
              Intake *intake)
-    : m_leftDrivetrain(leftDrivetrain), m_rightDrivetrain(rightDrivetrain), m_controller(controller), m_inertial(inertial), m_driveController(driveController), m_ramseteController(ramseteController), m_localization(std::move(localization)), m_isFollowingTrajectory(false), little_will(littleWill), wing(wing),m_intake(intake)
+    : m_leftDrivetrain(leftDrivetrain), m_rightDrivetrain(rightDrivetrain), m_controller(controller), m_inertial(inertial), m_driveController(driveController), m_ramseteController(ramseteController), m_localization(std::move(localization)), m_isFollowingTrajectory(false),m_intake(intake)
 {
     // Validate all pointer parameters
     if (!leftDrivetrain)
@@ -239,7 +237,7 @@ void Robot::processAction(const ActionPoint &ap)
 
     if (ap.actions[1] == 1.0)
     {
-        little_will->toggle();
+
     }
     if (ap.actions[2] == 1.0)
     {
@@ -281,7 +279,6 @@ void Robot::processAction(const ActionPoint &ap)
     // }
 
     if (ap.actions[6] == 1.0){
-        wing->set_state(false);
     }
 
     if (ap.actions[7] != 0.0){

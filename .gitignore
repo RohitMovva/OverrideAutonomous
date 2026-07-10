@@ -15,15 +15,3 @@ temp.log
 temp.errors
 *.ini
 .d/
-
-# Logs
-*.log
-logs/
-robot_log_19700101000000.txt
-
-# Velocity files
-velocity_graphs/
-
-# route files
-routes.h
-
