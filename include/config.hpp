@@ -6,11 +6,11 @@
 namespace Config
 {
     // Robot config
-    constexpr double WHEEL_DIAMETER = Units::Constants::WHEEL_3_25_INCH;                      ///< Wheel diameter in inches
+    constexpr double WHEEL_DIAMETER = Units::Constants::WHEEL_2_75_INCH;                      ///< Wheel diameter in inches
     constexpr double WHEEL_CIRCUMFERENCE = WHEEL_DIAMETER * M_PI;                          ///< Wheel circumference in inches
     constexpr double TICKS_PER_ROTATION = Units::Constants::V5_BLUE_MOTOR_TICKS_PER_ROTATION; ///< Encoder ticks per rotation for blue cartridges
     constexpr double GEAR_RATIO = 36.0 / 48.0;                                           ///< Gear ratio of the drivetrain
-    constexpr double WHEEL_BASE_WIDTH = 14.0;                                               ///< Distance between the left and right wheels in inches
+    constexpr double WHEEL_BASE_WIDTH = 15.0;                                               ///< Effective track width in inches. Empirically ~15 from measured wheel velocities vs IMU heading in tuning logs (larger than the physical measurement due to wheel scrub); smaller values under-drive the wheel-speed differential and make the robot under-rotate on curves. Re-measure from a fresh log after any wheel/geometry change.
     constexpr double LATERAL_WHEEL_OFFSET = 2.419;                                            ///< Distance from tracking center to lateral wheel in inches
 
     // Velocity Controller Constants

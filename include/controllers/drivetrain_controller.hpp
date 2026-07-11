@@ -93,6 +93,7 @@ private:
     static constexpr double MAX_RPM = 450.0;             ///< Maximum output RPM
     static constexpr double TICKS_PER_REV = 300.0;       ///< Encoder ticks per revolution
     static constexpr double PI = 3.14159;               ///< Mathematical constant π
+    static constexpr int MOTOR_VOLTAGE_LIMIT = 127;      ///< V5 motor command range (±127)
 
     /**
      * @brief Calculate feedforward component of motor output

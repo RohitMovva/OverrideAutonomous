@@ -301,6 +301,14 @@ void Robot::processAction(const ActionPoint &ap)
 bool Robot::followTrajectory(Trajectory &trajectory, std::optional<Pose> start_pose)
 {
     Logger::getInstance()->log("Starting trajectory following");
+    // Build-config marker: logs the exact compiled constants so a log can be
+    // matched to the binary that produced it (guards against analyzing a stale
+    // log after a rebuild). If wheelBase here isn't the value you expect, the
+    // firmware on the brain is not the one you just built.
+    Logger::getInstance()->log(
+        "Build config: wheelBase=%.3f wheelDia=%.3f kS=%.3f kV=%.3f kA=%.3f kP=%.3f",
+        Config::WHEEL_BASE_WIDTH, Config::WHEEL_DIAMETER,
+        Config::KS, Config::KV, Config::KA, Config::KP);
     if (!isInitialized())
     {
         Logger::getInstance()->logError("Robot is not initialized, cannot follow trajectory");

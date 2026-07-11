@@ -48,7 +48,7 @@ std::string program_type = "autonomous";
 
 std::vector<std::vector<double>> route;
 // std::string route_name = "";
-std::string route_name = "splitsevenlow";
+std::string route_name = "fun_curve";
 // std::vector< std::string > routes = std::vector< std::string >{"skills8.1", "skills8.2"};
 std::vector<std::string> routes;
 std::vector<Trajectory> trajectories;
@@ -93,7 +93,7 @@ void initialize()
     );
 
     ramsete_controller = new RamseteController(2.4, 0.4, 4.5 * 12, 5.0, 0.0254000508);
-    drive_controller = new DrivetrainController(2.5, 1.45, 0.275, 3.0, 0.00, 0.0);
+    drive_controller = new DrivetrainController(2.55, 2.0, 0.4, 3.0, 0.00, 0.0);
 
     robot = new Robot(&left_mg, &right_mg, &imu_sensor, &master, drive_controller, ramsete_controller, std::move(localization), &intake);
 

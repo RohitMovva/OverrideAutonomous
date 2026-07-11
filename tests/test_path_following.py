@@ -20,7 +20,8 @@ from log_analysis.parser import parse_log, trajectory_runs
 
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_FILES = ["square.txt", "init.txt", "pikes.log", "erie.txt",
-             "state.txt", "league_night_2.txt", "default.log"]
+             "state.txt", "league_night_2.txt", "default.log",
+             "initial_tuning.txt"]
 
 _cache: dict[str, list] = {}
 

@@ -75,20 +75,29 @@ DrivetrainController::MotorVoltages DrivetrainController::calculateVoltages(
     // Logger::getInstance()->log("Left Feedback: %f, Right Feedback: %f", leftFeedback, rightFeedback);
 
     // Combine feedforward and feedback
-    int leftVoltage = static_cast<int>(leftFeedforward + leftFeedback);
-    int rightVoltage = static_cast<int>(rightFeedforward + rightFeedback);
-    // Logger::getInstance()->log("Left Voltage: %d, Right Voltage: %d", leftVoltage, rightVoltage);
-    
+    double leftVoltage = leftFeedforward + leftFeedback;
+    double rightVoltage = rightFeedforward + rightFeedback;
+    // Logger::getInstance()->log("Left Voltage: %f, Right Voltage: %f", leftVoltage, rightVoltage);
+
     // Update previous values
     prevLeftVelocityError = leftVelocityError;
     prevRightVelocityError = rightVelocityError;
     prevTime = currentTime;
-    
-    // Clamp to V5 motor range (-127 to 127)
-    leftVoltage = std::clamp(leftVoltage, -127, 127);
-    rightVoltage = std::clamp(rightVoltage, -127, 127);
-    
-    return {leftVoltage, rightVoltage};
+
+    // Desaturate instead of clamping each side independently. If either side
+    // exceeds the V5 range, scale BOTH by the same factor so the left/right
+    // ratio -- the commanded curvature -- is preserved. Clipping only the
+    // saturated (outside) wheel flattens the turn and drives the robot wide,
+    // the dominant tracking error seen in tuning logs (cross-track bias on
+    // curves, outside wheel saturating ~30% while the inside stayed unclipped).
+    double maxMagnitude = std::max(std::abs(leftVoltage), std::abs(rightVoltage));
+    if (maxMagnitude > MOTOR_VOLTAGE_LIMIT) {
+        double scale = MOTOR_VOLTAGE_LIMIT / maxMagnitude;
+        leftVoltage *= scale;
+        rightVoltage *= scale;
+    }
+
+    return {static_cast<int>(leftVoltage), static_cast<int>(rightVoltage)};
 }
 
 double DrivetrainController::calculateFeedforward(double velocityTicks, double accelerationTicks) {
