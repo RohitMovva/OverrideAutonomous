@@ -3,6 +3,7 @@
 #include "utilities/math/units.hpp"
 #include "utilities/math/angle.hpp"
 #include "navigation/distance_reset_odometry.hpp"
+#include <cmath>
 #include <stdexcept>
 
 Robot::Robot()
@@ -193,13 +194,32 @@ void Robot::processTrajectory(const TrajectoryPoint &tp)
         );
     }
 
-    if (std::abs(voltages.left) == 0)
+    // Anti-slide floor. When feedforward + feedback round to zero the motors go
+    // limp, which lets the robot slide back on an incline. m_min_voltage (set per
+    // route by action parameter 5) puts a floor under the command.
+    //
+    // Two bugs fixed here:
+    //  1. It used to key off voltage == 0 alone, so during an INTENTIONAL stop --
+    //     where zero voltage is the correct answer -- it injected m_min_voltage
+    //     anyway and the robot crept. Now it only fires when the trajectory
+    //     actually wants that wheel to move.
+    //  2. It always pushed FORWARD, ignoring the commanded direction, so on a
+    //     reversing segment it drove the wrong way. Now it takes the sign of the
+    //     wheel's setpoint.
+    constexpr double MOVING_THRESHOLD = 0.5; // in/s; below this the wheel is meant to be still
+    if (m_min_voltage != 0)
     {
-        voltages.left = m_min_voltage;
-    }
-    if (std::abs(voltages.right) == 0)
-    {
-        voltages.right = m_min_voltage;
+        const int floor_magnitude = std::abs(m_min_voltage);
+        if (voltages.left == 0 && std::abs(wheel_velocities[0]) > MOVING_THRESHOLD)
+        {
+            voltages.left = static_cast<int>(
+                std::copysign(static_cast<double>(floor_magnitude), wheel_velocities[0]));
+        }
+        if (voltages.right == 0 && std::abs(wheel_velocities[1]) > MOVING_THRESHOLD)
+        {
+            voltages.right = static_cast<int>(
+                std::copysign(static_cast<double>(floor_magnitude), wheel_velocities[1]));
+        }
     }
     Logger::getInstance()->log("Voltages: %d %d", voltages.left, voltages.right);
 
@@ -304,17 +324,7 @@ bool Robot::followTrajectory(Trajectory &trajectory, std::optional<Pose> start_p
         Logger::getInstance()->logError("Robot is not initialized, cannot follow trajectory");
         return false;
     }
-    // Build-config marker: logs the exact constants in force so a log can be
-    // matched to the binary that produced it (guards against analyzing a stale
-    // log after a rebuild). If wheelBase here isn't the value you expect, the
-    // firmware on the brain is not the one you just built.
-    //
-    // The gains are read back OUT OF THE CONTROLLERS, not out of Config::. This
-    // line used to print Config:: while main.cpp constructed the controllers from
-    // hardcoded literals, so every log claimed kS=2.5/kV=1.85/kA=0.3 while the
-    // drivetrain actually ran 2.55/2.0/0.4 -- the log described the config file
-    // rather than the robot. Ask the controller, always. (Logged after the
-    // isInitialized() check, which is what guarantees the controllers are non-null.)
+    
     Logger::getInstance()->log(
         "Build config: wheelBase=%.3f wheelDia=%.3f kS=%.3f kV=%.3f kA=%.3f "
         "kP=%.3f kI=%.3f kD=%.3f ramseteB=%.3f ramseteZeta=%.3f maxWheelVel=%.3f",
@@ -389,7 +399,6 @@ bool Robot::followTrajectory(Trajectory &trajectory, std::optional<Pose> start_p
 
         // Use delta time from configuration
         pros::Task::delay_until(&loop_start_time, Config::DT); // Convert to milliseconds
-        loop_start_time = pros::millis(); // Update loop start time for next iteration
     }
 
     // Stop motors
