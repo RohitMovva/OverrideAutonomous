@@ -194,32 +194,11 @@ void Robot::processTrajectory(const TrajectoryPoint &tp)
         );
     }
 
-    // Anti-slide floor. When feedforward + feedback round to zero the motors go
-    // limp, which lets the robot slide back on an incline. m_min_voltage (set per
-    // route by action parameter 5) puts a floor under the command.
-    //
-    // Two bugs fixed here:
-    //  1. It used to key off voltage == 0 alone, so during an INTENTIONAL stop --
-    //     where zero voltage is the correct answer -- it injected m_min_voltage
-    //     anyway and the robot crept. Now it only fires when the trajectory
-    //     actually wants that wheel to move.
-    //  2. It always pushed FORWARD, ignoring the commanded direction, so on a
-    //     reversing segment it drove the wrong way. Now it takes the sign of the
-    //     wheel's setpoint.
-    constexpr double MOVING_THRESHOLD = 0.5; // in/s; below this the wheel is meant to be still
+    // Sometimes robot needs to apply some constant force when stopped (e.g. sitting in a matchloader last year, might be useful this year)
     if (m_min_voltage != 0)
     {
-        const int floor_magnitude = std::abs(m_min_voltage);
-        if (voltages.left == 0 && std::abs(wheel_velocities[0]) > MOVING_THRESHOLD)
-        {
-            voltages.left = static_cast<int>(
-                std::copysign(static_cast<double>(floor_magnitude), wheel_velocities[0]));
-        }
-        if (voltages.right == 0 && std::abs(wheel_velocities[1]) > MOVING_THRESHOLD)
-        {
-            voltages.right = static_cast<int>(
-                std::copysign(static_cast<double>(floor_magnitude), wheel_velocities[1]));
-        }
+        voltages.left = static_cast<int>(wheel_velocities[0]);
+        voltages.right = static_cast<int>(wheel_velocities[1]);
     }
     Logger::getInstance()->log("Voltages: %d %d", voltages.left, voltages.right);
 
