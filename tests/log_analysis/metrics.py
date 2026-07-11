@@ -14,9 +14,18 @@ Each metric targets a specific suspected weakness in the control stack:
                             (shared vs angular feedforward constants)
 - steady_state_gain      -> settled measured/commanded ratio per side
                             (kV calibration + left/right mechanical asymmetry)
-- setpoint_feasibility   -> commanded wheel speeds beyond the physical max
-                            (route generator limits + missing desaturation)
+- setpoint_feasibility   -> commanded wheel speeds beyond what the drivetrain
+                            can deliver under load (route limits + desaturation)
 - saturation_cost        -> velocity error on saturated vs unsaturated ticks
+- effective_track_width  -> track width regressed from wheel differential vs IMU
+- rotation_deficit       -> commanded vs achieved rotation, and how much of any
+                            gap is wheel-velocity tracking error rather than a
+                            wrong track width
+
+Robot constants come from log_analysis.robot_config, which parses
+include/config.hpp. Do not hardcode them here -- the previous copies (track
+width 14.0, a 74 in/s speed ceiling) had drifted from the firmware and made the
+suite both raise false alarms and miss real faults.
 
 motion_regimes / steady_state_gain / setpoint_feasibility / saturation_cost
 accept a single Run or a list of Runs; pass a whole file's runs to pool
@@ -30,11 +39,32 @@ from dataclasses import dataclass, field
 from statistics import mean, median, pstdev
 
 from .parser import Run
+from .robot_config import (
+    DT_NOMINAL,
+    FREE_WHEEL_SPEED,
+    TRACK_WIDTH,
+    UNPHYSICAL_WHEEL_SPEED,
+    USABLE_WHEEL_SPEED,
+)
 
-DT_NOMINAL = 0.010          # Config::DT = 10 ms
-MAX_WHEEL_SPEED = 74.0      # in/s: 450 rpm * (36/48) * 3.25" * pi / 60 ~= 57.4;
-                            # allow generous margin, anything above is unphysical
+# Retained as an alias: "the fastest a wheel can conceivably be measured going".
+# Previously a hardcoded 74.0, which was well above this drivetrain's actual
+# 64.8 in/s free speed and therefore never flagged anything.
+MAX_WHEEL_SPEED = UNPHYSICAL_WHEEL_SPEED
 VOLTAGE_LIMIT = 127
+
+
+def declared_track_width(run: Run) -> float | None:
+    """The track width the firmware was actually built with for this run, from
+    the log's "Build config:" line. None for logs recorded before that line
+    existed.
+
+    Always prefer this over the current config.hpp when judging a log. A log from
+    a previous build ran with constants we no longer have any record of, so
+    holding it against today's config.hpp tests nothing -- it just reports that
+    the robot changed, which we already knew.
+    """
+    return run.build_config.get("wheelBase")
 
 
 def _wrap(a: float) -> float:
@@ -306,8 +336,12 @@ def theta_tracking(run: Run) -> dict:
 
 
 def dead_reckon(run: Run, source: str = "wheel_setpoints",
-                track_width: float = 14.0) -> dict:
+                track_width: float | None = None) -> dict:
     """Integrate commanded/measured velocities into a path; compare to goals.
+
+    track_width defaults to whatever the log's "Build config:" line says the
+    firmware ran with, falling back to config.hpp. Pass an explicit value to
+    sweep it.
 
     (Ported from goal_animator.py / velo_checker.py.) Sources:
       'mp'              — MP Output chassis velocities (square/init logs only)
@@ -316,9 +350,23 @@ def dead_reckon(run: Run, source: str = "wheel_setpoints",
 
     Seeded from the first goal pose (as the legacy scripts did). Returns the
     simulated path, goal path, endpoint drift, and index-aligned error stats.
-    Note: Config::WHEEL_BASE_WIDTH is 14.0 in; the legacy velo_checker.py
-    used 12.7 — pass track_width to compare.
+
+    Choose `source` deliberately -- the two answer different questions:
+
+      'wheel_setpoints' integrates what the controller *asked for*, so it
+      diverges from the goal whenever the drivetrain fails to deliver. It is a
+      test of delivery (saturation, feedforward), NOT of kinematics.
+
+      'wheel_actuals' integrates what the wheels *did*, so it isolates the
+      kinematic chain (track width, wheel diameter) from drivetrain shortfall.
+
+    Conflating them is why the old suite blamed track width for what was really
+    voltage saturation: the setpoint-integrated path only lined up with the goal
+    when track width was inflated to ~20 in, which "fixed" the error by adding a
+    second, compensating error.
     """
+    if track_width is None:
+        track_width = declared_track_width(run) or TRACK_WIDTH
     ticks = [tk for tk in run.ticks if tk.goal is not None]
     if len(ticks) < 2:
         return {"n": 0}
@@ -355,31 +403,148 @@ def dead_reckon(run: Run, source: str = "wheel_setpoints",
             "endpoint_drift_in": end_drift, "error": _stats(errs)}
 
 
-def effective_track_width(run: Run, nominal: float = 14.0) -> dict:
-    """Estimate the real track width from this run's data.
+def effective_track_width(run: Run, nominal: float = TRACK_WIDTH,
+                          min_omega: float = 0.3) -> dict:
+    """Estimate the real track width by regressing wheel differential on
+    IMU rotation rate, per tick.
 
-    Encoder-implied rotation is (ΔR - ΔL) / track_width; the pose theta
-    (IMU-driven) is the trusted rotation. If total rotation is significant,
-    width_est = (ΔR_total - ΔL_total) / total_rotation. A mismatch with
-    Config::WHEEL_BASE_WIDTH (14.0) biases every RAMSETE wheel-velocity
-    conversion and the accel split in Robot::processTrajectory.
+    Kinematics: (v_r - v_l) = W * omega. Pose theta is IMU-driven and is the
+    trusted rotation. Regressing the measured wheel differential against the
+    measured rotation rate through the origin gives W directly.
+
+    This *used* to be computed as (ΔR_total - ΔL_total) / net_rotation over
+    the whole run. That estimator is unusable on any route that reverses
+    curvature: net rotation is a signed sum, so a route that turns right, then
+    left, then right cancels most of it and the ratio blows up. On
+    tests/logs/initial_tuning.txt it reported 16.9 in (vs a true 14.5 in),
+    swinging between 13.1 and 19.3 in across 0.5 s windows -- a false alarm
+    that pointed tuning at the wrong constant entirely. The per-tick
+    regression is stable because every turning tick is an independent sample
+    and sign cancellation cannot occur (both sides of the fit flip together).
+
+    Ticks with |omega| < min_omega carry almost no information about W (the
+    differential is in the noise) and are excluded. `r_squared` reports how
+    much of the differential the fit actually explains -- treat an estimate
+    with r_squared < 0.8 as untrustworthy.
     """
-    ticks = [tk for tk in run.ticks
-             if tk.cum_left is not None and tk.pose is not None]
+    ticks = [tk for tk in run.ticks if tk.pose is not None
+             and tk.left_vel_actual is not None
+             and tk.right_vel_actual is not None]
+    if len(ticks) < 50:
+        return {"n": 0, "estimate_in": None, "nominal_in": nominal}
+
+    # (omega, differential) samples from consecutive ticks
+    xs, ys = [], []
+    total_abs_rot = 0.0
+    net_rot = 0.0
+    for a, b in zip(ticks, ticks[1:]):
+        dt = b.t - a.t
+        if not (0 < dt < 0.1):
+            continue
+        dth = _wrap(b.pose[2] - a.pose[2])
+        total_abs_rot += abs(dth)
+        net_rot += dth
+        omega = dth / dt
+        diff = a.right_vel_actual - a.left_vel_actual
+        if math.isnan(omega) or math.isnan(diff):
+            continue
+        if abs(omega) < min_omega:
+            continue
+        xs.append(omega)
+        ys.append(diff)
+
+    if len(xs) < 30:
+        return {"n": len(ticks), "turning_samples": len(xs),
+                "net_rotation_rad": net_rot,
+                "total_abs_rotation_rad": total_abs_rot,
+                "estimate_in": None, "nominal_in": nominal}
+
+    # least squares through the origin: W = sum(x*y) / sum(x*x)
+    den = sum(x * x for x in xs)
+    est = sum(x * y for x, y in zip(xs, ys)) / den
+    ss_res = sum((y - est * x) ** 2 for x, y in zip(xs, ys))
+    ss_tot = sum(y * y for y in ys)
+    r2 = 1.0 - ss_res / ss_tot if ss_tot > 0 else 0.0
+
+    return {"n": len(ticks), "turning_samples": len(xs),
+            "net_rotation_rad": net_rot,
+            "total_abs_rotation_rad": total_abs_rot,
+            "estimate_in": est, "nominal_in": nominal,
+            "r_squared": r2,
+            "ratio": est / nominal if nominal else math.nan}
+
+
+def rotation_deficit(run: Run, track_width: float | None = None) -> dict:
+    """Commanded vs achieved rotation, and how much of any gap is explained by
+    the drivetrain failing to deliver its commanded wheel velocities.
+
+    This is the metric that explains a one-sided cross-track error. Rotation is
+    driven by the *difference* of two large wheel speeds, so it is far more
+    fragile than forward motion: when the mean commanded differential is
+    ~18 in/s against a ~33 in/s chassis speed, a mere 3.5 in/s shortfall on the
+    outside wheel is a ~19% rotation error. The robot then under-rotates and
+    runs wide on every turn in the same direction.
+
+    `explained_fraction` near 1.0 means the whole rotation gap is wheel-velocity
+    tracking error (fix the drivetrain / give it headroom), NOT a bad track
+    width (fix the constant). Distinguishing those two is the entire point.
+
+    Uses the track width the log was built with (falling back to config.hpp),
+    since that is the constant RAMSETE actually divided by at record time.
+    """
+    if track_width is None:
+        track_width = declared_track_width(run) or TRACK_WIDTH
+    ticks = [tk for tk in run.ticks if tk.pose is not None
+             and tk.left_vel_setpoint is not None
+             and tk.right_vel_setpoint is not None
+             and tk.left_vel_actual is not None
+             and tk.right_vel_actual is not None]
     if len(ticks) < 50:
         return {"n": 0}
-    d_enc = (ticks[-1].cum_right - ticks[0].cum_right) - \
-            (ticks[-1].cum_left - ticks[0].cum_left)
-    total_rot = 0.0
+
+    commanded = achieved = tracking_loss = 0.0
+    cmd_diff = act_diff = 0.0
     for a, b in zip(ticks, ticks[1:]):
-        total_rot += _wrap(b.pose[2] - a.pose[2])
-    if abs(total_rot) < 1.5:  # need real net rotation for a stable estimate
-        return {"n": len(ticks), "total_rotation_rad": total_rot,
-                "estimate_in": None, "nominal_in": nominal}
-    est = d_enc / total_rot
-    return {"n": len(ticks), "total_rotation_rad": total_rot,
-            "estimate_in": est, "nominal_in": nominal,
-            "ratio": est / nominal if nominal else math.nan}
+        dt = b.t - a.t
+        if not (0 < dt < 0.1):
+            continue
+        c_diff = a.right_vel_setpoint - a.left_vel_setpoint
+        a_diff = a.right_vel_actual - a.left_vel_actual
+        act_w = _wrap(b.pose[2] - a.pose[2]) / dt
+        if any(math.isnan(v) for v in (c_diff, a_diff, act_w)):
+            continue
+        # --- track-width-free: did the wheels deliver the commanded differential?
+        cmd_diff += c_diff * dt
+        act_diff += a_diff * dt
+        # --- track-width-dependent: rotation in radians
+        commanded += (c_diff / track_width) * dt
+        achieved += act_w * dt
+        tracking_loss += ((a_diff - c_diff) / track_width) * dt
+
+    deficit = achieved - commanded
+    return {
+        "n": len(ticks),
+        # Track-width-FREE. Integrated wheel differential, actual vs commanded.
+        # This is the honest measure of "did the drivetrain deliver the turn",
+        # valid even for logs whose build constants are unknown: it compares
+        # wheel speeds to wheel speeds and never divides by a track width.
+        "commanded_differential_in": cmd_diff,
+        "actual_differential_in": act_diff,
+        "differential_delivered_fraction": (act_diff / cmd_diff
+                                            if abs(cmd_diff) > 1e-6 else math.nan),
+        # Track-width-DEPENDENT (uses `track_width`). Meaningful only when we
+        # know the constant the firmware actually ran with; otherwise a wrong
+        # track width shows up here as a fake rotation deficit.
+        "track_width_used": track_width,
+        "commanded_rotation_rad": commanded,
+        "achieved_rotation_rad": achieved,
+        "deficit_rad": deficit,
+        "delivered_fraction": achieved / commanded if commanded else math.nan,
+        "tracking_loss_rad": tracking_loss,
+        # what share of the rotation gap the wheel-tracking error accounts for
+        "explained_fraction": (tracking_loss / deficit
+                               if abs(deficit) > 1e-6 else math.nan),
+    }
 
 
 def reverse_driving(run: Run, min_speed_in: float = 0.05,
@@ -590,16 +755,21 @@ def steady_state_gain(runs: Run | list[Run], window: int = 20,
 
 
 def setpoint_feasibility(runs: Run | list[Run],
-                         vmax: float = MAX_WHEEL_SPEED,
+                         vmax: float = USABLE_WHEEL_SPEED,
                          samples: bool = False) -> dict:
-    """Commanded wheel speeds beyond what the drivetrain can physically do.
+    """Commanded wheel speeds beyond what the drivetrain can actually deliver.
 
-    Infeasible setpoints guarantee voltage saturation, and with no
-    desaturation step (RAMSETE limits unused; per-side clamp at +/-127 in
-    DrivetrainController) the left/right ratio — the commanded curvature —
-    is destroyed exactly when correction matters most. Sources: routes
-    generated beyond the real velocity limit, and RAMSETE corrections on
-    top of an already-fast reference.
+    Infeasible setpoints guarantee voltage saturation, and a saturated wheel is
+    open-loop: the commanded curvature is whatever the motors happen to manage.
+
+    The bar here is the *usable* speed under load (~85% of the 64.8 in/s free
+    speed implied by config.hpp gearing), not free speed itself. The old default
+    was a hardcoded 74.0 in/s -- above even this drivetrain's no-load ceiling --
+    so the check could never fail, and it duly passed initial_tuning.txt while
+    the left wheel sat on the voltage rail for 28% of the run. A setpoint the
+    motors can only reach with 100% of their voltage is not "feasible" in any
+    useful sense: it leaves the feedback term zero authority exactly when the
+    robot is off-path and needs it.
     """
     n = over = 0
     worst = 0.0
@@ -617,7 +787,8 @@ def setpoint_feasibility(runs: Run | list[Run],
                     mags.append(abs(sp))
     out = {"n": n, "infeasible_count": over,
            "infeasible_fraction": over / n if n else 0.0,
-           "max_setpoint_in_s": worst, "vmax_in_s": vmax}
+           "max_setpoint_in_s": worst, "vmax_in_s": vmax,
+           "free_speed_in_s": FREE_WHEEL_SPEED}
     if samples:
         out["samples"] = _thin(mags, 20000)
     return out

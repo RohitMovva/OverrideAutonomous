@@ -107,6 +107,11 @@ class Run:
     label: str = ""              # e.g. "s3r0" (session 3, run 0 within it)
     initial_pose: tuple[float, float, float] | None = None
     route_size: int | None = None
+    # Constants the firmware was actually built with, from the "Build config:"
+    # line (wheelBase, wheelDia, kS, kV, kA, kP). Empty for logs recorded before
+    # that line was added. Without it there is no way to know which constants a
+    # log ran with, so a mismatch against today's config.hpp is unattributable.
+    build_config: dict[str, float] = field(default_factory=dict)
     ticks: list[ControlTick] = field(default_factory=list)
     actions: list[float] = field(default_factory=list)   # timestamps of action points
     resets: list[DistanceReset] = field(default_factory=list)
@@ -144,7 +149,10 @@ _PATTERNS = {
     "positions_l": re.compile(rf"^Left Positions: ((?:{FLOAT}[ ]?)+)$"),
     "positions_r": re.compile(rf"^Right Positions: ((?:{FLOAT}[ ]?)+)$"),
     "cum_pos": re.compile(rf"^Left: ({FLOAT}), Right: ({FLOAT})$"),
+    "build_config": re.compile(r"^Build config: (.*)$"),
 }
+
+_KV_PAIR = re.compile(rf"(\w+)=({FLOAT})")
 
 
 def parse_log(path: str | Path) -> list[Session]:
@@ -154,6 +162,7 @@ def parse_log(path: str | Path) -> list[Session]:
     run: Run | None = None
     tick: ControlTick | None = None
     pending_reset = False
+    pending_build: dict = {}
     # Odometry logs its lines (IMU Heading, Heading, positions, Delta theta)
     # BEFORE processTrajectory logs Pose for the same iteration, so buffer them
     # and attach to the tick the next Pose line creates.
@@ -183,11 +192,19 @@ def parse_log(path: str | Path) -> list[Session]:
                 (run.errors if run else session.errors).append((t, msg))
                 continue
 
+            # Logged just before "Initial pose", i.e. before the Run exists.
+            pm = _PATTERNS["build_config"].match(msg)
+            if pm:
+                pending_build = {k: parse_float(v)
+                                 for k, v in _KV_PAIR.findall(pm.group(1))}
+                continue
+
             pm = _PATTERNS["initial_pose"].match(msg)
             if pm:
                 run = Run(t_start=t,
                           label=f"s{len(sessions)-1}r{len(session.runs)}",
-                          initial_pose=tuple(parse_float(x) for x in pm.groups()))
+                          initial_pose=tuple(parse_float(x) for x in pm.groups()),
+                          build_config=dict(pending_build))
                 session.runs.append(run)
                 tick = None
                 pending_odo = {}

@@ -257,54 +257,180 @@ def test_no_unexplained_pose_jumps(log_runs):
 # ------------------------------------------------------------------ kinematics
 
 def test_effective_track_width_consistent(log_runs):
-    """Encoder-implied rotation should match pose rotation at the configured
-    track width (Config::WHEEL_BASE_WIDTH = 14.0 in, config.hpp:13).
+    """Measured wheel differential should imply the configured track width
+    (Config::WHEEL_BASE_WIDTH, config.hpp:13).
 
-    The estimate (ΔR_total - ΔL_total) / total_rotation should land within
-    10% of 14.0. A consistent lower value means every RAMSETE wheel-velocity
-    conversion (RamseteController::calculate_wheel_velocities) turns the
-    robot more than intended. Note the legacy velo_checker.py already used
-    12.7 in.
+    Estimated by regressing (v_r - v_l) on IMU rotation rate per tick, using
+    *measured* wheel velocities -- so this tests the kinematic constant alone
+    and is unaffected by whether the drivetrain hit its setpoints. A real
+    mismatch mis-scales every RamseteController::calculate_wheel_velocities
+    conversion.
+
+    Only estimates with r_squared >= 0.8 are trusted; a poorly-conditioned run
+    (little turning) must not be allowed to indict the constant.
+
+    Judged against the track width the log's own "Build config:" line says the
+    firmware ran with -- NOT against today's config.hpp. Logs recorded before
+    that line existed are skipped: the robot has been rebuilt since, so a
+    mismatch would only be telling us the geometry changed, which is not a bug.
+    Keep the Build config line in the firmware; it is what makes old logs
+    interpretable.
     """
     name, runs = log_runs
+    nominal = next((metrics.declared_track_width(r) for r in runs
+                    if metrics.declared_track_width(r)), None)
+    if nominal is None:
+        pytest.skip(f"{name}: no 'Build config:' line — the constants this log "
+                    "ran with are unknown, so config.hpp cannot be judged by it")
     estimates = []
     for run in runs:
         tw = metrics.effective_track_width(run)
-        if tw.get("estimate_in"):
+        if tw.get("estimate_in") and tw.get("r_squared", 0) >= 0.8:
             estimates.append(tw["estimate_in"])
     if not estimates:
-        pytest.skip(f"{name}: no run with enough net rotation to estimate")
+        pytest.skip(f"{name}: no run with a well-conditioned track-width fit")
     median = sorted(estimates)[len(estimates) // 2]
-    assert abs(median - 14.0) / 14.0 <= 0.10, (
+    assert abs(median - nominal) / nominal <= 0.10, (
         f"{name}: effective track width median {median:.1f} in "
-        f"(runs: {[f'{e:.1f}' for e in sorted(estimates)]}) vs configured 14.0 in. "
-        "Config::WHEEL_BASE_WIDTH appears wrong; angular velocity commands are "
-        "systematically mis-scaled.")
+        f"(runs: {[f'{e:.1f}' for e in sorted(estimates)]}) vs the "
+        f"{nominal:.1f} in this build used. Config::WHEEL_BASE_WIDTH is wrong; "
+        "angular velocity commands are systematically mis-scaled.")
 
 
-def test_dead_reckoned_wheel_path_matches_goal(log_runs):
-    """Integrating the commanded wheel velocities (diff-drive kinematics,
-    configured track width) over the first 3 s should reproduce the goal
-    path within 4 in RMS.
+def test_dead_reckoned_actual_wheels_match_goal(log_runs):
+    """Integrating the MEASURED wheel velocities over the first 3 s should
+    reproduce the goal path within 4 in RMS.
 
-    This checks the kinematic chain (RamseteController::calculate_wheel_velocities
-    + track width) independent of odometry. Compounding drift is why only the
-    first 300 ticks are integrated.
+    Measured wheels + configured track width = the kinematic chain alone. This
+    is the version of the check that genuinely tests kinematics: if the wheels
+    actually turned this much and the robot still isn't where the goal says, the
+    geometry constants are wrong. Compounding drift is why only the first 300
+    ticks are integrated.
+
+    Requires the log to declare its build config: this integration divides by a
+    track width, so on a log from an unknown build it would just be measuring
+    our guess at the constant rather than the robot.
     """
     name, runs = log_runs
+    if not any(metrics.declared_track_width(r) for r in runs):
+        pytest.skip(f"{name}: no 'Build config:' line — the track width this log "
+                    "ran with is unknown, so dead reckoning cannot be attributed")
     failures = []
     for i, run in enumerate(runs):
         short = replace(run, ticks=run.ticks[:300])
-        dr = metrics.dead_reckon(short, source="wheel_setpoints")
+        dr = metrics.dead_reckon(short, source="wheel_actuals")
         if not dr.get("n") or dr["error"].get("n", 0) < 100:
             continue
         if dr["error"]["rms"] > 4.0:
             failures.append(f"run{i}: rms={dr['error']['rms']:.1f}in "
                             f"end={dr['endpoint_drift_in']:.1f}in")
     assert not failures, (
-        f"{name}: dead-reckoned wheel commands diverge from the goal path: "
-        f"{failures}. Wheel-velocity kinematics or track width are inconsistent "
-        "with the trajectory generator.")
+        f"{name}: the path the wheels actually drove diverges from the goal "
+        f"path: {failures}. Kinematic constants (track width, wheel diameter) "
+        "are inconsistent with the trajectory generator.")
+
+
+def test_commanded_wheel_path_is_delivered(log_runs):
+    """Integrating the COMMANDED wheel velocities should also reproduce the
+    goal path within 6 in RMS.
+
+    Same integration as above but seeded with setpoints, so it fails when the
+    drivetrain does not deliver what RAMSETE asked for -- saturation, feedforward
+    error, a weak side. Read it *together* with the measured-wheel test:
+
+      measured OK + commanded BAD  -> delivery problem (voltage/feedforward)
+      measured BAD + commanded OK  -> kinematics problem (track width)
+      both BAD                     -> could be either; check rotation_deficit
+
+    The old suite had only this half and called it a kinematics test, which sent
+    tuning after track width when the real fault was voltage saturation.
+
+    Requires a declared build config for the same reason as the measured-wheel
+    version: RAMSETE produced these setpoints by dividing by *its* track width,
+    so replaying them through a different one proves nothing.
+    """
+    name, runs = log_runs
+    if not any(metrics.declared_track_width(r) for r in runs):
+        pytest.skip(f"{name}: no 'Build config:' line — the track width this log "
+                    "ran with is unknown, so dead reckoning cannot be attributed")
+    failures = []
+    for i, run in enumerate(runs):
+        short = replace(run, ticks=run.ticks[:300])
+        dr = metrics.dead_reckon(short, source="wheel_setpoints")
+        if not dr.get("n") or dr["error"].get("n", 0) < 100:
+            continue
+        if dr["error"]["rms"] > 6.0:
+            failures.append(f"run{i}: rms={dr['error']['rms']:.1f}in "
+                            f"end={dr['endpoint_drift_in']:.1f}in")
+    assert not failures, (
+        f"{name}: the wheels did not deliver the commanded path: {failures}. "
+        "Compare with test_dead_reckoned_actual_wheels_match_goal to tell "
+        "delivery failure apart from bad kinematics.")
+
+
+# ------------------------------------------------------------------ rotation
+
+def test_commanded_rotation_is_delivered(log_runs):
+    """The wheels should deliver >= 90% of the commanded wheel differential.
+
+    Rotation is driven by the *difference* of two large wheel speeds, so it is
+    the first thing to break when a wheel cannot hit its setpoint: a few in/s of
+    shortfall on the outside wheel is a large fraction of the differential. The
+    result is systematic under-rotation -- the robot runs wide on every turn in
+    the same direction, which shows up as a one-sided cross-track error.
+
+    Asserted on the integrated wheel differential (actual vs commanded), which
+    never divides by a track width and so is valid even for logs whose build
+    constants are unknown. Where the log does declare its build config, the
+    message also reports the resulting rotation in radians and what share of the
+    gap is wheel-tracking error rather than bad geometry.
+    """
+    name, runs = log_runs
+    failures = []
+    for i, run in enumerate(runs):
+        rd = metrics.rotation_deficit(run)
+        if not rd.get("n") or abs(rd["commanded_differential_in"]) < 10.0:
+            continue
+        frac = rd["differential_delivered_fraction"]
+        if frac < 0.90:
+            detail = ""
+            if metrics.declared_track_width(run):
+                detail = (f"; rotation {rd['achieved_rotation_rad']:+.2f} of "
+                          f"{rd['commanded_rotation_rad']:+.2f} rad, "
+                          f"{100*rd['explained_fraction']:.0f}% of the gap is "
+                          "wheel-velocity tracking error (not track width)")
+            failures.append(
+                f"run{i}: wheels delivered {100*frac:.0f}% of the commanded "
+                f"turn differential{detail}")
+    assert not failures, f"{name}: under-rotation: {failures}"
+
+
+def test_cross_track_error_not_one_sided(log_runs):
+    """Cross-track error must not sit consistently on one side of the path.
+
+    Magnitude alone (test_cross_track_error_bounded) cannot tell noise from
+    bias. If |mean| is most of the RMS, the robot is always on the same side --
+    a systematic kinematic or delivery fault, not tracking noise. On a route
+    that mostly turns one way, that is the signature of under-rotation.
+    """
+    name, runs = log_runs
+    failures = []
+    for i, run in enumerate(runs):
+        te = metrics.tracking_errors(run)
+        ct = te["cross_track"]
+        if ct.get("n", 0) < 100:
+            continue
+        bias = te["cross_track_bias_in"]
+        if math.isnan(bias):
+            continue
+        # bias dominating RMS => one-sided. Allow small biases outright.
+        if abs(bias) > 0.75 and abs(bias) / ct["rms"] > 0.70:
+            failures.append(f"run{i}: bias={bias:+.2f}in of rms={ct['rms']:.2f}in "
+                            f"({100*abs(bias)/ct['rms']:.0f}% one-sided)")
+    assert not failures, (
+        f"{name}: cross-track error is systematically one-sided: {failures}. "
+        "The robot is always off the path in the same direction — check "
+        "test_commanded_rotation_is_delivered for under-rotation.")
 
 
 def test_no_unintended_reverse_driving(log_runs):
@@ -445,7 +571,10 @@ def test_drivetrain_sides_symmetric(log_runs):
     """
     name, runs = log_runs
     ss = metrics.steady_state_gain(runs)
-    if ss["left"]["n"] < 100 or ss["right"]["n"] < 100:
+    # 25, not 100: a short (~3 s) run yields only a few dozen settled ticks on
+    # the inside wheel, so a threshold of 100 skipped this check entirely on
+    # exactly the logs where a weak side matters. A median over 25 is stable.
+    if ss["left"]["n"] < 25 or ss["right"]["n"] < 25:
         pytest.skip(f"{name}: not enough settled data on both sides")
     assert ss["asymmetry"] <= 0.03, (
         f"{name}: side asymmetry {100 * ss['asymmetry']:.1f}% "
@@ -454,13 +583,17 @@ def test_drivetrain_sides_symmetric(log_runs):
 
 
 def test_wheel_setpoints_feasible(log_runs):
-    """Commanded wheel speeds must stay within the drivetrain's physical
-    max (~74 in/s).
+    """Commanded wheel speeds must stay within what the drivetrain can deliver
+    *under load* (~85% of the 64.8 in/s free speed implied by config.hpp).
 
-    Infeasible setpoints guarantee saturation, and with no desaturation
-    step the commanded curvature is destroyed exactly when correction
-    matters most. Sources: routes generated beyond the real velocity limit
-    plus RAMSETE corrections on top (state.txt commanded up to ~200 in/s).
+    The bar is deliberately below free speed. A setpoint the motors can only
+    reach by pinning the voltage at ±127 leaves the feedback term zero authority
+    exactly when the robot is off-path and needs it, and a saturated wheel is
+    open-loop. The old threshold was a hardcoded 74 in/s -- above this
+    drivetrain's no-load ceiling, so nothing could ever fail it.
+
+    Sources: routes generated beyond the real velocity limit, plus RAMSETE
+    corrections stacked on top of an already-maxed reference.
     """
     name, runs = log_runs
     sf = metrics.setpoint_feasibility(runs)
@@ -468,9 +601,10 @@ def test_wheel_setpoints_feasible(log_runs):
         pytest.skip(f"{name}: too little setpoint data")
     assert sf["infeasible_fraction"] <= 0.005, (
         f"{name}: {100 * sf['infeasible_fraction']:.1f}% of wheel setpoints "
-        f"exceed {sf['vmax_in_s']:.0f} in/s (worst {sf['max_setpoint_in_s']:.0f} "
-        "in/s). Regenerate routes with margin and add proportional "
-        "desaturation before DrivetrainController::calculateVoltages.")
+        f"exceed the usable {sf['vmax_in_s']:.0f} in/s (worst "
+        f"{sf['max_setpoint_in_s']:.0f} in/s; free speed "
+        f"{sf['free_speed_in_s']:.0f} in/s). Lower Config::RAMSETE_MAX_VELOCITY "
+        "and desaturate wheel setpoints before DrivetrainController::calculateVoltages.")
 
 
 def test_saturation_cost_bounded(log_runs):
