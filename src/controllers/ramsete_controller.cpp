@@ -1,22 +1,8 @@
 #include "controllers/ramsete_controller.hpp"
 
-RamseteController::RamseteController()
-    : b_(2.0)
-    , zeta_(0.7)
-{
-}
-
-RamseteController::RamseteController(double b, double zeta)
+RamseteController::RamseteController(double b, double zeta, double scale_factor)
     : b_(b)
     , zeta_(zeta)
-{
-}
-
-RamseteController::RamseteController(double b, double zeta, double max_v, double max_w, double scale_factor)
-    : b_(b)
-    , zeta_(zeta)
-    , max_v_(max_v * scale_factor)
-    , max_w_(max_w)
     , scale_factor_(scale_factor)
 {
 }
@@ -50,48 +36,42 @@ std::vector<double> RamseteController::calculate_local_error(std::vector<double>
     return local_error;
 }
 
-std::vector<double> RamseteController::get_output_velocities(double v, double w, double theta,
-                                                           double goal_theta, double k) {
-    std::vector<double> output_velocities;
-    
-    double theta_error = goal_theta - theta;
-    while (theta_error > M_PI) theta_error -= 2 * M_PI;
-    while (theta_error < -M_PI) theta_error += 2 * M_PI;
-    
-    if (std::abs(theta_error) < 1e-6) {
-        output_velocities.push_back(v);
-        output_velocities.push_back(w);
-    } else {
-        double v_output = v * std::cos(theta_error);
-        double w_output = w + k * theta_error;
-        
-        // Apply velocity limits
-        apply_velocity_limits(v_output, w_output);
-        
-        output_velocities.push_back(v_output);
-        output_velocities.push_back(w_output);
-    }
-    
-    return output_velocities;
-}
-
-
 std::vector<double> RamseteController::calculate_wheel_velocities(double linear_velocity,
                                                                 double angular_velocity,
-                                                                double wheel_diameter,
-                                                                double gear_ratio,
-                                                                double track_width) {
-    std::vector<double> wheel_velocities;
-    
+                                                                double track_width,
+                                                                double max_wheel_velocity) {
     // Calculate wheel speed difference based on angular velocity
     // angular_velocity (rad/s) * track_width/2 (inches) = inches/sec
     double wheel_speed_diff = angular_velocity * track_width / 2.0;
-    
-    // Calculate left and right wheel velocities in inches/sec
-    wheel_velocities.push_back(linear_velocity - wheel_speed_diff);
-    wheel_velocities.push_back(linear_velocity + wheel_speed_diff);
-    
-    return wheel_velocities;
+
+    double left = linear_velocity - wheel_speed_diff;
+    double right = linear_velocity + wheel_speed_diff;
+
+    // Desaturate. If either wheel is asked for more than the drivetrain can hold,
+    // scale BOTH by the same factor. That keeps left:right -- and therefore the
+    // commanded curvature -- intact, so the robot drives the same arc, just slower.
+    //
+    // Without this the excess silently became under-rotation. A RAMSETE correction
+    // stacked on top of a fast reference pushed the outside wheel to 59.4 in/s
+    // against a ~55 in/s ceiling; the motor pinned at 127, the wheel fell ~5 in/s
+    // short, and because rotation is the DIFFERENCE of two large wheel speeds that
+    // shortfall ate most of the turn. initial_tuning.txt delivered only 69% of the
+    // commanded turn differential and ran wide off the path for the entire run.
+    //
+    // Clamping the wheels independently would NOT work: it would cap the outside
+    // wheel while leaving the inside one alone, shrinking the differential and
+    // flattening the turn -- exactly the failure this exists to prevent. Scale, do
+    // not clip.
+    if (max_wheel_velocity > 0.0) {
+        double max_magnitude = std::max(std::abs(left), std::abs(right));
+        if (max_magnitude > max_wheel_velocity) {
+            double scale = max_wheel_velocity / max_magnitude;
+            left *= scale;
+            right *= scale;
+        }
+    }
+
+    return {left, right};
 }
 
 std::vector<double> RamseteController::calculate(double x, double y, double theta,

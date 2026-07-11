@@ -33,24 +33,17 @@ public:
      * @param kI Integral gain for PID
      * @param kD Derivative gain for PID
      */
-    DrivetrainController(double kS=5.0, double kV=0.2, double kA=0.05,
-                        double kP=0.1, double kI=0.001, double kD=0.01);
+    DrivetrainController(double kS, double kV, double kA,
+                        double kP, double kI, double kD);
 
-    /**
-     * @brief Convert linear velocity to encoder ticks
-     * 
-     * @param velocityInchesPerSec Velocity in inches per second
-     * @return double Velocity in encoder ticks per second
-     */
-    double velocityToTicks(double velocityInchesPerSec);
-
-    /**
-     * @brief Convert encoder ticks to linear velocity
-     * 
-     * @param ticksPerSec Velocity in encoder ticks per second
-     * @return double Velocity in inches per second
-     */
-    double ticksToVelocity(double ticksPerSec);
+    /// Gains actually in use. Log these -- never re-read Config::, or the log
+    /// will describe the config rather than the controller that produced it.
+    double getKS() const { return kS; }
+    double getKV() const { return kV; }
+    double getKA() const { return kA; }
+    double getKP() const { return kP; }
+    double getKI() const { return kI; }
+    double getKD() const { return kD; }
 
     /**
      * @brief Calculate motor voltages based on desired velocities and accelerations
@@ -89,10 +82,11 @@ private:
     uint32_t prevTime;
 
     // Robot constants
-    static constexpr double WHEEL_DIAMETER = 2.8;        ///< Wheel diameter (inches)
-    static constexpr double MAX_RPM = 450.0;             ///< Maximum output RPM
-    static constexpr double TICKS_PER_REV = 300.0;       ///< Encoder ticks per revolution
-    static constexpr double PI = 3.14159;               ///< Mathematical constant π
+    //
+    // WHEEL_DIAMETER (2.8), MAX_RPM, TICKS_PER_REV and PI used to live here as a
+    // third, conflicting copy of the geometry -- config.hpp says 2.76 in. They were
+    // only read by velocityToTicks()/ticksToVelocity(), which nothing called, so
+    // both are gone along with them. Anything needing geometry uses Config::.
     static constexpr int MOTOR_VOLTAGE_LIMIT = 127;      ///< V5 motor command range (±127)
 
     /**

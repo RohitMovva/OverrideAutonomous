@@ -583,17 +583,20 @@ def test_drivetrain_sides_symmetric(log_runs):
 
 
 def test_wheel_setpoints_feasible(log_runs):
-    """Commanded wheel speeds must stay within what the drivetrain can deliver
-    *under load* (~85% of the 64.8 in/s free speed implied by config.hpp).
+    """Commanded wheel speeds must stay within Config::MAX_WHEEL_VELOCITY -- what
+    the drivetrain can actually hold under load (~85% of free speed).
 
-    The bar is deliberately below free speed. A setpoint the motors can only
-    reach by pinning the voltage at ±127 leaves the feedback term zero authority
-    exactly when the robot is off-path and needs it, and a saturated wheel is
-    open-loop. The old threshold was a hardcoded 74 in/s -- above this
-    drivetrain's no-load ceiling, so nothing could ever fail it.
+    The bar is deliberately below free speed. A setpoint the motors can only reach
+    by pinning the voltage at ±127 leaves the feedback term zero authority exactly
+    when the robot is off-path and needs it, and a saturated wheel is open-loop.
+    (The old threshold was a hardcoded 74 in/s -- above this drivetrain's no-load
+    ceiling -- so nothing could ever fail it.)
 
-    Sources: routes generated beyond the real velocity limit, plus RAMSETE
-    corrections stacked on top of an already-maxed reference.
+    RamseteController::calculate_wheel_velocities now desaturates to this budget,
+    so a log recorded after that change should not be able to fail this test. If it
+    does, either the desaturation is not running (check the maxWheelVel field in the
+    log's "Build config:" line) or the budget is set above what the motors deliver.
+    Pre-desaturation logs fail here by design -- that is the bug being fixed.
     """
     name, runs = log_runs
     sf = metrics.setpoint_feasibility(runs)
@@ -603,8 +606,8 @@ def test_wheel_setpoints_feasible(log_runs):
         f"{name}: {100 * sf['infeasible_fraction']:.1f}% of wheel setpoints "
         f"exceed the usable {sf['vmax_in_s']:.0f} in/s (worst "
         f"{sf['max_setpoint_in_s']:.0f} in/s; free speed "
-        f"{sf['free_speed_in_s']:.0f} in/s). Lower Config::RAMSETE_MAX_VELOCITY "
-        "and desaturate wheel setpoints before DrivetrainController::calculateVoltages.")
+        f"{sf['free_speed_in_s']:.0f} in/s). Wheel-space desaturation in "
+        "RamseteController::calculate_wheel_velocities should make this impossible.")
 
 
 def test_saturation_cost_bounded(log_runs):

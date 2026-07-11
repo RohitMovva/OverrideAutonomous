@@ -16,12 +16,17 @@ import math
 import re
 from pathlib import Path
 
-_CONFIG_HPP = Path(__file__).resolve().parents[2] / "include" / "config.hpp"
+_INCLUDE = Path(__file__).resolve().parents[2] / "include"
+_CONFIG_HPP = _INCLUDE / "config.hpp"
+_UNITS_HPP = _INCLUDE / "utilities" / "math" / "units.hpp"
 
-# Units::Constants values that config.hpp refers to by name.
+# Fallbacks for the Units::Constants names config.hpp refers to. These are parsed
+# out of units.hpp below; the literals here are only used if it can't be read.
+# Note WHEEL_2_75_INCH is 2.76, not 2.75 -- it's the measured effective diameter,
+# so do not "correct" it to match its own name.
 _NAMED = {
-    "WHEEL_2_75_INCH": 2.75,
-    "WHEEL_3_25_INCH": 3.25,
+    "WHEEL_2_75_INCH": 2.76,
+    "WHEEL_3_25_INCH": 3.18,
     "WHEEL_4_INCH": 4.0,
     "V5_BLUE_MOTOR_TICKS_PER_ROTATION": 300.0,
 }
@@ -35,11 +40,10 @@ BLUE_CARTRIDGE_RPM = 600.0
 _DEFAULTS = {
     "WHEEL_BASE_WIDTH": 15.0,
     "GEAR_RATIO": 36.0 / 48.0,
-    "WHEEL_DIAMETER": 2.75,
-    "KS": 2.5, "KV": 1.85, "KA": 0.3,
+    "WHEEL_DIAMETER": 2.76,
+    "KS": 2.55, "KV": 2.0, "KA": 0.4,
     "KP": 3.0, "KI": 0.0, "KD": 0.0,
-    "RAMSETE_MAX_VELOCITY": 54.0,
-    "RAMSETE_B": 2.0, "RAMSETE_ZETA": 0.7,
+    "RAMSETE_B": 2.4, "RAMSETE_ZETA": 0.4,
     "DT": 10.0,
 }
 
@@ -62,8 +66,24 @@ def _evaluate(expr: str) -> float | None:
         return None
 
 
+def _load_named() -> dict[str, float]:
+    """Resolve Units::Constants names from units.hpp so they cannot drift."""
+    named = dict(_NAMED)
+    try:
+        text = _UNITS_HPP.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return named
+    for name, expr in _DECL.findall(text):
+        if name in named:
+            val = _evaluate(expr)
+            if val is not None:
+                named[name] = val
+    return named
+
+
 def _load() -> dict[str, float]:
     values = dict(_DEFAULTS)
+    _NAMED.update(_load_named())
     try:
         text = _CONFIG_HPP.read_text(encoding="utf-8", errors="replace")
     except OSError:
@@ -87,13 +107,14 @@ WHEEL_DIAMETER = _C["WHEEL_DIAMETER"]
 GEAR_RATIO = _C["GEAR_RATIO"]
 KS, KV, KA = _C["KS"], _C["KV"], _C["KA"]
 KP, KI, KD = _C["KP"], _C["KI"], _C["KD"]
-RAMSETE_MAX_VELOCITY = _C["RAMSETE_MAX_VELOCITY"]
 DT_MS = _C["DT"]
 DT_NOMINAL = DT_MS / 1000.0
 
 #: Free (no-load) wheel speed implied by the configured gearing, in in/s.
-#: 600 rpm blue cartridge * 36/48 * pi * 2.75" / 60 ~= 64.8 in/s.
-FREE_WHEEL_SPEED = (
+#: 600 rpm blue cartridge * 36/48 * pi * 2.76" / 60 ~= 65.0 in/s.
+#: Prefers Config::FREE_WHEEL_VELOCITY when the firmware defines it.
+FREE_WHEEL_SPEED = _C.get(
+    "FREE_WHEEL_VELOCITY",
     BLUE_CARTRIDGE_RPM * GEAR_RATIO * WHEEL_DIAMETER * math.pi / 60.0)
 
 #: A measured wheel speed above this is not physically possible and indicates a
@@ -101,9 +122,13 @@ FREE_WHEEL_SPEED = (
 #: long encoder delta by the nominal 10 ms). 10% over free speed for noise.
 UNPHYSICAL_WHEEL_SPEED = FREE_WHEEL_SPEED * 1.10
 
-#: The speed a *loaded* drivetrain can actually hold. Free speed is not
-#: achievable under load; commanding above this fraction of it guarantees
-#: voltage saturation and leaves no authority for feedback correction.
-#: Measured ceiling in tests/logs/initial_tuning.txt was ~56 in/s == 0.87.
-USABLE_SPEED_FRACTION = 0.85
-USABLE_WHEEL_SPEED = FREE_WHEEL_SPEED * USABLE_SPEED_FRACTION
+#: The speed a *loaded* drivetrain can actually hold, and the budget the firmware
+#: desaturates wheel setpoints to (Config::MAX_WHEEL_VELOCITY). Free speed is not
+#: achievable under load; commanding above this saturates the motor and leaves no
+#: authority for feedback. Measured ceiling in initial_tuning.txt was ~56 in/s.
+#:
+#: Read from config.hpp so the suite judges logs against the same budget the robot
+#: actually enforced, rather than a second opinion that can drift from it.
+USABLE_SPEED_FRACTION = _C.get("USABLE_SPEED_FRACTION", 0.85)
+USABLE_WHEEL_SPEED = _C.get(
+    "MAX_WHEEL_VELOCITY", FREE_WHEEL_SPEED * USABLE_SPEED_FRACTION)

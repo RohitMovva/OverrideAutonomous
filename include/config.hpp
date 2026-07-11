@@ -14,19 +14,50 @@ namespace Config
     constexpr double LATERAL_WHEEL_OFFSET = 2.419;                                            ///< Distance from tracking center to lateral wheel in inches
 
     // Velocity Controller Constants
-    constexpr double KS = 2.5;  ///< Static friction compensation (motor units)
-    constexpr double KV = 1.85; ///< Velocity feedforward gain
-    constexpr double KA = 0.3;  ///< Acceleration feedforward gain
+    //
+    // These are the values the robot has actually been running: until now main.cpp
+    // constructed DrivetrainController with hardcoded literals and these constants
+    // were only ever read to be printed in the "Build config:" log line -- so the
+    // log claimed kS=2.5/kV=1.85/kA=0.3 while the drivetrain really used
+    // 2.55/2.0/0.4. The literals are gone; these are now the single source of
+    // truth, seeded with the tested values so behaviour is unchanged.
+    constexpr double KS = 2.55; ///< Static friction compensation (motor units)
+    constexpr double KV = 2.0;  ///< Velocity feedforward gain (motor units)/(in/s)
+    constexpr double KA = 0.4;  ///< Acceleration feedforward gain (motor units)/(in/s^2)
     constexpr double KP = 3.0;  ///< Proportional gain for velocity control
     constexpr double KI = 0.00; ///< Integral gain for velocity control
     constexpr double KD = 0.0;  ///< Derivative gain for velocity control
 
     // Ramsete Controller Constants
-    constexpr double RAMSETE_B = 2.0;                     ///< Ramsete B gain
-    constexpr double RAMSETE_ZETA = 0.7;                  ///< Ramsete Zeta
-    constexpr double RAMSETE_MAX_VELOCITY = 4.5 * 12;     ///< Maximum velocity in inches per second
-    constexpr double RAMSETE_MAX_ACCELERATION = 5.0;      ///< Maximum acceleration in inches per second squared
+    constexpr double RAMSETE_B = 2.4;                     ///< Ramsete B gain (convergence)
+    constexpr double RAMSETE_ZETA = 0.4;                  ///< Ramsete zeta (damping)
     constexpr double RAMSETE_SCALE_FACTOR = 0.0254000508; ///< Scale factor for inputs and outputs (in relation to meters)
+
+    // Drivetrain speed budget
+    //
+    // The old RAMSETE_MAX_VELOCITY / RAMSETE_MAX_ANGULAR_VELOCITY pair is gone. They
+    // clamped the CHASSIS (v and w independently), which is the same mistake as
+    // clamping each wheel voltage on its own: it changes the v:w ratio and so
+    // flattens the commanded curvature. They were also never actually applied.
+    //
+    // The real constraint is on WHEEL speed, because that is what the motors limit.
+    // A wheel cap subsumes a chassis cap (|v| <= max(|v_l|, |v_r|) for any w), so
+    // one number is enough.
+    constexpr double MOTOR_FREE_SPEED_RPM = 600.0; ///< V5 blue cartridge free speed
+    constexpr double FREE_WHEEL_VELOCITY =
+        MOTOR_FREE_SPEED_RPM * GEAR_RATIO * WHEEL_DIAMETER * M_PI / 60.0; ///< ~65.0 in/s, no load
+
+    /// Fraction of free speed the drivetrain can actually hold under load. Measured
+    /// from tests/logs/initial_tuning.txt: while pinned at +/-127 the wheels topped
+    /// out near 56 in/s, i.e. ~0.86 of free speed. 0.85 is that, rounded down.
+    constexpr double USABLE_SPEED_FRACTION = 0.85;
+
+    /// Wheel-speed budget for desaturation (~55 in/s). Commanding above this cannot
+    /// be delivered: the motor saturates, the wheel falls behind its setpoint, and
+    /// since rotation is the DIFFERENCE of two large wheel speeds, a few in/s of
+    /// shortfall on the outside wheel becomes a large rotation error. That is how
+    /// initial_tuning.txt under-rotated by 31% and ran wide off the path all run.
+    constexpr double MAX_WHEEL_VELOCITY = FREE_WHEEL_VELOCITY * USABLE_SPEED_FRACTION;
 
     // Miscellaneous constants
     constexpr double DT = 10;                     ///< Global default time step in milliseconds

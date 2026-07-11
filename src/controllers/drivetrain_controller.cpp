@@ -15,14 +15,6 @@ DrivetrainController::DrivetrainController(
 {
 }
 
-double DrivetrainController::velocityToTicks(double velocityInchesPerSec) {
-    return (velocityInchesPerSec * TICKS_PER_REV) / (WHEEL_DIAMETER * PI);
-}
-
-double DrivetrainController::ticksToVelocity(double ticksPerSec) {
-    return (ticksPerSec * WHEEL_DIAMETER * PI) / TICKS_PER_REV;
-}
-
 DrivetrainController::MotorVoltages DrivetrainController::calculateVoltages(
     double leftVelocitySetpoint,
     double rightVelocitySetpoint,

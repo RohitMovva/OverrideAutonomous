@@ -92,8 +92,12 @@ void initialize()
         false, true
     );
 
-    ramsete_controller = new RamseteController(2.4, 0.4, 4.5 * 12, 5.0, 0.0254000508);
-    drive_controller = new DrivetrainController(2.55, 2.0, 0.4, 3.0, 0.00, 0.0);
+    ramsete_controller = new RamseteController(
+        Config::RAMSETE_B, Config::RAMSETE_ZETA,
+        Config::RAMSETE_SCALE_FACTOR);
+    drive_controller = new DrivetrainController(
+        Config::KS, Config::KV, Config::KA,
+        Config::KP, Config::KI, Config::KD);
 
     robot = new Robot(&left_mg, &right_mg, &imu_sensor, &master, drive_controller, ramsete_controller, std::move(localization), &intake);
 

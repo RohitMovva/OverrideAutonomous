@@ -155,18 +155,16 @@ void Robot::processTrajectory(const TrajectoryPoint &tp)
       wheel_velocities = m_ramseteController->calculate_wheel_velocities(
             ramsete_output[0],              // linear velocity
             ramsete_output[1],              // angular velocity
-            Config::WHEEL_DIAMETER,         // wheel diameter from config
-            Config::GEAR_RATIO,             // gear ratio from config
-            Config::WHEEL_BASE_WIDTH        // track width from config
+            Config::WHEEL_BASE_WIDTH,       // track width from config
+            Config::MAX_WHEEL_VELOCITY      // desaturate to what the motors can hold
             );
     } else {
         wheel_velocities = m_ramseteController->calculate_wheel_velocities(
-            tp.linear_vel,              // linear velocity
-            tp.angular_vel,              // angular velocity
-            Config::WHEEL_DIAMETER,         // wheel diameter from config
-            Config::GEAR_RATIO,             // gear ratio from config
-            Config::WHEEL_BASE_WIDTH        // track width from config
-            );  
+            tp.linear_vel,                  // linear velocity
+            tp.angular_vel,                 // angular velocity
+            Config::WHEEL_BASE_WIDTH,       // track width from config
+            Config::MAX_WHEEL_VELOCITY      // desaturate to what the motors can hold
+            );
     }
     
     Logger::getInstance()->log("Left wheel velocities: %f %f", wheel_velocities[0], m_localization->getLeftVelocity().linear);
@@ -301,19 +299,31 @@ void Robot::processAction(const ActionPoint &ap)
 bool Robot::followTrajectory(Trajectory &trajectory, std::optional<Pose> start_pose)
 {
     Logger::getInstance()->log("Starting trajectory following");
-    // Build-config marker: logs the exact compiled constants so a log can be
-    // matched to the binary that produced it (guards against analyzing a stale
-    // log after a rebuild). If wheelBase here isn't the value you expect, the
-    // firmware on the brain is not the one you just built.
-    Logger::getInstance()->log(
-        "Build config: wheelBase=%.3f wheelDia=%.3f kS=%.3f kV=%.3f kA=%.3f kP=%.3f",
-        Config::WHEEL_BASE_WIDTH, Config::WHEEL_DIAMETER,
-        Config::KS, Config::KV, Config::KA, Config::KP);
     if (!isInitialized())
     {
         Logger::getInstance()->logError("Robot is not initialized, cannot follow trajectory");
         return false;
     }
+    // Build-config marker: logs the exact constants in force so a log can be
+    // matched to the binary that produced it (guards against analyzing a stale
+    // log after a rebuild). If wheelBase here isn't the value you expect, the
+    // firmware on the brain is not the one you just built.
+    //
+    // The gains are read back OUT OF THE CONTROLLERS, not out of Config::. This
+    // line used to print Config:: while main.cpp constructed the controllers from
+    // hardcoded literals, so every log claimed kS=2.5/kV=1.85/kA=0.3 while the
+    // drivetrain actually ran 2.55/2.0/0.4 -- the log described the config file
+    // rather than the robot. Ask the controller, always. (Logged after the
+    // isInitialized() check, which is what guarantees the controllers are non-null.)
+    Logger::getInstance()->log(
+        "Build config: wheelBase=%.3f wheelDia=%.3f kS=%.3f kV=%.3f kA=%.3f "
+        "kP=%.3f kI=%.3f kD=%.3f ramseteB=%.3f ramseteZeta=%.3f maxWheelVel=%.3f",
+        Config::WHEEL_BASE_WIDTH, Config::WHEEL_DIAMETER,
+        m_driveController->getKS(), m_driveController->getKV(),
+        m_driveController->getKA(), m_driveController->getKP(),
+        m_driveController->getKI(), m_driveController->getKD(),
+        m_ramseteController->getB(), m_ramseteController->getZeta(),
+        Config::MAX_WHEEL_VELOCITY);
     if (trajectory.empty())
     {
         Logger::getInstance()->logError("Trajectory is empty, cannot follow");

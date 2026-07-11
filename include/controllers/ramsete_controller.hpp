@@ -15,10 +15,12 @@
  */
 class RamseteController {
 private:
-    void apply_velocity_limits(double& v, double& w) {
-        v = std::max(-max_v_, std::min(v, max_v_));
-        w = std::max(-max_w_, std::min(w, max_w_));
-    }
+    // apply_velocity_limits() used to live here. It clamped v and w independently,
+    // which changes the v:w ratio and so flattens the commanded curvature -- the
+    // same mistake as clipping each wheel voltage on its own. It was also dead: the
+    // only caller was get_output_velocities(), which nothing used, so RAMSETE output
+    // was in fact unbounded. Saturation is now handled where it belongs, in wheel
+    // space, by calculate_wheel_velocities(), which scales both wheels together.
 
     double normalizeAngle(double angle) {
         while (angle > M_PI) angle -= 2 * M_PI;
@@ -31,29 +33,28 @@ private:
     double prev_time;
 public:
     /**
-     * @brief Construct a new RAMSETE Controller with default parameters
-     * Default values: b = 2.0, zeta = 0.7
+     * @brief Construct a new RAMSETE Controller
+     *
+     * This is the only constructor. The previous RamseteController() and
+     * RamseteController(b, zeta) overloads left scale_factor_ uninitialized, and
+     * calculate() multiplies every input by it -- constructing either would have fed
+     * the controller garbage. Nothing used them, so they were removed.
+     *
+     * max_v/max_w are gone too: they were a chassis-level clamp (see the note on
+     * apply_velocity_limits above) and are superseded by the wheel-space
+     * desaturation in calculate_wheel_velocities().
+     *
+     * @param b Tuning parameter for convergence
+     * @param zeta Damping factor
+     * @param scale_factor Scale factor for inputs and outputs (in relation to meters)
      */
-    RamseteController();
+    RamseteController(double b, double zeta, double scale_factor);
 
-    /**
-     * @brief Construct a new RAMSETE Controller with custom tuning parameters
-     * 
-     * @param b Tuning parameter for convergence (default: 2.0)
-     * @param zeta Damping factor (default: 0.7)
-     */
-    RamseteController(double b, double zeta);
-
-    /**
-     * @brief Construct a new RAMSETE Controller with all custom parameters
-     * 
-     * @param b Tuning parameter for convergence (default: 2.0)
-     * @param zeta Damping factor (default: 0.7)
-     * @param max_v Maximum linear velocity (default: 2.0)
-     * @param max_w Maximum angular velocity (default: 2.0)
-     * @param scale_factor Scale factor for inputs and outputs (in relation to meters) (default: 1.0)
-     */
-    RamseteController(double b, double zeta, double max_v, double max_w, double scale_factor);
+    /// Gains actually in use, for logging. Do not read Config:: to log these --
+    /// the log must describe the controller, not the config file.
+    double getB() const { return b_; }
+    double getZeta() const { return zeta_; }
+    double getScaleFactor() const { return scale_factor_; }
 
     /**
      * @brief Calculate the global error between current and goal states
@@ -79,33 +80,27 @@ public:
     std::vector<double> calculate_local_error(std::vector<double> global_error, double goal_theta);
 
     /**
-     * @brief Calculate output velocities based on current state and error
-     * 
-     * @param v Linear velocity
-     * @param w Angular velocity
-     * @param theta Current heading
-     * @param goal_theta Goal heading
-     * @param k Control gain
-     * @return std::vector<double> Output velocities [linear, angular]
-     */
-    std::vector<double> get_output_velocities(double v, double w, double theta,
-                                            double goal_theta, double k);
-
-    /**
-     * @brief Convert desired velocities to wheel velocities
-     * 
-     * @param linear_velocity Desired linear velocity
-     * @param angular_velocity Desired angular velocity
-     * @param wheel_diameter Wheel diameter in inches
-     * @param gear_ratio Gear ratio (output/input)
+     * @brief Convert desired chassis velocities to wheel velocities, desaturated
+     *
+     * If either wheel exceeds max_wheel_velocity, BOTH are scaled by the same
+     * factor, preserving left:right and therefore the commanded curvature. The
+     * robot drives the same arc, just slower. Clamping the wheels independently
+     * would cap the outside wheel while leaving the inside one alone, shrinking the
+     * differential and flattening the turn.
+     *
+     * wheel_diameter and gear_ratio used to be parameters here but were never read
+     * -- the conversion only needs the track width.
+     *
+     * @param linear_velocity Desired linear velocity (in/s)
+     * @param angular_velocity Desired angular velocity (rad/s)
      * @param track_width Track width in inches
+     * @param max_wheel_velocity Wheel-speed budget (in/s); pass <= 0 to disable
      * @return std::vector<double> Wheel velocities [left_velocity, right_velocity]
      */
     std::vector<double> calculate_wheel_velocities(double linear_velocity,
                                                  double angular_velocity,
-                                                 double wheel_diameter,
-                                                 double gear_ratio,
-                                                 double track_width);
+                                                 double track_width,
+                                                 double max_wheel_velocity);
 
     /**
      * @brief Calculate control output for trajectory tracking
@@ -149,8 +144,6 @@ public:
 private:
     double b_;      ///< Convergence tuning parameter
     double zeta_;   ///< Damping factor
-    double max_v_;  ///< Maximum linear velocity
-    double max_w_;  ///< Maximum angular velocity
     double scale_factor_;  ///< Scale factor for inputs and outputs
 };
 
