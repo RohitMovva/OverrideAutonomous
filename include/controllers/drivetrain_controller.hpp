@@ -9,7 +9,7 @@
 /**
  * @brief Controller for differential drivetrain motor outputs
  * 
- * Implements feedforward and PID feedback control for precise velocity control
+ * Implements feedforward and PID feedback control for velocity control
  * of a differential drivetrain. Handles conversion between real-world units
  * and motor units, and provides voltage outputs suitable for V5 motors.
  */
@@ -36,8 +36,6 @@ public:
     DrivetrainController(double kS, double kV, double kA,
                         double kP, double kI, double kD);
 
-    /// Gains actually in use. Log these -- never re-read Config::, or the log
-    /// will describe the config rather than the controller that produced it.
     double getKS() const { return kS; }
     double getKV() const { return kV; }
     double getKA() const { return kA; }
@@ -82,11 +80,6 @@ private:
     uint32_t prevTime;
 
     // Robot constants
-    //
-    // WHEEL_DIAMETER (2.8), MAX_RPM, TICKS_PER_REV and PI used to live here as a
-    // third, conflicting copy of the geometry -- config.hpp says 2.76 in. They were
-    // only read by velocityToTicks()/ticksToVelocity(), which nothing called, so
-    // both are gone along with them. Anything needing geometry uses Config::.
     static constexpr int MOTOR_VOLTAGE_LIMIT = 127;      ///< V5 motor command range (±127)
 
     /**

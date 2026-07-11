@@ -47,21 +47,7 @@ std::vector<double> RamseteController::calculate_wheel_velocities(double linear_
     double left = linear_velocity - wheel_speed_diff;
     double right = linear_velocity + wheel_speed_diff;
 
-    // Desaturate. If either wheel is asked for more than the drivetrain can hold,
-    // scale BOTH by the same factor. That keeps left:right -- and therefore the
-    // commanded curvature -- intact, so the robot drives the same arc, just slower.
-    //
-    // Without this the excess silently became under-rotation. A RAMSETE correction
-    // stacked on top of a fast reference pushed the outside wheel to 59.4 in/s
-    // against a ~55 in/s ceiling; the motor pinned at 127, the wheel fell ~5 in/s
-    // short, and because rotation is the DIFFERENCE of two large wheel speeds that
-    // shortfall ate most of the turn. initial_tuning.txt delivered only 69% of the
-    // commanded turn differential and ran wide off the path for the entire run.
-    //
-    // Clamping the wheels independently would NOT work: it would cap the outside
-    // wheel while leaving the inside one alone, shrinking the differential and
-    // flattening the turn -- exactly the failure this exists to prevent. Scale, do
-    // not clip.
+    // Desaturate while preserving curvature
     if (max_wheel_velocity > 0.0) {
         double max_magnitude = std::max(std::abs(left), std::abs(right));
         if (max_magnitude > max_wheel_velocity) {

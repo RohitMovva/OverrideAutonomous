@@ -15,13 +15,6 @@
  */
 class RamseteController {
 private:
-    // apply_velocity_limits() used to live here. It clamped v and w independently,
-    // which changes the v:w ratio and so flattens the commanded curvature -- the
-    // same mistake as clipping each wheel voltage on its own. It was also dead: the
-    // only caller was get_output_velocities(), which nothing used, so RAMSETE output
-    // was in fact unbounded. Saturation is now handled where it belongs, in wheel
-    // space, by calculate_wheel_velocities(), which scales both wheels together.
-
     double normalizeAngle(double angle) {
         while (angle > M_PI) angle -= 2 * M_PI;
         while (angle < -M_PI) angle += 2 * M_PI;
@@ -35,23 +28,13 @@ public:
     /**
      * @brief Construct a new RAMSETE Controller
      *
-     * This is the only constructor. The previous RamseteController() and
-     * RamseteController(b, zeta) overloads left scale_factor_ uninitialized, and
-     * calculate() multiplies every input by it -- constructing either would have fed
-     * the controller garbage. Nothing used them, so they were removed.
-     *
-     * max_v/max_w are gone too: they were a chassis-level clamp (see the note on
-     * apply_velocity_limits above) and are superseded by the wheel-space
-     * desaturation in calculate_wheel_velocities().
-     *
      * @param b Tuning parameter for convergence
      * @param zeta Damping factor
      * @param scale_factor Scale factor for inputs and outputs (in relation to meters)
      */
     RamseteController(double b, double zeta, double scale_factor);
 
-    /// Gains actually in use, for logging. Do not read Config:: to log these --
-    /// the log must describe the controller, not the config file.
+    // Gain getters, mainly for logging
     double getB() const { return b_; }
     double getZeta() const { return zeta_; }
     double getScaleFactor() const { return scale_factor_; }
@@ -80,16 +63,7 @@ public:
     std::vector<double> calculate_local_error(std::vector<double> global_error, double goal_theta);
 
     /**
-     * @brief Convert desired chassis velocities to wheel velocities, desaturated
-     *
-     * If either wheel exceeds max_wheel_velocity, BOTH are scaled by the same
-     * factor, preserving left:right and therefore the commanded curvature. The
-     * robot drives the same arc, just slower. Clamping the wheels independently
-     * would cap the outside wheel while leaving the inside one alone, shrinking the
-     * differential and flattening the turn.
-     *
-     * wheel_diameter and gear_ratio used to be parameters here but were never read
-     * -- the conversion only needs the track width.
+     * @brief Convert desired chassis velocities to wheel velocities, desaturated to preserve curvature
      *
      * @param linear_velocity Desired linear velocity (in/s)
      * @param angular_velocity Desired angular velocity (rad/s)

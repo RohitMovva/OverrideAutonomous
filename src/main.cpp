@@ -25,9 +25,6 @@ EnhancedDigitalOut flipper(3, false);
 EnhancedDigitalOut intake_widener(7, false);
 EnhancedDigitalOut bobby_wheel(6, false);
 
-// Output limits are millivolts (fed straight to move_voltage), so they must be
-// ±12000 — the ±127 default would starve the hold and let the lift sag. kI trims
-// out the residual droop a pure-P hold would leave against gravity.
 PIDController lift_pid(250, 60, 1200, -12000, 12000);
 Lift lift(lift_rotation_sensor, lift_motors, claw_angler, claw_clamp, 12000, 12000, 8000, 192000, 200, lift_pid);
 Intake intake(intake_motors, intake_widener, color_sort_os, color_sort_ds);
@@ -206,10 +203,6 @@ int joystickCurveSkills(int x, double a = 3.0)
  */
 // std::pair<int, int> arcade_drive(int throttle, int steer)
 // {
-//     // -------------------------------------------------------------------------
-//     //  TUNING CONSTANTS  (edit these to suit your robot / controller)
-//     // -------------------------------------------------------------------------
-
 //     // Deadband: joystick inputs whose absolute value falls at or below this
 //     // threshold are treated as zero.  Eliminates controller drift.
 //     // Range: [0, 127]  –  typical value: 5–15

@@ -76,12 +76,7 @@ DrivetrainController::MotorVoltages DrivetrainController::calculateVoltages(
     prevRightVelocityError = rightVelocityError;
     prevTime = currentTime;
 
-    // Desaturate instead of clamping each side independently. If either side
-    // exceeds the V5 range, scale BOTH by the same factor so the left/right
-    // ratio -- the commanded curvature -- is preserved. Clipping only the
-    // saturated (outside) wheel flattens the turn and drives the robot wide,
-    // the dominant tracking error seen in tuning logs (cross-track bias on
-    // curves, outside wheel saturating ~30% while the inside stayed unclipped).
+    // Desaturate while preserving curvature
     double maxMagnitude = std::max(std::abs(leftVoltage), std::abs(rightVoltage));
     if (maxMagnitude > MOTOR_VOLTAGE_LIMIT) {
         double scale = MOTOR_VOLTAGE_LIMIT / maxMagnitude;
