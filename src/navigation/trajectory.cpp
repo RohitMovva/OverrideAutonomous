@@ -27,10 +27,19 @@ void Trajectory::loadFromFile(const std::string &filepath)
         {
             TrajectoryPoint tp;
             iss >> tp.time >> tp.x >> tp.y >> tp.theta >> tp.linear_vel >> tp.angular_vel;
-            
-            // Calculate linear and angular acceleration if available
-            tp.linear_accel = (tp.linear_vel - past_linear_vel) / (tp.time - past_time);
-            tp.angular_accel = (tp.angular_vel - past_angular_vel) / (tp.time - past_time);
+
+            // Safe accel calculation to avoid division by zero (usually would happen at start of trajectories when past time = current time)
+            const double dt = tp.time - past_time;
+            if (dt > 1e-9)
+            {
+                tp.linear_accel = (tp.linear_vel - past_linear_vel) / dt;
+                tp.angular_accel = (tp.angular_vel - past_angular_vel) / dt;
+            }
+            else
+            {
+                tp.linear_accel = 0.0;
+                tp.angular_accel = 0.0;
+            }
 
             past_time = tp.time;
             past_linear_vel = tp.linear_vel;
