@@ -5,8 +5,10 @@ Odometry::Odometry(pros::MotorGroup &left, pros::MotorGroup &right,
                    bool enable_heading_filter,
                    bool enable_velocity_filters)
     : leftDrive(left), rightDrive(right), lateralEncoder(lateral), imu(imuSensor),
-      leftVelocityObserver(Config::KS, Config::KV, Config::KA, Config::VELOCITY_OBSERVER_GAIN),
-      rightVelocityObserver(Config::KS, Config::KV, Config::KA, Config::VELOCITY_OBSERVER_GAIN),
+      leftVelocityObserver(Config::KS, Config::KV, Config::KA, Config::VELOCITY_OBSERVER_GAIN,
+                           Config::VELOCITY_OBSERVER_DISTURBANCE_GAIN),
+      rightVelocityObserver(Config::KS, Config::KV, Config::KA, Config::VELOCITY_OBSERVER_GAIN,
+                            Config::VELOCITY_OBSERVER_DISTURBANCE_GAIN),
       headingFilter(), useHeadingFilter(enable_heading_filter), useVelocityFilters(enable_velocity_filters)
 {
     reset();
@@ -16,13 +18,6 @@ void Odometry::reset()
 {
     currentPose = Pose();
     lastUpdateTime = Units::millisecondsToSeconds(pros::millis());
-
-    std::vector<double> leftPositions = leftDrive.get_position_all();
-    std::vector<double> rightPositions = rightDrive.get_position_all();
-
-    prevLeftPos = std::vector<double>(leftPositions.size(), 0);
-    prevRightPos = std::vector<double>(rightPositions.size(), 0);
-    prevLateralPos = 0;
     prevTime = lastUpdateTime;
 
     leftVelocityObserver.reset(0.0);
@@ -35,11 +30,22 @@ void Odometry::reset()
     lastRightVoltage = 0.0;
     headingFilter.reset();
 
-    leftDrive.tare_position_all();
-    rightDrive.tare_position_all();
-    lateralEncoder.reset_position();
-    imu.tare_rotation();
-    imu.tare_heading();
+    // Prevents race condition with taring sensors then reading
+    seedSensorBaseline();
+}
+
+void Odometry::seedSensorBaseline()
+{
+    prevLeftPos = getMotorPositionsInches(leftDrive.get_position_all());
+    prevRightPos = getMotorPositionsInches(rightDrive.get_position_all());
+
+    const double lateral = latTicksToInches(lateralEncoder.get_position());
+    prevLateralPos = std::isfinite(lateral) ? lateral : 0.0;
+
+    const double rotation = imu.get_rotation();
+    prevImuRotation = std::isfinite(rotation) ? rotation : 0.0;
+
+    hasPrevSensorReadings = std::isfinite(rotation);
 }
 
 void Odometry::update()
@@ -52,21 +58,39 @@ void Odometry::update()
         deltaTime = Units::millisecondsToSeconds(Config::DT);
     }
 
-    // Get filtered heading
-    double filteredHeading;
-    filteredHeading = Angles::degreesToRadians(imu.get_heading() * -1);
+    // If the IMU was unreadable when the baseline was taken (still calibrating, or
+    // disconnected), we have no valid reference to difference against. Take a fresh
+    // baseline and sit this tick out rather than integrating a bogus delta.
+    if (!hasPrevSensorReadings)
+    {
+        Logger::getInstance()->logWarning("No valid sensor baseline; reseeding and skipping tick");
+        seedSensorBaseline();
+        lastUpdateTime = currentTime;
+        return;
+    }
 
-    // Logger::getInstance()->log("IMU Heading: %f", imu.get_heading() * -1);
-    // Logger::getInstance()->log("Heading: %f", filteredHeading);
+    const double imuRotation = imu.get_rotation(); // Continuous rotation
+    double deltaTheta = 0.0;
+    if (std::isfinite(imuRotation))
+    {
+        // Negated: the IMU counts clockwise, we use CCW+
+        deltaTheta = Angles::degreesToRadians(-(imuRotation - prevImuRotation));
+        prevImuRotation = imuRotation;
+    }
+    else
+    {
+        Logger::getInstance()->logWarning("Invalid IMU reading; holding heading this tick");
+    }
 
-    double deltaTheta = filteredHeading;
+    // Absolute encoder positions
+    std::vector<double> leftPositions = getMotorPositionsInches(leftDrive.get_position_all());
+    std::vector<double> rightPositions = getMotorPositionsInches(rightDrive.get_position_all());
 
-    // Get and validate encoder readings
-    std::vector<double> leftPositions = getMotorPositionsInches(leftDrive.get_position_all(),
-                                                                getAveragePosition(prevLeftPos));
-    std::vector<double> rightPositions = getMotorPositionsInches(rightDrive.get_position_all(),
-                                                                 getAveragePosition(prevRightPos));
-    double lateralPos = latTicksToInches(lateralEncoder.get_position()) + prevLateralPos;
+    double lateralPos = latTicksToInches(lateralEncoder.get_position());
+    if (!std::isfinite(lateralPos))
+    {
+        lateralPos = prevLateralPos;
+    }
 
     // For now, disable lateral encoder
     lateralPos = 0;
@@ -75,6 +99,19 @@ void Odometry::update()
     //                            leftDrive.get_position_all()[1], leftDrive.get_position_all()[2]);
     // Logger::getInstance()->log("Right Positions: %f %f %f", rightDrive.get_position_all()[0],
     //                            rightDrive.get_position_all()[1], rightDrive.get_position_all()[2]);
+
+    // getMotorPositionsInches drops unreadable motors. If a whole side dced (kinda cooked), 
+    // hold its previous position so the delta is zer
+    if (leftPositions.empty())
+    {
+        Logger::getInstance()->logWarning("No readable left drive encoders; holding position");
+        leftPositions = prevLeftPos;
+    }
+    if (rightPositions.empty())
+    {
+        Logger::getInstance()->logWarning("No readable right drive encoders; holding position");
+        rightPositions = prevRightPos;
+    }
 
     double currentLeftPos = getAveragePosition(leftPositions);
     double currentRightPos = getAveragePosition(rightPositions);
@@ -87,6 +124,9 @@ void Odometry::update()
     double deltaLateral = lateralPos - prevLateralPos;
 
     // Update velocities with optional filtering.
+    const double prevLeftVelocity = leftVelocity.linear;
+    const double prevRightVelocity = rightVelocity.linear;
+
     leftVelocityRaw = deltaLeft / deltaTime;
     rightVelocityRaw = deltaRight / deltaTime;
 
@@ -101,13 +141,9 @@ void Odometry::update()
         rightVelocity.linear = rightVelocityRaw;
     }
 
-    // Calculate accelerations
-    leftAccel.linear = (leftVelocity.linear - (prevLeftPos[0] - getAveragePosition(prevLeftPos)) /
-                                                  (prevTime - lastUpdateTime)) /
-                       deltaTime;
-    rightAccel.linear = (rightVelocity.linear - (prevRightPos[0] - getAveragePosition(prevRightPos)) /
-                                                    (prevTime - lastUpdateTime)) /
-                        deltaTime;
+    // Acceleration = d(velocity)/dt 
+    leftAccel.linear = (leftVelocity.linear - prevLeftVelocity) / deltaTime;
+    rightAccel.linear = (rightVelocity.linear - prevRightVelocity) / deltaTime;
 
     // Calculate forward displacement
     double forwardDisplacement = (deltaLeft + deltaRight) / 2.0;
@@ -145,18 +181,19 @@ void Odometry::update()
 
     currentPose.theta = Angles::normalizeAngle(currentPose.theta + deltaTheta);
 
-    // Update previous values
+    // Update previous values. prevImuRotation was already advanced above, next to the read
+    // that validated it.
+    //
+    // Nothing is tared here any more. The tares that used to close this function
+    // (lateralEncoder.reset_position(), imu.tare_heading(), tare_position_all() on both
+    // drives) issued four asynchronous port writes per tick and then assumed a zero
+    // baseline on the next one. Motion during that latency was lost, biasing distance and
+    // heading low in proportion to speed.
     prevLeftPos = leftPositions;
     prevRightPos = rightPositions;
     prevLateralPos = lateralPos;
     prevTime = lastUpdateTime;
     lastUpdateTime = currentTime;
-
-    // Reset encoders for next iteration
-    lateralEncoder.reset_position();
-    imu.tare_heading();
-    leftDrive.tare_position_all();
-    rightDrive.tare_position_all();
 }
 
 // Core interface implementation
@@ -198,19 +235,30 @@ double Odometry::latTicksToInches(int ticks)
 
 double Odometry::getAveragePosition(const std::vector<double> &positions)
 {
-    if (positions.empty())
-        return 0.0;
-    return std::accumulate(positions.begin(), positions.end(), 0.0) / positions.size();
+    double sum = 0.0;
+    int count = 0;
+    for (double pos : positions)
+    {
+        if (std::isfinite(pos))
+        {
+            sum += pos;
+            ++count;
+        }
+    }
+    return (count > 0) ? (sum / count) : 0.0;
 }
 
-std::vector<double> Odometry::getMotorPositionsInches(
-    const std::vector<double> &motorPositions, double prevPos)
+std::vector<double> Odometry::getMotorPositionsInches(const std::vector<double> &motorPositions)
 {
+    // Ignores dced motors to not make everything NaN
     std::vector<double> positions;
     positions.reserve(motorPositions.size());
     for (double pos : motorPositions)
     {
-        positions.push_back(ticksToInches(pos) + prevPos);
+        if (std::isfinite(pos))
+        {
+            positions.push_back(ticksToInches(pos));
+        }
     }
     return positions;
 }
@@ -250,7 +298,8 @@ void Odometry::disableSensor(const std::string &sensor)
     }
     else if (sensor == "lateral")
     {
-        prevLateralPos = lateralEncoder.get_position() * -1;
+        const double lateral = latTicksToInches(lateralEncoder.get_position());
+        prevLateralPos = std::isfinite(lateral) ? lateral : prevLateralPos;
     }
 }
 

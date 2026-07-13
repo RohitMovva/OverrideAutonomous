@@ -61,6 +61,11 @@ namespace Config
     /// Encoder-correction gain for the wheel-velocity observer (VelocityObserver).
     /// Basically a GH filter that uses the feedforward model we use for velo control
     constexpr double VELOCITY_OBSERVER_GAIN = 0.2;
+
+    /// Integral gain on the observer's residual, in (motor units)/(in/s) per tick. Learns
+    /// the voltage the kS/kV/kA model is missing, so a constant model error does not leave
+    /// a constant velocity bias.
+    constexpr double VELOCITY_OBSERVER_DISTURBANCE_GAIN = 0.15;
 }
 
 #endif

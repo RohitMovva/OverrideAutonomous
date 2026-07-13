@@ -424,6 +424,10 @@ void Robot::tuneTrackWidth()
     PIDController controller = PIDController(200.0, 25.0, 20.0, -127.0, 127.0, 50.0);
     Logger::getInstance()->log("Track width tuning started");
 
+    // Zero encoders
+    m_leftDrivetrain->tare_position_all();
+    m_rightDrivetrain->tare_position_all();
+
     double heading = Angles::degreesToRadians(m_inertial->get_heading() * -1);
 
     double target_heading = Angles::degreesToRadians(heading + 180.0);

@@ -3,13 +3,16 @@
 #include <algorithm>
 #include <cmath>
 
-VelocityObserver::VelocityObserver(double kS, double kV, double kA, double gain)
+VelocityObserver::VelocityObserver(double kS, double kV, double kA, double gain,
+                                   double disturbanceGain)
     : kS(kS)
     , kV(kV)
     , kA(kA)
     , gain(std::clamp(gain, 0.0, 1.0))
+    , disturbanceGain(std::max(disturbanceGain, 0.0))
     , modelUsable(kA > 0.0)
     , vHat(0.0)
+    , dHat(0.0)
 {
 }
 
@@ -26,20 +29,26 @@ double VelocityObserver::update(double measuredVelocity, double appliedVoltage, 
     if (modelUsable)
     {
         // Friction opposes motion. At a standstill it has no direction of its own, so it
-        // can only cancel the applied voltage, never reverse it -- otherwise the model
-        // would predict the robot accelerating backwards out of every stop.
+        // can only cancel the applied voltage, never reverse it
         const double friction =
             (std::abs(vHat) > STATIC_VELOCITY_EPSILON)
                 ? std::copysign(kS, vHat)
                 : std::copysign(std::min(std::abs(appliedVoltage), kS), appliedVoltage);
 
-        const double predictedAccel = (appliedVoltage - friction - kV * vHat) / kA;
+        // dHat is the voltage the model is missing: scrub, sag, a driving into a goal, a bad kV.
+        const double effectiveVoltage = appliedVoltage + dHat;
+        const double predictedAccel = (effectiveVoltage - friction - kV * vHat) / kA;
         vHat += predictedAccel * dt;
     }
 
-    // Correct towards the encoder. With modelUsable == false this is all that runs, and
-    // the observer is exactly an exponential moving average with alpha = gain.
-    vHat += gain * (measuredVelocity - vHat);
+    // If constant error is detected don't keep offsetting it, assume it's actually real
+    const double residual = measuredVelocity - vHat;
+    vHat += gain * residual;
+
+    if (modelUsable)
+    {
+        dHat = std::clamp(dHat + disturbanceGain * residual, -MAX_DISTURBANCE, MAX_DISTURBANCE);
+    }
 
     return vHat;
 }
@@ -47,4 +56,5 @@ double VelocityObserver::update(double measuredVelocity, double appliedVoltage, 
 void VelocityObserver::reset(double velocity)
 {
     vHat = std::isfinite(velocity) ? velocity : 0.0;
+    dHat = 0.0;
 }

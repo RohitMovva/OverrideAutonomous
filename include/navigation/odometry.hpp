@@ -47,12 +47,25 @@ private:
     bool useHeadingFilter;
     bool useVelocityFilters;
 
-    // State variables
+    // State variables.
+    //
+    // prevLeftPos / prevRightPos / prevLateralPos / prevImuRotation are ABSOLUTE sensor
+    // readings from the previous tick, and every delta is taken against them. Nothing is
+    // tared inside update().
+    //
+    // The old code tared the encoders and the IMU at the end of every tick and read the
+    // "delta" straight off a freshly-zeroed sensor. tare_position_all() / tare_heading()
+    // are asynchronous smart-port writes: any motion that occurs between issuing the tare
+    // and the device applying it lands in neither tick and is silently lost. That biases
+    // both distance and heading LOW by an amount proportional to speed -- an error no
+    // downstream filter can recover, because the measurement was never taken.
     Pose currentPose;
     double lastUpdateTime;
-    std::vector<double> prevLeftPos;
-    std::vector<double> prevRightPos;
-    double prevLateralPos;
+    std::vector<double> prevLeftPos;   ///< Absolute per-motor position, inches
+    std::vector<double> prevRightPos;  ///< Absolute per-motor position, inches
+    double prevLateralPos;             ///< Absolute lateral encoder position, inches
+    double prevImuRotation;            ///< Absolute IMU rotation, degrees (continuous, unwrapped)
+    bool hasPrevSensorReadings;        ///< False until the first post-reset baseline is captured
     double prevTime;
 
     // Velocity and acceleration tracking
@@ -70,8 +83,15 @@ private:
     double ticksToInches(double ticks);
     double latTicksToInches(int ticks);
     double degreesToRadians(double degrees);
+    /// Mean of the finite entries only. A disconnected motor reports PROS_ERR_F
+    /// (infinity); averaging that in would make the mean infinite, the delta NaN, and the
+    /// pose NaN forever after.
     double getAveragePosition(const std::vector<double> &positions);
-    std::vector<double> getMotorPositionsInches(const std::vector<double> &motorPositions, double prevPos);
+    /// Absolute per-motor position in inches. No longer folds in a previous offset --
+    /// that only existed to undo the per-tick tare.
+    std::vector<double> getMotorPositionsInches(const std::vector<double> &motorPositions);
+    /// Capture the current absolute sensor readings as the baseline for the next delta.
+    void seedSensorBaseline();
     bool isValidEncoderReading(double newPos, double oldPos, double deltaTime);
     double validateAndFilterEncoders(const std::vector<double> &positions,
                                      const std::vector<double> &prevPositions,
