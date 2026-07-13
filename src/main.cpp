@@ -72,11 +72,6 @@ void initialize()
     left_mg.tare_position_all();
     right_mg.tare_position_all();
 
-    if (!skills){
-        ;
-        intake.start_color_sorting("blue");
-    }
-
     imu_sensor.reset();
 
     side_encoder.set_reversed(true);
@@ -201,108 +196,108 @@ int joystickCurveSkills(int x, double a = 3.0)
  * @param steer     Raw left/right axis    [-127, 127]
  * @return          std::pair<int, int>  { leftMotor, rightMotor }  [-127, 127]
  */
-// std::pair<int, int> arcade_drive(int throttle, int steer)
-// {
-//     // Deadband: joystick inputs whose absolute value falls at or below this
-//     // threshold are treated as zero.  Eliminates controller drift.
-//     // Range: [0, 127]  –  typical value: 5–15
-//     constexpr int DEADBAND = 10;
+std::pair<int, int> arcade_drive(int throttle, int steer)
+{
+    // Deadband: joystick inputs whose absolute value falls at or below this
+    // threshold are treated as zero.  Eliminates controller drift.
+    // Range: [0, 127]  –  typical value: 5–15
+    constexpr int DEADBAND = 10;
 
-//     // Minimum speed: once a joystick clears the deadband, the output is
-//     // immediately scaled up to at least this value (avoids a "dead zone" where
-//     // the motor stalls because the command is too small to overcome friction).
-//     // Range: [0, 127]  –  typical value: 15–30
-//     constexpr int MIN_SPEED = 20;
+    // Minimum speed: once a joystick clears the deadband, the output is
+    // immediately scaled up to at least this value (avoids a "dead zone" where
+    // the motor stalls because the command is too small to overcome friction).
+    // Range: [0, 127]  –  typical value: 15–30
+    constexpr int MIN_SPEED = 20;
 
-//     // Turning curve exponent: applies a power-curve to the *steering* axis so
-//     // small deflections produce finer control while full deflection still
-//     // reaches 100 %.  Higher values = gentler at low speeds.
-//     // Range: (1.0, ∞)  –  typical value: 1.5–3.0  (1.0 = linear / no curve)
-//     constexpr double TURN_CURVE_EXPONENT = 2.5;
+    // Turning curve exponent: applies a power-curve to the *steering* axis so
+    // small deflections produce finer control while full deflection still
+    // reaches 100 %.  Higher values = gentler at low speeds.
+    // Range: (1.0, ∞)  –  typical value: 1.5–3.0  (1.0 = linear / no curve)
+    constexpr double TURN_CURVE_EXPONENT = 2.5;
 
-//     // Throttle/steer priority: blends throttle vs steering authority when both
-//     // axes are active simultaneously.  At 1.0 the robot drives straight at full
-//     // speed even with max steering input; at 0.0 steering gets no headroom at
-//     // all alongside full throttle.
-//     // Range: [0.0, 1.0]  –  typical value: 0.5–0.7
-//     constexpr double THROTTLE_PRIORITY = 0.1;
+    // Throttle/steer priority: blends throttle vs steering authority when both
+    // axes are active simultaneously.  At 1.0 the robot drives straight at full
+    // speed even with max steering input; at 0.0 steering gets no headroom at
+    // all alongside full throttle.
+    // Range: [0.0, 1.0]  –  typical value: 0.5–0.7
+    constexpr double THROTTLE_PRIORITY = 0.1;
 
-//     // -------------------------------------------------------------------------
-//     //  INPUT CLAMPING
-//     // -------------------------------------------------------------------------
-//     const double rawThrottle = std::clamp(throttle, -127, 127);
-//     const double rawSteer    = std::clamp(steer,    -127, 127);
+    // -------------------------------------------------------------------------
+    //  INPUT CLAMPING
+    // -------------------------------------------------------------------------
+    const double rawThrottle = std::clamp(throttle, -127, 127);
+    const double rawSteer    = std::clamp(steer,    -127, 127);
 
-//     // -------------------------------------------------------------------------
-//     //  DEADBAND
-//     //  Zero out inputs that fall within the dead zone.
-//     // -------------------------------------------------------------------------
-//     const double filteredThrottle = (std::abs(rawThrottle) <= DEADBAND) ? 0.0 : rawThrottle;
-//     const double filteredSteer    = (std::abs(rawSteer)    <= DEADBAND) ? 0.0 : rawSteer;
+    // -------------------------------------------------------------------------
+    //  DEADBAND
+    //  Zero out inputs that fall within the dead zone.
+    // -------------------------------------------------------------------------
+    const double filteredThrottle = (std::abs(rawThrottle) <= DEADBAND) ? 0.0 : rawThrottle;
+    const double filteredSteer    = (std::abs(rawSteer)    <= DEADBAND) ? 0.0 : rawSteer;
 
-//     // -------------------------------------------------------------------------
-//     //  MINIMUM SPEED SCALING
-//     //  Remap [deadband+1 … 127] → [MIN_SPEED … 127] so the output jumps to a
-//     //  usable value the moment the stick clears the deadband.
-//     // -------------------------------------------------------------------------
-//     auto applyMinSpeed = [&](double val) -> double
-//     {
-//         if (val == 0.0) return 0.0;
+    // -------------------------------------------------------------------------
+    //  MINIMUM SPEED SCALING
+    //  Remap [deadband+1 … 127] → [MIN_SPEED … 127] so the output jumps to a
+    //  usable value the moment the stick clears the deadband.
+    // -------------------------------------------------------------------------
+    auto applyMinSpeed = [&](double val) -> double
+    {
+        if (val == 0.0) return 0.0;
 
-//         const double sign      = (val > 0.0) ? 1.0 : -1.0;
-//         const double magnitude = std::abs(val);
+        const double sign      = (val > 0.0) ? 1.0 : -1.0;
+        const double magnitude = std::abs(val);
 
-//         // Normalise to [0, 1] relative to the usable input range
-//         const double normalised = (magnitude - DEADBAND) / (127.0 - DEADBAND);
+        // Normalise to [0, 1] relative to the usable input range
+        const double normalised = (magnitude - DEADBAND) / (127.0 - DEADBAND);
 
-//         // Rescale to [MIN_SPEED, 127]
-//         const double scaled = MIN_SPEED + normalised * (127.0 - MIN_SPEED);
-//         return sign * scaled;
-//     };
+        // Rescale to [MIN_SPEED, 127]
+        const double scaled = MIN_SPEED + normalised * (127.0 - MIN_SPEED);
+        return sign * scaled;
+    };
 
-//     const double scaledThrottle = applyMinSpeed(filteredThrottle);
-//     const double scaledSteer    = applyMinSpeed(filteredSteer);
+    const double scaledThrottle = applyMinSpeed(filteredThrottle);
+    const double scaledSteer    = applyMinSpeed(filteredSteer);
 
-//     // -------------------------------------------------------------------------
-//     //  TURNING CURVE
-//     //  Apply a power curve to the steering axis only.
-//     //  Output = sign(x) * (|x| / 127)^EXPONENT * 127
-//     // -------------------------------------------------------------------------
-//     double curvedSteer = 0.0;
-//     if (scaledSteer != 0.0)
-//     {
-//         const double sign      = (scaledSteer > 0.0) ? 1.0 : -1.0;
-//         const double normalised = std::abs(scaledSteer) / 127.0;          // [0, 1]
-//         const double curved    = std::pow(normalised, TURN_CURVE_EXPONENT); // power curve
-//         curvedSteer = sign * curved * 127.0;
-//     }
+    // -------------------------------------------------------------------------
+    //  TURNING CURVE
+    //  Apply a power curve to the steering axis only.
+    //  Output = sign(x) * (|x| / 127)^EXPONENT * 127
+    // -------------------------------------------------------------------------
+    double curvedSteer = 0.0;
+    if (scaledSteer != 0.0)
+    {
+        const double sign      = (scaledSteer > 0.0) ? 1.0 : -1.0;
+        const double normalised = std::abs(scaledSteer) / 127.0;          // [0, 1]
+        const double curved    = std::pow(normalised, TURN_CURVE_EXPONENT); // power curve
+        curvedSteer = sign * curved * 127.0;
+    }
 
-//     // -------------------------------------------------------------------------
-//     //  THROTTLE / STEER PRIORITY MIXING
-//     //
-//     //  The available "budget" for steering shrinks proportionally as the
-//     //  throttle increases, ensuring full-speed straight driving is reachable.
-//     //
-//     //  steering headroom = 127 * (1 - THROTTLE_PRIORITY * |throttle| / 127)
-//     //  The final mix:
-//     //      left  = throttle + steerContribution
-//     //      right = throttle - steerContribution
-//     // -------------------------------------------------------------------------
-//     const double throttleNorm = std::abs(scaledThrottle) / 127.0;           // [0, 1]
-//     const double steerBudget  = 127.0 * (1.0 - THROTTLE_PRIORITY * throttleNorm);
-//     const double steerContrib = curvedSteer * (steerBudget / 127.0);
+    // -------------------------------------------------------------------------
+    //  THROTTLE / STEER PRIORITY MIXING
+    //
+    //  The available "budget" for steering shrinks proportionally as the
+    //  throttle increases, ensuring full-speed straight driving is reachable.
+    //
+    //  steering headroom = 127 * (1 - THROTTLE_PRIORITY * |throttle| / 127)
+    //  The final mix:
+    //      left  = throttle + steerContribution
+    //      right = throttle - steerContribution
+    // -------------------------------------------------------------------------
+    const double throttleNorm = std::abs(scaledThrottle) / 127.0;           // [0, 1]
+    const double steerBudget  = 127.0 * (1.0 - THROTTLE_PRIORITY * throttleNorm);
+    const double steerContrib = curvedSteer * (steerBudget / 127.0);
 
-//     double left  = scaledThrottle + steerContrib;
-//     double right = scaledThrottle - steerContrib;
+    double left  = scaledThrottle + steerContrib;
+    double right = scaledThrottle - steerContrib;
 
-//     // -------------------------------------------------------------------------
-//     //  OUTPUT CLAMPING  →  keep within [-127, 127]
-//     // -------------------------------------------------------------------------
-//     return {
-//         static_cast<int>(std::clamp(left,  -127.0, 127.0)),
-//         static_cast<int>(std::clamp(right, -127.0, 127.0))
-//     };
-// }
+    // -------------------------------------------------------------------------
+    //  OUTPUT CLAMPING  →  keep within [-127, 127]
+    // -------------------------------------------------------------------------
+    return {
+        static_cast<int>(std::clamp(left,  -127.0, 127.0)),
+        static_cast<int>(std::clamp(right, -127.0, 127.0))
+    };
+}
 /**
  * Runs the operator control code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via

@@ -187,8 +187,8 @@ void Robot::processTrajectory(const TrajectoryPoint &tp)
         voltages = m_driveController->calculateVoltages(
             wheel_velocities[0],                       // left velocity setpoint
             wheel_velocities[1],                       // right velocity setpoint
-            wheel_velocities[0],  // current left velocity
-            wheel_velocities[1], // current right velocity
+            wheel_velocities[0],                       // current left velocity
+            wheel_velocities[1],                       // current right velocity
             left_accel,                                // left acceleration
             right_accel                                // right acceleration
         );
