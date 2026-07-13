@@ -4,7 +4,10 @@ Odometry::Odometry(pros::MotorGroup &left, pros::MotorGroup &right,
                    pros::Rotation &lateral, pros::Imu &imuSensor,
                    bool enable_heading_filter,
                    bool enable_velocity_filters)
-    : leftDrive(left), rightDrive(right), lateralEncoder(lateral), imu(imuSensor), leftVelocityLimiter(200, 200), rightVelocityLimiter(200, 200), headingFilter(), useHeadingFilter(enable_heading_filter), useVelocityFilters(enable_velocity_filters)
+    : leftDrive(left), rightDrive(right), lateralEncoder(lateral), imu(imuSensor),
+      leftVelocityObserver(Config::KS, Config::KV, Config::KA, Config::VELOCITY_OBSERVER_GAIN),
+      rightVelocityObserver(Config::KS, Config::KV, Config::KA, Config::VELOCITY_OBSERVER_GAIN),
+      headingFilter(), useHeadingFilter(enable_heading_filter), useVelocityFilters(enable_velocity_filters)
 {
     reset();
 }
@@ -22,8 +25,14 @@ void Odometry::reset()
     prevLateralPos = 0;
     prevTime = lastUpdateTime;
 
-    leftVelocityLimiter.reset(0);
-    rightVelocityLimiter.reset(0);
+    leftVelocityObserver.reset(0.0);
+    rightVelocityObserver.reset(0.0);
+    leftVelocity = Velocity();
+    rightVelocity = Velocity();
+    leftVelocityRaw = 0.0;
+    rightVelocityRaw = 0.0;
+    lastLeftVoltage = 0.0;
+    lastRightVoltage = 0.0;
     headingFilter.reset();
 
     leftDrive.tare_position_all();
@@ -77,16 +86,19 @@ void Odometry::update()
     // Logger::getInstance()->log("DeltaLeft: %f, DeltaRight: %f", deltaLeft, deltaRight);
     double deltaLateral = lateralPos - prevLateralPos;
 
-    // Update velocities with optional filtering
+    // Update velocities with optional filtering.
+    leftVelocityRaw = deltaLeft / deltaTime;
+    rightVelocityRaw = deltaRight / deltaTime;
+
     if (useVelocityFilters)
     {
-        leftVelocity.linear = leftVelocityLimiter.calculate(deltaLeft / deltaTime, deltaTime);
-        rightVelocity.linear = rightVelocityLimiter.calculate(deltaRight / deltaTime, deltaTime);
+        leftVelocity.linear = leftVelocityObserver.update(leftVelocityRaw, lastLeftVoltage, deltaTime);
+        rightVelocity.linear = rightVelocityObserver.update(rightVelocityRaw, lastRightVoltage, deltaTime);
     }
     else
     {
-        leftVelocity.linear = deltaLeft / deltaTime;
-        rightVelocity.linear = deltaRight / deltaTime;
+        leftVelocity.linear = leftVelocityRaw;
+        rightVelocity.linear = rightVelocityRaw;
     }
 
     // Calculate accelerations
@@ -127,7 +139,7 @@ void Odometry::update()
 
     // Logger::getInstance()->log("DeltaX: %f, DeltaY: %f", deltaX, deltaY);
 
-    // Update position with optional Kalman filtering
+    // Update position with optional filtering
     currentPose.x += deltaX;
     currentPose.y += deltaY;
 
@@ -158,6 +170,15 @@ double Odometry::getX() const { return currentPose.x; }
 double Odometry::getY() const { return currentPose.y; }
 Velocity Odometry::getLeftVelocity() const { return leftVelocity; }
 Velocity Odometry::getRightVelocity() const { return rightVelocity; }
+
+void Odometry::setDriveVoltages(double leftVoltage, double rightVoltage)
+{
+    if (std::isfinite(leftVoltage) && std::isfinite(rightVoltage))
+    {
+        lastLeftVoltage = leftVoltage;
+        lastRightVoltage = rightVoltage;
+    }
+}
 
 bool Odometry::isReliable() const
 {
@@ -221,11 +242,11 @@ void Odometry::disableSensor(const std::string &sensor)
 {
     if (sensor == "left")
     {
-        leftVelocityLimiter.reset();
+        leftVelocityObserver.reset();
     }
     else if (sensor == "right")
     {
-        rightVelocityLimiter.reset();
+        rightVelocityObserver.reset();
     }
     else if (sensor == "lateral")
     {
@@ -235,11 +256,12 @@ void Odometry::disableSensor(const std::string &sensor)
 
 Odometry::DebugInfo Odometry::getOdometryDebugInfo()
 {
+    // Reports the estimates update() already produced.
     return {
+        leftVelocityRaw,
+        rightVelocityRaw,
         leftVelocity.linear,
         rightVelocity.linear,
-        leftVelocityLimiter.calculate(leftVelocity.linear, 0.01),
-        rightVelocityLimiter.calculate(rightVelocity.linear, 0.01),
         Angles::degreesToRadians(imu.get_heading() * -1),
         currentPose.theta,
         getPositionUncertainty()};
@@ -250,6 +272,8 @@ std::unordered_map<std::string, double> Odometry::getDebugData() const
     std::unordered_map<std::string, double> debug;
     debug["left_velocity"] = leftVelocity.linear;
     debug["right_velocity"] = rightVelocity.linear;
+    debug["left_velocity_raw"] = leftVelocityRaw;
+    debug["right_velocity_raw"] = rightVelocityRaw;
     debug["left_acceleration"] = leftAccel.linear;
     debug["right_acceleration"] = rightAccel.linear;
     debug["heading_raw"] = Angles::degreesToRadians(imu.get_heading() * -1);

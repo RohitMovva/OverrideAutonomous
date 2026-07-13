@@ -92,6 +92,13 @@ void Robot::stopTrajectory()
     {
         m_rightDrivetrain->move_voltage(0);
     }
+
+    // Otherwise the velocity observer keeps predicting forward off the last nonzero
+    // voltage it was told about.
+    if (m_localization)
+    {
+        m_localization->setDriveVoltages(0.0, 0.0);
+    }
 }
 
 auto Robot::getCurrentPosition() const -> decltype(m_localization->getPose())
@@ -205,6 +212,11 @@ void Robot::processTrajectory(const TrajectoryPoint &tp)
     // Apply voltages to motors
     m_leftDrivetrain->move(voltages.left);
     m_rightDrivetrain->move(voltages.right);
+
+    // Hand the applied voltages to localization. The velocity observer predicts the next
+    // tick's wheel speeds from these and the kS/kV/kA model, so it must see what the
+    // motors were actually told
+    m_localization->setDriveVoltages(voltages.left, voltages.right);
 }
 
 void Robot::processAction(const ActionPoint &ap)
@@ -383,6 +395,7 @@ bool Robot::followTrajectory(Trajectory &trajectory, std::optional<Pose> start_p
     // Stop motors
     m_leftDrivetrain->move(0);
     m_rightDrivetrain->move(0);
+    m_localization->setDriveVoltages(0.0, 0.0);
 
     m_isFollowingTrajectory = false;
 

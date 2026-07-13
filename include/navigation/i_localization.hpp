@@ -73,6 +73,16 @@ public:
     // Velocity interface (needed for trajectory following)
     virtual Velocity getLeftVelocity() const = 0;
     virtual Velocity getRightVelocity() const = 0;
+
+    /**
+     * @brief Report the voltage just sent to the drivetrain, in motor units (+/-127).
+     *
+     * Used by drivetrain model estimator that needs voltage to model accel/speed
+     *
+     * Defaults to a no-op so localizers that estimate velocity from sensors alone are
+     * unaffected.
+     */
+    virtual void setDriveVoltages(double leftVoltage, double rightVoltage) {}
     
     // Implementation identification
     virtual LocalizationType getType() const = 0;

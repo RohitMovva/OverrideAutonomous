@@ -5,7 +5,7 @@
 #include "api.h"
 #include "filters/kalman_2d.hpp"
 #include "filters/heading_filter.hpp"
-#include "filters/slew_rate_limiter.hpp"
+#include "filters/velocity_observer.hpp"
 #include "config.hpp"
 #include <cmath>
 #include <vector>
@@ -34,9 +34,14 @@ private:
     pros::Imu &imu;
 
     // Filters
-    SlewRateLimiter leftVelocityLimiter;
-    SlewRateLimiter rightVelocityLimiter;
+    VelocityObserver leftVelocityObserver;
+    VelocityObserver rightVelocityObserver;
     HeadingFilter headingFilter;
+
+    // Voltage last applied to each side, in motor units (+/-127). Fed in by the
+    // controller via setDriveVoltages(); drives the observers' prediction step.
+    double lastLeftVoltage;
+    double lastRightVoltage;
 
     // Filter toggles
     bool useHeadingFilter;
@@ -55,6 +60,11 @@ private:
     Velocity rightVelocity;
     Velocity leftAccel;
     Velocity rightAccel;
+
+    // Pre-observer encoder velocities, kept for tuning/logging. Retained as state so the
+    // debug getters can report them without re-running (and mutating) a filter.
+    double leftVelocityRaw;
+    double rightVelocityRaw;
 
     // Helper functions
     double ticksToInches(double ticks);
@@ -110,6 +120,7 @@ public:
     bool isReliable() const override;
     Velocity getLeftVelocity() const override;
     Velocity getRightVelocity() const override;
+    void setDriveVoltages(double leftVoltage, double rightVoltage) override;
 
     LocalizationType getType() const override { return LocalizationType::ODOMETRY; }
     std::string getTypeName() const override { return "Odometry"; }
