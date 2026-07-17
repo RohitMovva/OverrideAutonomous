@@ -53,6 +53,12 @@ from .robot_config import (
 MAX_WHEEL_SPEED = UNPHYSICAL_WHEEL_SPEED
 VOLTAGE_LIMIT = 127
 
+# Slack allowed when judging a wheel setpoint against the desaturation cap. The
+# firmware clamps to MAX_WHEEL_VELOCITY exactly, but the log prints setpoints to
+# 6 decimals, so a clamped value parses back marginally above the cap. Anything
+# genuinely infeasible overshoots by whole in/s, far beyond this.
+_SETPOINT_REL_TOL = 1e-5
+
 
 def declared_track_width(run: Run) -> float | None:
     """The track width the firmware was actually built with for this run, from
@@ -770,7 +776,15 @@ def setpoint_feasibility(runs: Run | list[Run],
     motors can only reach with 100% of their voltage is not "feasible" in any
     useful sense: it leaves the feedback term zero authority exactly when the
     robot is off-path and needs it.
+
+    A setpoint the firmware desaturated to exactly MAX_WHEEL_VELOCITY is
+    feasible, not infeasible. The log prints it rounded to 6 decimals
+    (55.276323 for a cap of 55.27632273991241), so a bare `> vmax` counts every
+    correctly-clamped tick as a violation -- which is how 07132026.txt reported
+    4.4% infeasible setpoints while desaturation was working perfectly. Compare
+    against the cap plus the print precision.
     """
+    tol = vmax * _SETPOINT_REL_TOL
     n = over = 0
     worst = 0.0
     mags = []
@@ -780,7 +794,7 @@ def setpoint_feasibility(runs: Run | list[Run],
                 if sp is None or math.isnan(sp):
                     continue
                 n += 1
-                if abs(sp) > vmax:
+                if abs(sp) > vmax + tol:
                     over += 1
                 worst = max(worst, abs(sp))
                 if samples:

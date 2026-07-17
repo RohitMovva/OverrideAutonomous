@@ -318,11 +318,14 @@ bool Robot::followTrajectory(Trajectory &trajectory, std::optional<Pose> start_p
     
     Logger::getInstance()->log(
         "Build config: wheelBase=%.3f wheelDia=%.3f kS=%.3f kV=%.3f kA=%.3f "
-        "kP=%.3f kI=%.3f kD=%.3f ramseteB=%.3f ramseteZeta=%.3f maxWheelVel=%.3f",
+        "kADec=%.3f kP=%.3f kI=%.3f kD=%.3f kSAng=%.3f kVAng=%.3f "
+        "ramseteB=%.3f ramseteZeta=%.3f maxWheelVel=%.3f",
         Config::WHEEL_BASE_WIDTH, Config::WHEEL_DIAMETER,
         m_driveController->getKS(), m_driveController->getKV(),
-        m_driveController->getKA(), m_driveController->getKP(),
+        m_driveController->getKA(), m_driveController->getKADecel(),
+        m_driveController->getKP(),
         m_driveController->getKI(), m_driveController->getKD(),
+        m_driveController->getKSAngular(), m_driveController->getKVAngular(),
         m_ramseteController->getB(), m_ramseteController->getZeta(),
         Config::MAX_WHEEL_VELOCITY);
     if (trajectory.empty())

@@ -38,7 +38,7 @@ BLUE_CARTRIDGE_RPM = 600.0
 # Fallbacks used only if config.hpp cannot be read/parsed (keeps tests runnable
 # from a bare checkout of tests/).
 _DEFAULTS = {
-    "WHEEL_BASE_WIDTH": 15.0,
+    "WHEEL_BASE_WIDTH": 13.5,
     "GEAR_RATIO": 36.0 / 48.0,
     "WHEEL_DIAMETER": 2.76,
     "KS": 2.55, "KV": 2.0, "KA": 0.4,

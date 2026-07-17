@@ -4,9 +4,15 @@
 
 DrivetrainController::DrivetrainController(
     double kS, double kV, double kA,
-    double kP, double kI, double kD)
+    double kP, double kI, double kD,
+    double kSAngular, double kVAngular,
+    double kADecel)
     : kS(kS), kV(kV), kA(kA)
+    // A negative kADecel means "not supplied" -> fall back to kA, i.e. the old symmetric
+    // behaviour. Callers that predate the braking asymmetry keep working unchanged.
+    , kADecel(kADecel < 0.0 ? kA : kADecel)
     , kP(kP), kI(kI), kD(kD)
+    , kSAngular(kSAngular), kVAngular(kVAngular)
     , prevLeftVelocityError(0.0)
     , prevRightVelocityError(0.0)
     , leftIntegralError(0.0)
@@ -71,6 +77,17 @@ DrivetrainController::MotorVoltages DrivetrainController::calculateVoltages(
     double rightVoltage = rightFeedforward + rightFeedback;
     // Logger::getInstance()->log("Left Voltage: %f, Right Voltage: %f", leftVoltage, rightVoltage);
 
+    // Turning scrub resists yaw: it drags the outer wheel back and pushes the inner
+    // one forward, so the delivered differential falls short of the commanded one.
+    // Correct it antisymmetrically -- the term carries the sign of w, so adding it to
+    // the right wheel and subtracting it from the left always reinforces the commanded
+    // turn, whichever way the robot is going, and leaves forward speed untouched.
+    double angularVelocitySetpoint =
+        (rightVelocitySetpoint - leftVelocitySetpoint) / Config::WHEEL_BASE_WIDTH;
+    double angularFeedforward = calculateAngularFeedforward(angularVelocitySetpoint);
+    leftVoltage -= angularFeedforward;
+    rightVoltage += angularFeedforward;
+
     // Update previous values
     prevLeftVelocityError = leftVelocityError;
     prevRightVelocityError = rightVelocityError;
@@ -88,12 +105,33 @@ DrivetrainController::MotorVoltages DrivetrainController::calculateVoltages(
 }
 
 double DrivetrainController::calculateFeedforward(double velocityTicks, double accelerationTicks) {
-    // Logger::getInstance()->log("Velocity: %f, Acceleration: %f", velocityTicks, accelerationTicks);
-    return std::copysign(kS, velocityTicks) + 
-           kV * velocityTicks + 
-           kA * accelerationTicks;
+    // Braking is when the commanded acceleration OPPOSES the commanded velocity. Testing
+    // the product rather than the sign of the acceleration is what makes this correct when
+    // driving backwards too: at v < 0 it is a POSITIVE acceleration that slows the robot,
+    // and that is still braking. Reverse nodes make that case routine, not exotic.
+    //
+    // Friction fights the motors on the way up and helps them on the way down, so braking
+    // costs less voltage per unit of |acceleration| than accelerating does. Charging both
+    // at kA over-drives every braking ramp: the robot decelerated ~17% harder than
+    // commanded and stopped short of the goal.
+    const bool braking = velocityTicks * accelerationTicks < 0.0;
+    const double kAEffective = braking ? kADecel : kA;
+
+    return std::copysign(kS, velocityTicks) +
+           kV * velocityTicks +
+           kAEffective * accelerationTicks;
 }
 
 double DrivetrainController::calculateFeedback(double error, double integral, double derivative) {
     return kP * error + kI * integral + kD * derivative;
+}
+
+double DrivetrainController::calculateAngularFeedforward(double angularVelocitySetpoint) {
+    // Straight-line driving has no scrub torque to cancel, and the copysign term
+    // below would dither on the sign of a near-zero number.
+    if (std::abs(angularVelocitySetpoint) < Config::ANGULAR_FF_DEADBAND) {
+        return 0.0;
+    }
+    return std::copysign(kSAngular, angularVelocitySetpoint) +
+           kVAngular * angularVelocitySetpoint;
 }

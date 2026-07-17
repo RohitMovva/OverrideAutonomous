@@ -3,10 +3,10 @@
 // Robot config
 bool skills = false;
 pros::Controller master(pros::E_CONTROLLER_MASTER);
-pros::MotorGroup left_mg({-11, 12, 13});
-pros::MotorGroup right_mg({14, -15, -16});
-pros::MotorGroup intake_motors({17, -18});
-pros::MotorGroup lift_motors({4, -19});
+pros::MotorGroup left_mg({1, -2});
+pros::MotorGroup right_mg({-3, 4});
+pros::MotorGroup intake_motors({9, 15});
+pros::MotorGroup lift_motors({5, 6});
 
 pros::Optical color_sort_os(21);
 pros::Distance color_sort_ds(10);
@@ -33,7 +33,7 @@ Trajectory trajectory;
 Trajectory goal_to_matchloader;
 Trajectory low_goal;
 
-pros::Imu imu_sensor(1);
+pros::Imu imu_sensor(20);
 
 Logger *logger = Logger::getInstance();
 
@@ -45,7 +45,7 @@ std::string program_type = "autonomous";
 
 std::vector<std::vector<double>> route;
 // std::string route_name = "";
-std::string route_name = "fun_curve";
+std::string route_name = "sawp";
 // std::vector< std::string > routes = std::vector< std::string >{"skills8.1", "skills8.2"};
 std::vector<std::string> routes;
 std::vector<Trajectory> trajectories;
@@ -89,7 +89,9 @@ void initialize()
         Config::RAMSETE_SCALE_FACTOR);
     drive_controller = new DrivetrainController(
         Config::KS, Config::KV, Config::KA,
-        Config::KP, Config::KI, Config::KD);
+        Config::KP, Config::KI, Config::KD,
+        Config::KS_ANGULAR, Config::KV_ANGULAR,
+        Config::KA_DECEL);
 
     robot = new Robot(&left_mg, &right_mg, &imu_sensor, &master, drive_controller, ramsete_controller, std::move(localization), &intake);
 

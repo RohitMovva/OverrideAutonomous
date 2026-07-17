@@ -21,7 +21,7 @@ from log_analysis.parser import parse_log, trajectory_runs
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_FILES = ["square.txt", "init.txt", "pikes.log", "erie.txt",
              "state.txt", "league_night_2.txt", "default.log",
-             "initial_tuning.txt"]
+             "initial_tuning.txt", "07132026.txt", "07132026-2.txt", "07132026-3.txt", "07132026-4.txt", "07132026-5.txt", "07132026-6.txt", "07132026-7.txt", "07132026-8.txt"]
 
 _cache: dict[str, list] = {}
 

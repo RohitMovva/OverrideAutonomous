@@ -73,8 +73,10 @@ void Odometry::update()
     double deltaTheta = 0.0;
     if (std::isfinite(imuRotation))
     {
-        // Negated: the IMU counts clockwise, we use CCW+
-        deltaTheta = Angles::degreesToRadians(-(imuRotation - prevImuRotation));
+        // Negated: the IMU counts clockwise, we use CCW+. Scaled by IMU_HEADING_SCALE
+        // to correct the unit's factory gyro-scale error (measured ~0.87% low over a
+        // 10-turn spin). prevImuRotation stays raw; scaling the delta keeps it exact.
+        deltaTheta = Angles::degreesToRadians(-(imuRotation - prevImuRotation) * Config::IMU_HEADING_SCALE);
         prevImuRotation = imuRotation;
     }
     else

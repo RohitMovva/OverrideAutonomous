@@ -32,16 +32,24 @@ public:
      * @param kP Proportional gain for PID
      * @param kI Integral gain for PID
      * @param kD Derivative gain for PID
+     * @param kSAngular Angular static friction compensation (motor units)
+     * @param kVAngular Angular velocity feedforward gain (motor units)/(rad/sec)
+     * @param kADecel Acceleration feedforward while braking; defaults to kA (symmetric)
      */
     DrivetrainController(double kS, double kV, double kA,
-                        double kP, double kI, double kD);
+                        double kP, double kI, double kD,
+                        double kSAngular = 0.0, double kVAngular = 0.0,
+                        double kADecel = -1.0);
 
     double getKS() const { return kS; }
     double getKV() const { return kV; }
     double getKA() const { return kA; }
+    double getKADecel() const { return kADecel; }
     double getKP() const { return kP; }
     double getKI() const { return kI; }
     double getKD() const { return kD; }
+    double getKSAngular() const { return kSAngular; }
+    double getKVAngular() const { return kVAngular; }
 
     /**
      * @brief Calculate motor voltages based on desired velocities and accelerations
@@ -63,14 +71,19 @@ public:
 
 private:
     // Feedforward constants
-    const double kS;  ///< Static friction compensation (motor units)
-    const double kV;  ///< Velocity feedforward gain
-    const double kA;  ///< Acceleration feedforward gain
+    const double kS;       ///< Static friction compensation (motor units)
+    const double kV;       ///< Velocity feedforward gain
+    const double kA;       ///< Acceleration feedforward gain (accelerating)
+    const double kADecel;  ///< Acceleration feedforward gain (braking) -- see Config::KA_DECEL
     
     // PID constants
     const double kP;  ///< Proportional gain
     const double kI;  ///< Integral gain
     const double kD;  ///< Derivative gain
+
+    // Angular (turning-scrub) feedforward constants
+    const double kSAngular;  ///< Angular static friction compensation
+    const double kVAngular;  ///< Angular velocity feedforward gain
 
     // State tracking
     double prevLeftVelocityError;
@@ -84,7 +97,12 @@ private:
 
     /**
      * @brief Calculate feedforward component of motor output
-     * 
+     *
+     * Uses kA when speeding up and kADecel when braking. Friction opposes the motors on
+     * the way up and helps them on the way down, so the same commanded |acceleration|
+     * costs less voltage to brake than to accelerate; charging both at kA over-drives
+     * every braking ramp and stops the robot short.
+     *
      * @param velocityTicks Velocity in encoder ticks/sec
      * @param accelerationTicks Acceleration in encoder ticks/sec²
      * @return double Feedforward term in motor units
@@ -100,6 +118,20 @@ private:
      * @return double Feedback term in motor units
      */
     double calculateFeedback(double error, double integral, double derivative);
+
+    /**
+     * @brief Feedforward for the yaw-resisting scrub torque that appears only
+     *        while turning.
+     *
+     * Returned antisymmetrically: ADD to the outer wheel, SUBTRACT from the inner,
+     * so it moves the wheel differential (and therefore rotation) without changing
+     * forward speed. KS/KV/KA cannot represent this because they are fitted to
+     * straight driving and applied to each wheel independently.
+     *
+     * @param angularVelocitySetpoint Commanded chassis rotation (rad/sec), positive CCW
+     * @return double Angular feedforward term in motor units
+     */
+    double calculateAngularFeedforward(double angularVelocitySetpoint);
 };
 
 #endif // DRIVETRAIN_CONTROLLER_H

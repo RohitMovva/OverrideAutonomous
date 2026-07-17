@@ -20,3 +20,5 @@ temp.errors
 tests/output/
 __pycache__/
 .pytest_cache/
+
+logs/
