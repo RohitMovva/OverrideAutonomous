@@ -91,13 +91,24 @@ public:
     /**
      * @brief Configure encoder units, brake modes, and tare all three encoders.
      *
-     * Call once at startup with the mechanism physically in the START pose. It
-     * seeds each winch encoder and the bar rotation sensor to their START-pose
-     * angle (not zero), so all pose angles stay measured from the LOADING
-     * reference (LOADING = 0, ...); the robot MUST
-     * therefore be in the START pose when this runs. This also arms the
-     * START->STOW startup choreography (@ref start_to_loading()), which then
-     * plays out as update() is called each loop.
+     * Call once at startup with the mechanism physically in the START pose. It seeds
+     * the WINCH encoders to their START-pose value (not zero), so winch positions
+     * stay measured from the LOADING reference -- the winch is on motor IMEs, which
+     * come up at 0 every boot, so the robot MUST be in the START pose when this runs
+     * for the winch reference to be right (and it is re-homed anyway by the
+     * seek/respool pass once the mechanism first settles in STOW).
+     *
+     * The bar and end-effector rotation sensors are NOT seeded: they hold their
+     * reading across a power cycle, so the code takes them as given and only
+     * configures their orientation. Their zero must therefore agree with the pose
+     * convention (LOADING = 0) as a one-time commissioning step -- see
+     * CHAINBAR_START_DEG / CHAIN_START_DEG, which now only describe what those
+     * sensors should read in the START pose. The actual readings are logged as
+     * "LIFTINIT sensors (unseeded)" on every boot so a drifted or re-magnetised
+     * sensor is visible in the log rather than silently overwritten.
+     *
+     * This also arms the START->STOW startup choreography (@ref start_to_loading()),
+     * which then plays out as update() is called each loop.
      */
     void initialize();
 

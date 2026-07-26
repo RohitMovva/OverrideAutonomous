@@ -108,8 +108,10 @@ void Lift::initialize() {
     chain_rotation_.set_reversed(CHAIN_ROTATION_REVERSED);
     probe("chain rotation set_reversed ok");
 
-    // Start in the dedicated power-on START pose (STARTUP mode). Positions are the
-    // START_* constants (placeholders -- set them to the real measured start pose).
+    // Start in the dedicated power-on START pose (STARTUP mode). CHAINBAR_START_DEG /
+    // CHAIN_START_DEG now only DESCRIBE that pose (they are what the sensors should
+    // read there, and what the choreography's first clearance move is measured from);
+    // nothing writes them into a sensor any more.
     mode_ = Mode::STARTUP;
     start_step_ = StartStep::IDLE;
     prime_step_ = PrimeStep::RAISE;
@@ -126,22 +128,31 @@ void Lift::initialize() {
     advancing_ = false;
     retreating_ = false;
     winch_manual_target_ = WINCH_START_POS;
-    bar_target_deg_ = CHAINBAR_START_DEG;
-    chain_target_deg_ = CHAIN_START_DEG;
+    // Open the bar / EE targets on their MEASURED angles, not the START_* constants.
+    // Now that the rotation sensors are not seeded, the reading is whatever the
+    // mechanism was actually left at, which is only approximately the START pose --
+    // and any difference would otherwise be a standing error on tick 1, i.e. a lurch
+    // the moment update() first runs. The startup choreography overwrites both within
+    // a tick or two anyway; this just makes the handover quiet.
+    double bar0 = get_bar_angle();
+    double ee0 = get_ee_angle();
+    bar_target_deg_ = bar0;
+    chain_target_deg_ = ee0;
     chain_scoring_deg_ = CHAIN_SCORING_DEG;
     claw_.set_state(CLAW_START_STATE);
     probe("claw set_state ok");
     winch_pid_.reset();
     chainbar_pid_.reset();
     chain_pid_.reset();
-    double bar0 = get_bar_angle();  // seed the windowed-rate history to the start pose
-    for (int i = 0; i < CHAINBAR_RATE_WINDOW; ++i) {
+    for (int i = 0; i < CHAINBAR_RATE_WINDOW; ++i) {  // seed the windowed-rate history
         bar_angle_hist_[i] = bar0;
     }
-    double ee0 = get_ee_angle();    // same for the chain (else tick 1 reads a huge rate)
-    for (int i = 0; i < CHAIN_RATE_WINDOW; ++i) {
+    for (int i = 0; i < CHAIN_RATE_WINDOW; ++i) {     // else tick 1 reads a huge rate
         chain_angle_hist_[i] = ee0;
     }
+    Logger::getInstance()->log(
+        "LIFTINIT sensors (unseeded): bar=%.1f (START %.1f), ee=%.1f (START %.1f), winch=%.1f",
+        bar0, CHAINBAR_START_DEG, ee0, CHAIN_START_DEG, get_winch_position());
     probe("pids reset; state seeded");
 
     // Kick off the START->STOW startup choreography automatically. It runs as
