@@ -58,9 +58,7 @@ void Odometry::update()
         deltaTime = Units::millisecondsToSeconds(Config::DT);
     }
 
-    // If the IMU was unreadable when the baseline was taken (still calibrating, or
-    // disconnected), we have no valid reference to difference against. Take a fresh
-    // baseline and sit this tick out rather than integrating a bogus delta.
+    // No valid prev sensor readings which are required to find delta in movements
     if (!hasPrevSensorReadings)
     {
         Logger::getInstance()->logWarning("No valid sensor baseline; reseeding and skipping tick");
@@ -73,9 +71,7 @@ void Odometry::update()
     double deltaTheta = 0.0;
     if (std::isfinite(imuRotation))
     {
-        // Negated: the IMU counts clockwise, we use CCW+. Scaled by IMU_HEADING_SCALE
-        // to correct the unit's factory gyro-scale error (measured ~0.87% low over a
-        // 10-turn spin). prevImuRotation stays raw; scaling the delta keeps it exact.
+        // We use CCW+ so we have to negate IMU readings
         deltaTheta = Angles::degreesToRadians(-(imuRotation - prevImuRotation) * Config::IMU_HEADING_SCALE);
         prevImuRotation = imuRotation;
     }
@@ -94,16 +90,16 @@ void Odometry::update()
         lateralPos = prevLateralPos;
     }
 
-    // For now, disable lateral encoder
+    // Only using drive IMEs so we don't need the lateral chord
     lateralPos = 0;
 
-    // Logger::getInstance()->log("Left Positions: %f %f %f", leftDrive.get_position_all()[0],
-    //                            leftDrive.get_position_all()[1], leftDrive.get_position_all()[2]);
-    // Logger::getInstance()->log("Right Positions: %f %f %f", rightDrive.get_position_all()[0],
-    //                            rightDrive.get_position_all()[1], rightDrive.get_position_all()[2]);
+    Logger::getInstance()->log("Left Positions: %f %f %f", leftDrive.get_position_all()[0],
+                               leftDrive.get_position_all()[1], leftDrive.get_position_all()[2]);
+    Logger::getInstance()->log("Right Positions: %f %f %f", rightDrive.get_position_all()[0],
+                               rightDrive.get_position_all()[1], rightDrive.get_position_all()[2]);
 
     // getMotorPositionsInches drops unreadable motors. If a whole side dced (kinda cooked), 
-    // hold its previous position so the delta is zer
+    // hold its previous position so the delta is zero
     if (leftPositions.empty())
     {
         Logger::getInstance()->logWarning("No readable left drive encoders; holding position");
@@ -122,7 +118,7 @@ void Odometry::update()
     // Calculate position changes
     double deltaLeft = currentLeftPos - getAveragePosition(prevLeftPos);
     double deltaRight = currentRightPos - getAveragePosition(prevRightPos);
-    // Logger::getInstance()->log("DeltaLeft: %f, DeltaRight: %f", deltaLeft, deltaRight);
+    Logger::getInstance()->log("DeltaLeft: %f, DeltaRight: %f", deltaLeft, deltaRight);
     double deltaLateral = lateralPos - prevLateralPos;
 
     // Update velocities with optional filtering.
@@ -149,8 +145,6 @@ void Odometry::update()
 
     // Calculate forward displacement
     double forwardDisplacement = (deltaLeft + deltaRight) / 2.0;
-    // Logger::getInstance()->log("Forward displacement: %f", forwardDisplacement);
-    // Logger::getInstance()->log("Delta theta: %f", deltaTheta);
 
     // Local position update
     double deltaX, deltaY;
@@ -175,22 +169,12 @@ void Odometry::update()
         deltaY = forwardDisplacement * sin(currentPose.theta);
     }
 
-    // Logger::getInstance()->log("DeltaX: %f, DeltaY: %f", deltaX, deltaY);
-
     // Update position with optional filtering
     currentPose.x += deltaX;
     currentPose.y += deltaY;
 
     currentPose.theta = Angles::normalizeAngle(currentPose.theta + deltaTheta);
 
-    // Update previous values. prevImuRotation was already advanced above, next to the read
-    // that validated it.
-    //
-    // Nothing is tared here any more. The tares that used to close this function
-    // (lateralEncoder.reset_position(), imu.tare_heading(), tare_position_all() on both
-    // drives) issued four asynchronous port writes per tick and then assumed a zero
-    // baseline on the next one. Motion during that latency was lost, biasing distance and
-    // heading low in proportion to speed.
     prevLeftPos = leftPositions;
     prevRightPos = rightPositions;
     prevLateralPos = lateralPos;

@@ -1,7 +1,7 @@
 {
   "py/object": "pros.conductor.project.Project",
   "py/state": {
-    "project_name": "sawp",
+    "project_name": "drive",
     "target": "v5",
     "templates": {
       "kernel": {
@@ -594,7 +594,7 @@
     "upload_options": {
       "description": "wtf man",
       "icon": "X",
-      "slot": 3
+      "slot": 1
     },
     "use_early_access": false
   }

@@ -38,7 +38,24 @@ python3 tests/visualize.py all square.txt                  # every static plot
 python3 tests/visualize.py tracking erie.txt --run 3 --show
 python3 tests/visualize.py animate square.txt --show       # or --gif
 python3 tests/visualize.py animate-wheels square.txt --show --track-width 12.7
+
+python3 tests/visualize.py lift 07222026.txt --run all     # lift/chainbar debug dashboard
+pytest tests/test_lift.py -v                               # lift log-format checks
 ```
+
+### Lift / chainbar debug stream
+
+The lift emits its own `LIFTDBG` / `LIFTCMD` / `LIFTEVT` lines from
+`Lift::log_debug_state` (throttled ~20 Hz, opcontrol only — the lift is not
+driven during trajectory following). `visualize.py lift <log>` draws a
+target-vs-actual + commanded-voltage dashboard per boot (with command and
+respool/startup-transition markers) for tuning the position PIDs, the chainbar
+gravity feed-forward, and the respool stall threshold. Here `--run N` selects
+the Nth boot that actually contains lift samples (`all` for every one).
+`test_lift.py` round-trips the log format and asserts lift invariants (finite
+values, `err == target-actual`, commands within ±12000 mV, respool only drives
+up) over any log carrying lift data; logs without it are skipped. Parsing/plots
+live in `log_analysis/lift_parser.py` and `log_analysis/lift_plots.py`.
 
 Static plots save to `tests/output/<log>/<session+run>_<plot>.png` by
 default; `--show` opens interactive windows (with hover tooltips if

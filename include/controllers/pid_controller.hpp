@@ -26,11 +26,17 @@ public:
      *        term, in (0, 1]. 1.0 = no filtering (raw derivative); smaller values
      *        smooth harder. Use this to tame derivative noise from quantized /
      *        noisy sensors (default: 1.0, i.e. disabled for backward compat).
+     * @param integralActiveBand Integral separation: the integral only
+     *        accumulates while |error| <= this band, so it trims steady-state
+     *        error near the target but cannot wind up during a large-error
+     *        transient (a long slew, a stiction stall) and sling past the goal.
+     *        Default: effectively infinite (integrate always), for back-compat.
      */
     PIDController(double kP, double kI, double kD,
                   double minOutput = -127.0, double maxOutput = 127.0,
                   double integralLimit = 50.0,
-                  double derivativeFilterAlpha = 1.0);
+                  double derivativeFilterAlpha = 1.0,
+                  double integralActiveBand = 1.0e9);
 
     /**
      * @brief Calculate PID output based on current error
@@ -50,12 +56,21 @@ public:
      * supplied rate, e.g. a hardware velocity. Units of @p measuredRate must be
      * (process-variable units) per second; kD is then "output per (unit/sec)".
      *
+     * A @p feedforward term (e.g. gravity holding voltage) may be supplied; it is
+     * added to the output AND folded into the anti-windup saturation check, so the
+     * integrator sees the true, post-feedforward command when deciding whether it
+     * is railed. Without this, a feedforward added by the caller *after* the PID
+     * hides saturation from the anti-windup and lets the integral wind up.
+     *
      * @param setpoint Desired target value
      * @param processVariable Current measured value
      * @param measuredRate Rate of change of the process variable (units/sec)
+     * @param feedforward Extra command added to the output before clamping and
+     *        accounted for in the anti-windup check (default: 0.0, units = output)
      * @return double Control output clamped to output limits
      */
-    double calculate(double setpoint, double processVariable, double measuredRate);
+    double calculate(double setpoint, double processVariable, double measuredRate,
+                     double feedforward = 0.0);
 
     /**
      * @brief Calculate PID output with explicit error input
@@ -145,6 +160,7 @@ private:
 
     // Integral windup protection
     double integralLimit;    ///< Maximum integral accumulation
+    double integralActiveBand; ///< Integrate only while |error| <= this (integral separation)
 
     // Derivative filtering
     double derivativeFilterAlpha;  ///< Low-pass smoothing factor in (0, 1]; 1.0 = off
@@ -164,11 +180,14 @@ private:
      *
      * @param error Current error (setpoint - processVariable)
      * @param derivative Fully-formed derivative term (already scaled by kD)
+     * @param feedforward Extra command folded into the output and the anti-windup
+     *        saturation check (units = output)
      * @param dt Time step used for integration (seconds)
      * @param currentTime Timestamp of this calculation (ms) for state bookkeeping
      * @return double Control output clamped to output limits
      */
-    double composeOutput(double error, double derivative, double dt, uint32_t currentTime);
+    double composeOutput(double error, double derivative, double feedforward,
+                         double dt, uint32_t currentTime);
 
     /**
      * @brief Clamp value to specified range

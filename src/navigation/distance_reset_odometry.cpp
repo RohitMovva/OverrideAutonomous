@@ -80,12 +80,29 @@ void DistanceResetOdometry::reset(const DistanceSensor& sensor, double sensor_an
     double wallToCenter = abs(sensorToWall + sensorToCenter);
     double actualPos = wallSign * (70.7 - wallToCenter);
 
+    // Brain-screen readout. pros::lcd::print wraps LVGL and racing its render
+    // daemon from a control-loop task can freeze the program. reset() is called
+    // one-shot per action point rather than on a periodic tick, so a modulo tick
+    // counter would wrongly drop most of these; guard on elapsed time instead,
+    // which prints an isolated reset every time yet still bounds a burst of
+    // back-to-back resets to ~5 Hz.
+    static uint32_t last_reset_print_ms = 0;
+    uint32_t now = pros::millis();
+    bool do_print = (now - last_reset_print_ms) >= 200;
+    if (do_print) {
+        last_reset_print_ms = now;
+    }
+
     if (resettingX) {
         setPose({actualPos, currentPose.y, currentPose.theta});
-        pros::lcd::print(4, "Reset X to: %.2f", actualPos);
+        if (do_print) {
+            pros::lcd::print(4, "Reset X to: %.2f", actualPos);
+        }
     } else {
         setPose({currentPose.x, actualPos, currentPose.theta});
-        pros::lcd::print(5, "Reset Y to: %.2f", actualPos);
+        if (do_print) {
+            pros::lcd::print(5, "Reset Y to: %.2f", actualPos);
+        }
     }
 }
 

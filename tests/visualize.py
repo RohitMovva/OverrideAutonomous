@@ -12,6 +12,7 @@ Replaces the legacy scripts in tests/log_analyis/:
     goal_animator.py                   → visualize.py animate-mp <log> --show
     velo_checker.py                    → visualize.py animate-wheels <log> --show
     (new)                              → visualize.py field | dashboard | all <log>
+    (new)                              → visualize.py lift <log>   (lift debug stream)
 
 Examples:
     python3 tests/visualize.py dashboard state.txt --run all
@@ -36,6 +37,7 @@ sys.path.insert(0, str(HERE))
 STATIC = ["tracking", "theta", "outputs", "wheels", "encoders", "field", "dashboard"]
 POOLED = ["gains"]   # per-file figures pooling all selected runs
 ANIMS = ["animate", "animate-mp", "animate-wheels"]
+LIFT = ["lift"]      # lift/chainbar debug stream (own parser, not trajectory)
 
 
 def resolve_log(name: str) -> Path:
@@ -51,7 +53,7 @@ def resolve_log(name: str) -> Path:
 def main():
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=STATIC + POOLED + ANIMS + ["all"],
+    ap.add_argument("command", choices=STATIC + POOLED + ANIMS + LIFT + ["all"],
                     help="plot type ('all' = every static plot)")
     ap.add_argument("log", help="log file name (resolved against tests/logs/) or path")
     ap.add_argument("--session", type=int, default=None,
@@ -80,11 +82,44 @@ def main():
         matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    log_path = resolve_log(args.log)
+
+    # Lift debug stream: its own parser (opcontrol, not trajectory following) and
+    # its own selection ("run" = a boot with lift data; 'all' = every such boot).
+    if args.command in LIFT:
+        from log_analysis.lift_parser import parse_lift_log, lift_sessions_with_data
+        from log_analysis.lift_plots import lift_dashboard
+
+        have = lift_sessions_with_data(parse_lift_log(log_path))
+        if not have:
+            sys.exit("error: no LIFTDBG samples in this log. The lift only logs "
+                     "in opcontrol — drive the lift with the debug build to capture data.")
+        if args.run == "all":
+            chosen = have
+        else:
+            try:
+                chosen = [have[int(args.run)]]
+            except (ValueError, IndexError):
+                sys.exit(f"error: run {args.run} out of range ({len(have)} boots with lift data)")
+
+        out_dir = Path(args.out) / log_path.stem
+        if not args.show:
+            out_dir.mkdir(parents=True, exist_ok=True)
+        for sess in chosen:
+            fig = lift_dashboard(sess)
+            if args.show:
+                plt.show()
+            else:
+                path = out_dir / f"boot{sess.index}_lift.png"
+                fig.savefig(path, dpi=130, bbox_inches="tight")
+                print(path)
+            plt.close(fig)
+        return
+
     from log_analysis import plots
     from log_analysis.animate import ANIMATIONS
     from log_analysis.parser import parse_log, select_runs
 
-    log_path = resolve_log(args.log)
     sessions = parse_log(log_path)
     try:
         runs = select_runs(sessions, args.session, args.run)

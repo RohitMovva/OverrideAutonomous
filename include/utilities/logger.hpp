@@ -96,7 +96,13 @@
       * Runs in a separate task to prevent blocking the main thread.
       */
      void processLogQueue();
- 
+
+     /**
+      * @brief Format one message with its timestamp and write+flush it to file.
+      *        Called only from the logging task (single writer).
+      */
+     void writeMessage(const LogMessage& msg);
+
      /**
       * @brief Adds a message to the logging queue
       * @param level Log level string (INFO, DEBUG, WARNING, ERROR, LOG)
@@ -198,7 +204,19 @@
       * Returns the full path to the current log file being written to.
       */
      const std::string& getLogFilename() const;
- 
+
+     /**
+      * @brief Block until every message queued so far has been written to the SD
+      *        card.
+      *
+      * Logging is asynchronous: log() only enqueues, and a background task writes
+      * to the file. If the program crashes or the brain is powered off, anything
+      * still in the queue is lost. Call this after a message you MUST see on disk
+      * (e.g. init-progress diagnostics for chasing a boot-time crash) so it is
+      * persisted before continuing. Bounded (~500 ms) so it can never hang init.
+      */
+     void flush();
+
      /**
       * @brief Closes the logger and cleans up resources
       * 

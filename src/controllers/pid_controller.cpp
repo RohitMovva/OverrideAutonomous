@@ -7,7 +7,8 @@
 PIDController::PIDController(double kP, double kI, double kD,
                            double minOutput, double maxOutput,
                            double integralLimit,
-                           double derivativeFilterAlpha)
+                           double derivativeFilterAlpha,
+                           double integralActiveBand)
     : kP(kP), kI(kI), kD(kD)
     , minOutput(minOutput), maxOutput(maxOutput)
     , integralTerm(0.0)
@@ -16,6 +17,7 @@ PIDController::PIDController(double kP, double kI, double kD,
     , lastTime(0)
     , firstRun(true)
     , integralLimit(integralLimit)
+    , integralActiveBand(integralActiveBand)
     , derivativeFilterAlpha(derivativeFilterAlpha)
     , filteredDerivative(0.0)
 {
@@ -27,7 +29,8 @@ double PIDController::calculate(double setpoint, double processVariable) {
     return calculate(error);
 }
 
-double PIDController::calculate(double setpoint, double processVariable, double measuredRate) {
+double PIDController::calculate(double setpoint, double processVariable, double measuredRate,
+                                double feedforward) {
     double error = setpoint - processVariable;
 
     uint32_t currentTime = pros::millis();
@@ -53,7 +56,7 @@ double PIDController::calculate(double setpoint, double processVariable, double 
         derivative = kD * filteredDerivative;
     }
 
-    return composeOutput(error, derivative, dt, currentTime);
+    return composeOutput(error, derivative, feedforward, dt, currentTime);
 }
 
 double PIDController::calculate(double error) {
@@ -81,10 +84,11 @@ double PIDController::calculate(double error) {
         derivative = kD * filteredDerivative;
     }
 
-    return composeOutput(error, derivative, dt, currentTime);
+    return composeOutput(error, derivative, 0.0, dt, currentTime);
 }
 
-double PIDController::composeOutput(double error, double derivative, double dt, uint32_t currentTime) {
+double PIDController::composeOutput(double error, double derivative, double feedforward,
+                                    double dt, uint32_t currentTime) {
     double proportional = kP * error;
 
     // Conditional-integration anti-windup: tentatively advance the integral,
@@ -92,17 +96,24 @@ double PIDController::composeOutput(double error, double derivative, double dt, 
     // saturation. When railed in the direction the error is driving, we hold
     // the integral steady so it cannot wind up; it is still free to unwind (or
     // grow the other way) once the error reverses. The integral is also hard
-    // clamped to +/-integralLimit as a backstop.
+    // clamped to +/-integralLimit as a backstop. The feedforward is included in
+    // the saturation check so a caller-side feedforward (e.g. gravity holding
+    // voltage) cannot mask saturation and let the integral wind up behind it.
     double candidateIntegral = clamp(integralTerm + error * dt, -integralLimit, integralLimit);
-    double candidateOutput = proportional + kI * candidateIntegral + derivative;
+    double candidateOutput = proportional + kI * candidateIntegral + derivative + feedforward;
     bool worsensHighSaturation = candidateOutput > maxOutput && error > 0.0;
     bool worsensLowSaturation  = candidateOutput < minOutput && error < 0.0;
-    if (!worsensHighSaturation && !worsensLowSaturation) {
+    // Integral separation: only accumulate near the target. A large error (a long
+    // slew, a stiction stall) must NOT charge the integral, or it slings the
+    // output past the goal once the mechanism finally moves. Steady-state trim
+    // near the target still works because the error there is inside the band.
+    bool withinActiveBand = std::abs(error) <= integralActiveBand;
+    if (withinActiveBand && !worsensHighSaturation && !worsensLowSaturation) {
         integralTerm = candidateIntegral;
     }
     double integral = kI * integralTerm;
 
-    double output = clamp(proportional + integral + derivative, minOutput, maxOutput);
+    double output = clamp(proportional + integral + derivative + feedforward, minOutput, maxOutput);
 
     // Log key values periodically (not every calculation)
     static uint32_t logCounter = 0;

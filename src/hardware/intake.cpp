@@ -1,8 +1,8 @@
 #include "intake.hpp"
 
-Intake::Intake(pros::MotorGroup& intake_motors, EnhancedDigitalOut& intake_widener,
+Intake::Intake(pros::MotorGroup& intake_motors,
                pros::Optical& optical_sensor, pros::Distance& distance_sensor)
-    : intake_motors_(intake_motors), intake_widener_(intake_widener),
+    : intake_motors_(intake_motors),
       color_sort_os_(optical_sensor), color_sort_ds_(distance_sensor),
       target_color_(nullptr), intake_state_(0), skills_(false),
       color_sorting_active_(false) {
@@ -93,36 +93,8 @@ void Intake::update(){
 
     bool detected = false;
 
-    // Auto-widener: if the distance sensor sees something close for
-    // WIDENER_TRIGGER_MS, pull the widener in and hold it for WIDENER_HOLD_MS.
-    if (widener_close_ms_ > 0) {
-        widener_close_ms_ -= 10;
-        if (widener_close_ms_ <= 0) {
-            widener_close_ms_ = 0;
-            widener_detect_ms_ = 0;   // require a fresh detection after releasing
-            widener_cooldown_ms_ = WIDENER_COOLDOWN_MS;   // wait before re-triggering
-            intake_widener_.set_state(false);
-        }
-    } else if (widener_cooldown_ms_ > 0) {
-        widener_cooldown_ms_ -= 10;   // cooling down: ignore detections
-    } else {
-        if (color_sort_ds_.get_distance() < WIDENER_DISTANCE_THRESHOLD) {
-            widener_detect_ms_ += 10;
-        } else {
-            widener_detect_ms_ = 0;
-        }
-        if (widener_detect_ms_ >= WIDENER_TRIGGER_MS) {
-            widener_detect_ms_ = 0;
-            widener_close_ms_ = WIDENER_HOLD_MS;
-            intake_widener_.set_state(true);
-        }
-    }
 
     time_since_state_set_ += 10;
 
     apply_state_motors();
-}
-
-void Intake::park() {
-    set_state(5);
 }

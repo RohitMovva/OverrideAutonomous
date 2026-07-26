@@ -29,7 +29,6 @@ class Intake {
 private:
     // Motors
     pros::MotorGroup& intake_motors_; ///< Lower intake motor reference
-    EnhancedDigitalOut& intake_widener_;
 
     // Color detection
     pros::Optical& color_sort_os_;   ///< Optical sensor reference
@@ -51,21 +50,6 @@ private:
     /// Voltage (mV) used for a gentle outtake (state 4), e.g. while the lift lowers.
     static constexpr int OUTTAKE_SLOW_SPEED = 4000;
 
-    // Auto-widener: when something sits close to the distance sensor long enough,
-    // pull the intake widener in for a fixed time.
-    int widener_detect_ms_ = 0;      ///< How long the distance has been below the threshold (ms)
-    int widener_close_ms_ = 0;       ///< Remaining time to hold the widener closed (ms)
-    int widener_cooldown_ms_ = 0;    ///< Remaining cooldown after opening before it can re-trigger (ms)
-
-    /// Distance (mm, smaller = closer) below this counts as an object present.
-    static constexpr int32_t WIDENER_DISTANCE_THRESHOLD = 150;
-    /// Distance must stay below the threshold this long before the widener closes.
-    static constexpr int WIDENER_TRIGGER_MS = 20;
-    /// How long to hold the widener closed once triggered.
-    static constexpr int WIDENER_HOLD_MS = 1000;
-    /// Cooldown after the widener opens back out before it can trigger again.
-    static constexpr int WIDENER_COOLDOWN_MS = 500;
-
     /**
      * @brief Apply motor speeds based on current intake state
      */
@@ -78,7 +62,7 @@ public:
      * @param optical_sensor Reference to optical sensor
      */
     Intake(pros::MotorGroup& intake_motors, 
-                EnhancedDigitalOut& intake_widener, pros::Optical& optical_sensor, pros::Distance& distance_sensor);
+                pros::Optical& optical_sensor, pros::Distance& distance_sensor);
     
     /**
      * @brief Destructor - ensures proper cleanup
@@ -148,5 +132,4 @@ public:
      */
     bool is_color_sorting_active() const;
 
-    void park();
 };

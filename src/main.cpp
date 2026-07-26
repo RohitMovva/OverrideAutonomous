@@ -1,16 +1,20 @@
 #include "main.h"
+#include <malloc.h>  // mallinfo() — heap-usage diagnostics (temporary)
 
 // Robot config
 bool skills = false;
 pros::Controller master(pros::E_CONTROLLER_MASTER);
-pros::MotorGroup left_mg({1, -2});
-pros::MotorGroup right_mg({-3, 4});
-pros::MotorGroup intake_motors({9, 15});
-pros::MotorGroup lift_motors({5, 6});
+pros::MotorGroup left_mg({-18, 19});
+pros::MotorGroup right_mg({14, -15});
+pros::MotorGroup intake_motors({-20});
+pros::MotorGroup winch_motors({-16, 17});                     // two 200 RPM lift winch motors
+pros::Motor chainbar_motor(-10, pros::v5::MotorGears::red); // 11W bar pivot, geared 100->50; PLACEHOLDER port
+pros::Rotation chainbar_rotation(11);                      // bar-axle angle sensor, 1:1; PLACEHOLDER port
+pros::Motor chain_motor(13, pros::v5::MotorGears::green);  // 5.5W 200 RPM chain, 1:1 end effector; PLACEHOLDER port
+pros::Rotation chain_rotation(9);                          // EE-axle angle sensor, 1:1; PLACEHOLDER port
 
 pros::Optical color_sort_os(21);
 pros::Distance color_sort_ds(10);
-pros::Rotation lift_rotation_sensor(20);
 pros::Distance left_distance_sensor(3);
 pros::Distance right_distance_sensor(5);
 pros::Distance front_distance_sensor(16);
@@ -19,21 +23,33 @@ DistanceResetOdometry::DistanceSensor left_sensor(&left_distance_sensor, 5.9272,
 DistanceResetOdometry::DistanceSensor right_sensor(&right_distance_sensor, 6.3209, 0);
 DistanceResetOdometry::DistanceSensor front_sensor(&front_distance_sensor, 2.8, -4.5);
 
-EnhancedDigitalOut claw_clamp(5, false);
-EnhancedDigitalOut claw_angler(6, false);
+EnhancedDigitalOut claw(8, false);   // single open/close claw solenoid; PLACEHOLDER ADI port
 EnhancedDigitalOut flipper(3, false);
-EnhancedDigitalOut intake_widener(7, false);
-EnhancedDigitalOut bobby_wheel(6, false);
+EnhancedDigitalOut bobby_wheel(7, false);
 
-PIDController lift_pid(250, 60, 1200, -12000, 12000);
-Lift lift(lift_rotation_sensor, lift_motors, claw_angler, claw_clamp, 12000, 12000, 8000, 192000, 200, lift_pid);
-Intake intake(intake_motors, intake_widener, color_sort_os, color_sort_ds);
+PIDController winch_pid(300, 0, 0, -12000, 12000, 50.0, 0.3);
+
+// kD is the bar's only source of deceleration BEFORE it reaches a target. With
+// kD=0 the return sweep could brake only by overshooting (P * how far past it
+// already was), so it crossed the low-zone gate at 560 deg/s and took 36 deg to
+// stop -- inside the clearance zone the gate exists to keep it out of, and hard
+// enough to recoil the mechanism backwards (log 07262026, 09.58-09.93). At kD=10
+// that same 560 deg/s contributes -5600 mV of braking while the bar is still
+// short of the target. TUNE: raise if it still overruns, lower if the sweep gets
+// sluggish or buzzes -- Lift feeds it the 50 ms windowed rate (and the velocity
+// ERROR on profiled moves), so there is real phase lag to respect.
+PIDController chainbar_pid(200, 60, 10, -12000, 12000, 100.0, 0.3, 10.0);
+
+PIDController chain_pid(120, 20, 6, -12000, 12000, 50.0, 0.3);
+Lift lift(winch_motors, chainbar_motor, chainbar_rotation, chain_motor, chain_rotation,
+          claw, winch_pid, chainbar_pid, chain_pid);
+Intake intake(intake_motors, color_sort_os, color_sort_ds);
 
 Trajectory trajectory;
 Trajectory goal_to_matchloader;
 Trajectory low_goal;
 
-pros::Imu imu_sensor(20);
+pros::Imu imu_sensor(12);
 
 Logger *logger = Logger::getInstance();
 
@@ -63,8 +79,18 @@ Robot *robot;
  */
 void initialize()
 {
+    // --- Diagnostic instrumentation (temporary) -----------------------------
+    // Logs heap-in-use (mallinfo().uordblks) after each setup step so a post-run
+    // SD log shows how far initialize() got and which step consumed memory (the
+    // memory hypothesis). Higher usedHeap = more allocated.
+    logger->log("=== INITIALIZE START (diagnostic build) === usedHeap=%d",
+                mallinfo().uordblks);
+
     pros::lcd::initialize();
+    logger->log("init: lcd::initialize done, usedHeap=%d", mallinfo().uordblks);
+    logger->flush();  // persist each step before the next, so a crash pins the spot
     // pros::lcd::clear()
+
 
     left_mg.set_encoder_units_all(pros::E_MOTOR_ENCODER_COUNTS);
     right_mg.set_encoder_units_all(pros::E_MOTOR_ENCODER_COUNTS);
@@ -73,8 +99,14 @@ void initialize()
     right_mg.tare_position_all();
 
     imu_sensor.reset();
+    logger->log("init: imu.reset issued, usedHeap=%d", mallinfo().uordblks);
+    logger->flush();
 
-    side_encoder.set_reversed(true);
+    lift.initialize();
+    logger->log("init: lift.initialize done, usedHeap=%d", mallinfo().uordblks);
+    logger->flush();
+
+    bobby_wheel.set_value(true);
 
     DistanceResetOdometry::DistanceSensors distance_sensors = {front_sensor, nullptr, left_sensor, right_sensor};
 
@@ -83,6 +115,8 @@ void initialize()
         left_mg, right_mg, side_encoder, imu_sensor, distance_sensors,
         false, true
     );
+    logger->log("init: localization created, usedHeap=%d", mallinfo().uordblks);
+    logger->flush();
 
     ramsete_controller = new RamseteController(
         Config::RAMSETE_B, Config::RAMSETE_ZETA,
@@ -94,20 +128,14 @@ void initialize()
         Config::KA_DECEL);
 
     robot = new Robot(&left_mg, &right_mg, &imu_sensor, &master, drive_controller, ramsete_controller, std::move(localization), &intake);
+    logger->log("init: robot created, usedHeap=%d", mallinfo().uordblks);
+    logger->flush();
 
     pros::delay(5);
     trajectory.loadFromFile("/usd/routes/" + route_name + ".txt");
-
-    if (skills && routes.size() > 0){
-        for (auto& route: routes){
-            Trajectory traj;
-            traj.loadFromFile("/usd/routes/" + route + ".txt");
-            trajectories.push_back(traj);
-        }
-    }
-
-    goal_to_matchloader.loadFromFile("/usd/routes/goal_to_matchloader.txt");
-    low_goal.loadFromFile("/usd/routes/low_goal.txt");
+    logger->log("init: trajectory '%s' loaded size=%d, usedHeap=%d",
+                route_name.c_str(), trajectory.size(), mallinfo().uordblks);
+    logger->flush();
     // trajectory.loadFromVector();
     // if (trajectory.empty())
     // {
@@ -116,6 +144,7 @@ void initialize()
     // }
 
     logger->log("Robot initialized");
+    logger->flush();
 }
 
 /**
@@ -152,7 +181,6 @@ void competition_initialize()
 void autonomous()
 {
     logger->log("Program type: %s", program_type.c_str());
-    // trajectory.loadFromFile("/usd/routes/" + route_name + ".txt");
 
     if (program_type == "autonomous")
     {
@@ -164,142 +192,10 @@ void autonomous()
             robot->followTrajectories(trajectories);
         }
     }
-    if (route_name == "splitsevenhigh" || route_name == "splitsevenhighcounter"){
-        left_mg.move_voltage(3600);
-        right_mg.move_voltage(-3600);
-        pros::delay(600);
-        right_mg.move_voltage(0);
-        left_mg.move_voltage(0);
-    }
     left_mg.set_brake_mode_all(MOTOR_BRAKE_BRAKE);
     right_mg.set_brake_mode_all(MOTOR_BRAKE_BRAKE);
 }
 
-int joystickCurve(int x, double a = 3.0)
-{
-    return int(((127.0 * std::pow(std::abs(double(x)), std::abs(a))) / (std::pow(127.0, a))) * (double(x) / std::abs(double(x))));
-}
-
-int joystickCurveSkills(int x, double a = 3.0)
-{
-    return int(((std::pow((double(x) / 5.7), 2.0) - std::abs(std::pow((double(x) / 5.7), 3.0) / 6.0) + (std::pow((double(x) / 5.7), 4.0) / 120.0)) * double(x)) / (3.0 * std::abs(double(x))));
-}
-
-#include <cmath>
-#include <algorithm>
-#include <utility>
-
-/**
- * arcade_drive
- *
- * Mixes two joystick axes (throttle + steering) into left/right motor outputs.
- *
- * @param throttle  Raw forward/back axis  [-127, 127]
- * @param steer     Raw left/right axis    [-127, 127]
- * @return          std::pair<int, int>  { leftMotor, rightMotor }  [-127, 127]
- */
-std::pair<int, int> arcade_drive(int throttle, int steer)
-{
-    // Deadband: joystick inputs whose absolute value falls at or below this
-    // threshold are treated as zero.  Eliminates controller drift.
-    // Range: [0, 127]  –  typical value: 5–15
-    constexpr int DEADBAND = 10;
-
-    // Minimum speed: once a joystick clears the deadband, the output is
-    // immediately scaled up to at least this value (avoids a "dead zone" where
-    // the motor stalls because the command is too small to overcome friction).
-    // Range: [0, 127]  –  typical value: 15–30
-    constexpr int MIN_SPEED = 20;
-
-    // Turning curve exponent: applies a power-curve to the *steering* axis so
-    // small deflections produce finer control while full deflection still
-    // reaches 100 %.  Higher values = gentler at low speeds.
-    // Range: (1.0, ∞)  –  typical value: 1.5–3.0  (1.0 = linear / no curve)
-    constexpr double TURN_CURVE_EXPONENT = 2.5;
-
-    // Throttle/steer priority: blends throttle vs steering authority when both
-    // axes are active simultaneously.  At 1.0 the robot drives straight at full
-    // speed even with max steering input; at 0.0 steering gets no headroom at
-    // all alongside full throttle.
-    // Range: [0.0, 1.0]  –  typical value: 0.5–0.7
-    constexpr double THROTTLE_PRIORITY = 0.1;
-
-    // -------------------------------------------------------------------------
-    //  INPUT CLAMPING
-    // -------------------------------------------------------------------------
-    const double rawThrottle = std::clamp(throttle, -127, 127);
-    const double rawSteer    = std::clamp(steer,    -127, 127);
-
-    // -------------------------------------------------------------------------
-    //  DEADBAND
-    //  Zero out inputs that fall within the dead zone.
-    // -------------------------------------------------------------------------
-    const double filteredThrottle = (std::abs(rawThrottle) <= DEADBAND) ? 0.0 : rawThrottle;
-    const double filteredSteer    = (std::abs(rawSteer)    <= DEADBAND) ? 0.0 : rawSteer;
-
-    // -------------------------------------------------------------------------
-    //  MINIMUM SPEED SCALING
-    //  Remap [deadband+1 … 127] → [MIN_SPEED … 127] so the output jumps to a
-    //  usable value the moment the stick clears the deadband.
-    // -------------------------------------------------------------------------
-    auto applyMinSpeed = [&](double val) -> double
-    {
-        if (val == 0.0) return 0.0;
-
-        const double sign      = (val > 0.0) ? 1.0 : -1.0;
-        const double magnitude = std::abs(val);
-
-        // Normalise to [0, 1] relative to the usable input range
-        const double normalised = (magnitude - DEADBAND) / (127.0 - DEADBAND);
-
-        // Rescale to [MIN_SPEED, 127]
-        const double scaled = MIN_SPEED + normalised * (127.0 - MIN_SPEED);
-        return sign * scaled;
-    };
-
-    const double scaledThrottle = applyMinSpeed(filteredThrottle);
-    const double scaledSteer    = applyMinSpeed(filteredSteer);
-
-    // -------------------------------------------------------------------------
-    //  TURNING CURVE
-    //  Apply a power curve to the steering axis only.
-    //  Output = sign(x) * (|x| / 127)^EXPONENT * 127
-    // -------------------------------------------------------------------------
-    double curvedSteer = 0.0;
-    if (scaledSteer != 0.0)
-    {
-        const double sign      = (scaledSteer > 0.0) ? 1.0 : -1.0;
-        const double normalised = std::abs(scaledSteer) / 127.0;          // [0, 1]
-        const double curved    = std::pow(normalised, TURN_CURVE_EXPONENT); // power curve
-        curvedSteer = sign * curved * 127.0;
-    }
-
-    // -------------------------------------------------------------------------
-    //  THROTTLE / STEER PRIORITY MIXING
-    //
-    //  The available "budget" for steering shrinks proportionally as the
-    //  throttle increases, ensuring full-speed straight driving is reachable.
-    //
-    //  steering headroom = 127 * (1 - THROTTLE_PRIORITY * |throttle| / 127)
-    //  The final mix:
-    //      left  = throttle + steerContribution
-    //      right = throttle - steerContribution
-    // -------------------------------------------------------------------------
-    const double throttleNorm = std::abs(scaledThrottle) / 127.0;           // [0, 1]
-    const double steerBudget  = 127.0 * (1.0 - THROTTLE_PRIORITY * throttleNorm);
-    const double steerContrib = curvedSteer * (steerBudget / 127.0);
-
-    double left  = scaledThrottle + steerContrib;
-    double right = scaledThrottle - steerContrib;
-
-    // -------------------------------------------------------------------------
-    //  OUTPUT CLAMPING  →  keep within [-127, 127]
-    // -------------------------------------------------------------------------
-    return {
-        static_cast<int>(std::clamp(left,  -127.0, 127.0)),
-        static_cast<int>(std::clamp(right, -127.0, 127.0))
-    };
-}
 /**
  * Runs the operator control code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
@@ -315,6 +211,7 @@ std::pair<int, int> arcade_drive(int throttle, int steer)
  */
 void opcontrol()
 {
+    bobby_wheel.set_value(false);
     double drivetrain_slow = 0.5;
     left_mg.set_brake_mode_all(MOTOR_BRAKE_COAST);
     right_mg.set_brake_mode_all(MOTOR_BRAKE_COAST);
@@ -322,8 +219,42 @@ void opcontrol()
     int intake_state = 0;
     int intake_pressed_dur = 0;
     bool intaking = false;
+
+    // --- Diagnostic instrumentation (temporary) -----------------------------
+    // A post-freeze SD log (/usd/robot_log_*.txt) then shows: heap-in-use over
+    // time (a leak/exhaustion makes usedHeap climb), the worst loop period/work
+    // time per window (a blocking call or stall spikes these), and the last
+    // heartbeat count before the log stops (pinpoints when it died). Logging is
+    // queued to the background logger task, so it adds no blocking SD I/O here.
+    uint32_t last_loop_ms = pros::millis();
+    uint32_t worst_period_ms = 0;
+    uint32_t worst_work_ms = 0;
+    logger->log("=== OPCONTROL START (diagnostic build) === usedHeap=%d",
+                mallinfo().uordblks);
+
     while (true)
     {
+        uint32_t iter_start = pros::millis();
+        uint32_t period = iter_start - last_loop_ms;
+        last_loop_ms = iter_start;
+        if (period > worst_period_ms)
+            worst_period_ms = period;
+        // Nominal period is ~10 ms; flag any single stalled iteration the instant
+        // it happens so the log's last line lands near the freeze.
+        if (period > 30)
+            logger->log("LOOP STALL: period=%u ms at count=%lld usedHeap=%d",
+                        period, count, mallinfo().uordblks);
+
+        // Heartbeat (~4 Hz) with heap-in-use and the worst timing this window.
+        if (count % 25 == 0)
+        {
+            logger->log("hb count=%lld usedHeap=%d worstPeriod=%u worstWork=%u",
+                        count, mallinfo().uordblks,
+                        worst_period_ms, worst_work_ms);
+            worst_period_ms = 0;
+            worst_work_ms = 0;
+        }
+
         // Update the LCD at ~4 Hz, not every 10ms — hammering pros::lcd::print
         // (an LVGL wrapper) from opcontrol races the LVGL render daemon.
         if (count % 25 == 0)
@@ -332,60 +263,84 @@ void opcontrol()
         left_mg.move(master.get_analog(ANALOG_LEFT_Y));
         right_mg.move(master.get_analog(ANALOG_RIGHT_Y));
 
-        if (master.get_digital_new_press(DIGITAL_R1)) // Intake
-        {
-            if (!intaking)
-            {
-                intake_state = 1;
-            }
-            else
-            {
-                intake_state = 0;
-            }
-            intaking = !intaking;
-        }
+        // R1 is a combined tap/hold control. Disambiguate on RELEASE by how
+        // long it was held so a hold-to-outtake never corrupts the toggle:
+        //   - tap  (< 150 ms) -> toggle intake on/off
+        //   - hold (>= 150 ms) -> outtake while held, then restore toggle state
+        // `intaking` is the persistent toggle; it is only ever flipped by a tap.
         if (master.get_digital(DIGITAL_R1))
         {
             intake_pressed_dur += 10;
             if (intake_pressed_dur >= 150)
-            {
-                intake_state = 2;
-            }
+                intake_state = 2; // held long enough -> outtake
         }
         else
         {
+            if (intake_pressed_dur > 0 && intake_pressed_dur < 150)
+                intaking = !intaking; // it was a tap -> flip the toggle
+            // On any release (tap or after a hold) settle back to the toggle state.
+            if (intake_pressed_dur > 0)
+                intake_state = intaking ? 1 : 0;
             intake_pressed_dur = 0;
-            if (intake_state == 2)
-                intake_state = 0;
         }
         intake.set_state(intake_state);
 
 
-        // Hold L1 to raise; on release lift.update() captures the current
-        // angle and holds it, so the lift stays where the driver left it.
+        // Lift: hold L1 to advance the coordinated lift/chainbar raise sequence
+        // (starts from primed). It advances while held and freezes wherever it is
+        // on release; the winch is otherwise fully owned by lift.update().
         if (master.get_digital(DIGITAL_L1))
         {
-            lift.raise();
+            lift.move_lift_up();
         }
-        // Single-press macros: score (B) and return to bottom (L2).
-        else if (master.get_digital_new_press(DIGITAL_B))
+        // Hold L2 to retreat the raise sequence back toward primed -- a plain manual
+        // reverse (no pressure detect / auto-return, unlike B/score). Raising (L1)
+        // wins if both are held.
+        if (master.get_digital(DIGITAL_L2))
+        {
+            lift.move_lift_down();
+        }
+
+        // Chainbar macros: X primes (grab + bar 45, winch flat), Y returns to
+        // loading (claw open), B scores (reverses the raise sequence onto the
+        // tower with pressure detect, then stows).
+        if (master.get_digital_new_press(DIGITAL_B))
+        {
+            lift.prime();
+        }
+        else if (master.get_digital_new_press(DIGITAL_Y))
+        {
+            lift.return_to_loading();
+        }
+        else if (master.get_digital_new_press(DIGITAL_DOWN))
         {
             lift.score();
         }
-        else if (master.get_digital_new_press(DIGITAL_L2))
+        // RIGHT flips the end-effector orientation used by the raised poses
+        // (270 <-> 90) so a piece can be presented from either side. Takes effect
+        // at once -- before priming, while primed, or part-way up the sequence --
+        // and sticks until pressed again.
+        else if (master.get_digital_new_press(DIGITAL_RIGHT))
         {
-            lift.move_down();
+            lift.toggle_scoring_orientation();
         }
 
-
-        // While the lift eases down, gently outtake so a piece clears the intake.
-        if (lift.is_lowering())
-        {
-            intake.set_state(4);
+        // A manually releases the piece wherever the lift happens to be -- primed,
+        // part-way up the sequence, or mid-score -- without moving anything or
+        // changing the mode. The next prime/score re-clamps.
+        if (master.get_digital_new_press(DIGITAL_A)){
+            lift.open_claw();
         }
+
 
         intake.update();
         lift.update();
+
+        // Work time this iteration (excludes the 10 ms sleep). A blocking device
+        // read or SD stall shows up here as a spike even if the period looks fine.
+        uint32_t work_ms = pros::millis() - iter_start;
+        if (work_ms > worst_work_ms)
+            worst_work_ms = work_ms;
 
         pros::delay(10);
         // ------------- END MATCH DRIVER CONTROLS --------------------
