@@ -10,8 +10,8 @@ pros::MotorGroup intake_motors({-20});
 pros::MotorGroup winch_motors({-16, 17});                     // two 200 RPM lift winch motors
 pros::Motor chainbar_motor(-10, pros::v5::MotorGears::red); // 11W bar pivot, geared 100->50; PLACEHOLDER port
 pros::Rotation chainbar_rotation(11);                      // bar-axle angle sensor, 1:1; PLACEHOLDER port
-pros::Motor chain_motor(13, pros::v5::MotorGears::green);  // 5.5W 200 RPM chain, 1:1 end effector; PLACEHOLDER port
-pros::Rotation chain_rotation(9);                          // EE-axle angle sensor, 1:1; PLACEHOLDER port
+pros::Motor chain_motor(-13, pros::v5::MotorGears::green);  // 5.5W 200 RPM chain, 1:1 end effector; PLACEHOLDER port
+pros::Rotation chain_rotation(1);                          // EE-axle angle sensor, 1:1; PLACEHOLDER port
 
 pros::Optical color_sort_os(21);
 pros::Distance color_sort_ds(10);
@@ -23,7 +23,7 @@ DistanceResetOdometry::DistanceSensor left_sensor(&left_distance_sensor, 5.9272,
 DistanceResetOdometry::DistanceSensor right_sensor(&right_distance_sensor, 6.3209, 0);
 DistanceResetOdometry::DistanceSensor front_sensor(&front_distance_sensor, 2.8, -4.5);
 
-EnhancedDigitalOut claw(8, false);   // single open/close claw solenoid; PLACEHOLDER ADI port
+EnhancedDigitalOut claw(8, false);   // single open/1close claw solenoid; PLACEHOLDER ADI port
 EnhancedDigitalOut flipper(3, false);
 EnhancedDigitalOut bobby_wheel(7, false);
 
@@ -36,7 +36,7 @@ PIDController winch_pid(300, 0, 0, -12000, 12000, 50.0, 0.3);
 // enough to recoil the mechanism backwards (log 07262026, 09.58-09.93). At kD=10
 // that same 560 deg/s contributes -5600 mV of braking while the bar is still
 // short of the target. TUNE: raise if it still overruns, lower if the sweep gets
-// sluggish or buzzes -- Lift feeds it the 50 ms windowed rate (and the velocity
+// sluggish or buzzes -- Lift feeds it the 50 ms windowed rate (9 the velocity
 // ERROR on profiled moves), so there is real phase lag to respect.
 PIDController chainbar_pid(200, 60, 10, -12000, 12000, 100.0, 0.3, 10.0);
 
@@ -294,19 +294,46 @@ void opcontrol()
             lift.move_lift_up();
         }
         // Hold L2 to retreat the raise sequence back toward primed -- a plain manual
-        // reverse (no pressure detect / auto-return, unlike B/score). Raising (L1)
+        // reverse (no release / auto-return, unlike DOWN/score). Raising (L1)
         // wins if both are held.
         if (master.get_digital(DIGITAL_L2))
         {
             lift.move_lift_down();
         }
 
-        // Chainbar macros: X primes (grab + bar 45, winch flat), Y returns to
-        // loading (claw open), B scores (reverses the raise sequence onto the
-        // tower with pressure detect, then stows).
+        // Chainbar macros: B primes (grab + bar 45, winch flat), Y returns to
+        // loading (claw open), DOWN scores (swings the bar out of primed, extends
+        // the cascade to full height, releases, then returns to the pose it primed
+        // from).
+        //
+        // B primes from EITHER resting pose -- loading or matchload -- so the driver
+        // uses the same button whichever one they picked up from.
         if (master.get_digital_new_press(DIGITAL_B))
         {
             lift.prime();
+        }
+        // X is the matchload button. Sitting at a resting pose it swaps to the other
+        // one (loading <-> matchload); from anywhere else -- primed, part way up the
+        // sequence, mid-score -- it returns to matchload, the way Y returns to
+        // loading. Every path runs the lift-clearance choreography, so it is a macro
+        // like the rest, not an instant pose change.
+        //
+        // A score started from matchload also RETURNS to matchload on its own, so X
+        // is only needed to change your mind mid-cycle.
+        // UP runs the BACK cycle -- the other side of the mechanism, reached without
+        // swinging the bar the long way round to the front primed pose. From a resting
+        // pose it is the back prime (grab + move onto the BOTTOM back pose); pressed
+        // again it toggles BOTTOM <-> TOP, each move running its own clearance
+        // choreography. Once parked, L1/L2 jog the cascade freely, DOWN scores with the
+        // same pressure detection, and RIGHT flips the end effector between the back
+        // orientations. Y/X still bring it home.
+        else if (master.get_digital_new_press(DIGITAL_UP))
+        {
+            lift.back_prime();
+        }
+        else if (master.get_digital_new_press(DIGITAL_R2))
+        {
+            lift.toggle_matchload();
         }
         else if (master.get_digital_new_press(DIGITAL_Y))
         {

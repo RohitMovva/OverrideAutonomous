@@ -30,23 +30,31 @@ Lift::Lift(pros::MotorGroup& winch_motors,
       start_step_(StartStep::IDLE),
       prime_step_(PrimeStep::RAISE),
       return_step_(ReturnStep::RAISE_SWEEP),
+      matchload_step_(MatchloadStep::RAISE),
+      back_step_(BackStep::HOLD),
+      back_pose_(BackPose::BOTTOM),
+      back_hold_bar_(CHAINBAR_BACK_BOTTOM_DEG),
+      back_hold_winch_(WINCH_BACK_BOTTOM_POS),
+      return_dest_(Mode::STOW),
+      entry_bar_deg_(CHAINBAR_START_DEG),
       startup_complete_(false),
       chainbar_coasting_(false),
       bar_coast_done_(false),
       alt_return_gate_(false),
       return_hold_winch_(WINCH_START_POS),
       raise_progress_(0.0),
+      bar_swing_broke_out_(false),
+      seq_swing_driving_(false),
       advancing_(false),
       retreating_(false),
       winch_manual_target_(WINCH_START_POS),
       bar_target_deg_(CHAINBAR_START_DEG),
       bar_target_vel_dps_(0.0),
       chain_target_deg_(CHAIN_START_DEG),
-      chain_scoring_deg_(CHAIN_SCORING_DEG),
-      score_start_ms_(0),
-      score_overtravel_deg_(0.0),
-      score_settle_start_ms_(0),
-      score_stall_ticks_(0),
+      ee_family_(EeFamily::FRONT),
+      ee_alt_(false),
+      retreat_winch_target_(WINCH_START_POS),
+      score_retreat_parked_(false),
       last_update_ms_(0),
       winch_mode_(WinchMode::HOLD),
       winch_respooled_(false),
@@ -78,13 +86,22 @@ void Lift::initialize() {
     // in update()). Seed it to its START-pose value rather than taring to 0, since
     // all poses are measured from the LOADING reference.
     //
-    // The BAR and the EE are not seeded at all any more. Both are rotation sensors on
-    // their own axle, and those hold their reading across a power cycle, so writing
-    // set_position() here would throw away a good absolute reference and replace it
-    // with an assumption about where the mechanism was parked. They only get their
-    // orientation (set_reversed) configured below. This does mean the sensor zero has
-    // to AGREE with the pose convention (LOADING = 0) -- that is now a one-time
-    // mechanical/commissioning step, not something the code re-establishes each boot.
+    // The BAR and the EE are no longer re-zeroed. Both are rotation sensors on their
+    // own axle, and those hold their reading across a power cycle, so overwriting them
+    // with a START_* constant would throw away a good absolute reference and replace
+    // it with an assumption about where the mechanism was parked.
+    //
+    // They do still need their TURN COUNT resolved once, which is a different thing.
+    // The sensor comes up reporting its absolute angle folded into [0, 360), so the
+    // bar in its START pose reads ~335 rather than -25 -- same physical place, wrong
+    // branch, and a 360 deg error would put every pose, soft limit and PID error in
+    // the file on the wrong side of the mechanism. get_position() accumulates
+    // continuously from its start value (nothing wraps once running), so choosing the
+    // right branch ONCE here fixes every later reading. unwrap_angle_near() does that
+    // by picking the multiple of 360 nearest the pose the mechanism is documented to
+    // boot in -- the sensor's fine angle is kept exactly as measured; only the turn
+    // count is decided. Booting in some other pose puts it on the wrong branch, hence
+    // the sanity warning below.
     winch_motors_.set_encoder_units_all(pros::E_MOTOR_ENCODER_DEGREES);
     probe("winch set_encoder_units_all ok");
     winch_motors_.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
@@ -95,18 +112,25 @@ void Lift::initialize() {
     chainbar_motor_.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
     probe("chainbar set_brake_mode ok");
     // The bar angle is sensed by a rotation sensor on the axle (1:1), not the motor
-    // encoder. Orientation only -- its position is left exactly as the sensor
-    // reports it (see above).
+    // encoder. Orient it, then resolve its turn count (see below).
     chainbar_rotation_.set_reversed(CHAINBAR_ROTATION_REVERSED);
     probe("chainbar rotation set_reversed ok");
+    double bar_raw = chainbar_rotation_.get_position() / 100.0;
+    double bar_seed = unwrap_angle_near(bar_raw, CHAINBAR_START_DEG);
+    chainbar_rotation_.set_position(static_cast<std::int32_t>(bar_seed * 100.0));
+    probe("chainbar rotation turn count resolved");
 
     chain_motor_.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
     probe("chain set_brake_mode ok");
     // Like the bar, the EE angle is sensed by a rotation sensor on its own axle
     // (1:1), not the chain motor's encoder -- so nothing here touches the motor's
-    // encoder units or zero, and its position is left as the sensor reports it.
+    // encoder units or zero. Same turn-count resolution as the bar.
     chain_rotation_.set_reversed(CHAIN_ROTATION_REVERSED);
     probe("chain rotation set_reversed ok");
+    double ee_raw = chain_rotation_.get_position() / 100.0;
+    double ee_seed = unwrap_angle_near(ee_raw, CHAIN_START_DEG);
+    chain_rotation_.set_position(static_cast<std::int32_t>(ee_seed * 100.0));
+    probe("chain rotation turn count resolved");
 
     // Start in the dedicated power-on START pose (STARTUP mode). CHAINBAR_START_DEG /
     // CHAIN_START_DEG now only DESCRIBE that pose (they are what the sensors should
@@ -116,6 +140,8 @@ void Lift::initialize() {
     start_step_ = StartStep::IDLE;
     prime_step_ = PrimeStep::RAISE;
     return_step_ = ReturnStep::RAISE_SWEEP;
+    matchload_step_ = MatchloadStep::RAISE;
+    return_dest_ = Mode::STOW;   // the startup choreography lands in STOW
     startup_complete_ = false;  // re-zero cap arms when the choreography finishes
     chainbar_coasting_ = false;
     bar_coast_done_ = false;
@@ -124,7 +150,8 @@ void Lift::initialize() {
     winch_mode_ = WinchMode::HOLD;
     winch_respooled_ = false;
     raise_progress_ = 0.0;
-    score_overtravel_deg_ = 0.0;
+    bar_swing_broke_out_ = false;
+    seq_swing_driving_ = false;
     advancing_ = false;
     retreating_ = false;
     winch_manual_target_ = WINCH_START_POS;
@@ -138,7 +165,15 @@ void Lift::initialize() {
     double ee0 = get_ee_angle();
     bar_target_deg_ = bar0;
     chain_target_deg_ = ee0;
-    chain_scoring_deg_ = CHAIN_SCORING_DEG;
+    retreat_winch_target_ = WINCH_START_POS;
+    score_retreat_parked_ = false;
+    // Back cycle idle, and the raised orientation back to the front family's default.
+    back_step_ = BackStep::HOLD;
+    back_pose_ = BackPose::BOTTOM;
+    back_hold_bar_ = CHAINBAR_BACK_BOTTOM_DEG;
+    back_hold_winch_ = WINCH_BACK_BOTTOM_POS;
+    ee_family_ = EeFamily::FRONT;
+    ee_alt_ = false;
     claw_.set_state(CLAW_START_STATE);
     probe("claw set_state ok");
     winch_pid_.reset();
@@ -150,9 +185,25 @@ void Lift::initialize() {
     for (int i = 0; i < CHAIN_RATE_WINDOW; ++i) {     // else tick 1 reads a huge rate
         chain_angle_hist_[i] = ee0;
     }
+    // Boot reference trace: raw sensor angle, the branch it was resolved onto, and
+    // the START pose it should match. This is the line to read when a pose looks 360
+    // deg out or the mechanism sets off the wrong way on power-up.
     Logger::getInstance()->log(
-        "LIFTINIT sensors (unseeded): bar=%.1f (START %.1f), ee=%.1f (START %.1f), winch=%.1f",
-        bar0, CHAINBAR_START_DEG, ee0, CHAIN_START_DEG, get_winch_position());
+        "LIFTINIT refs: bar raw=%.1f -> %.1f (START %.1f) | ee raw=%.1f -> %.1f "
+        "(START %.1f) | winch=%.1f",
+        bar_raw, bar0, CHAINBAR_START_DEG, ee_raw, ee0, CHAIN_START_DEG,
+        get_winch_position());
+    if (std::abs(bar0 - CHAINBAR_START_DEG) > START_POSE_SANITY_DEG ||
+        std::abs(ee0 - CHAIN_START_DEG) > START_POSE_SANITY_DEG) {
+        // The turn count was resolved against the START pose, so if the mechanism was
+        // not actually there the resolved angle can be whole turns out -- and the
+        // startup choreography is about to drive to absolute angles on that reference.
+        Logger::getInstance()->log(
+            "LIFTWARN boot pose is NOT the START pose (bar %.1f vs %.1f, ee %.1f vs "
+            "%.1f, limit %.0f) -- turn count may be resolved onto the wrong branch; "
+            "power on with the mechanism in START",
+            bar0, CHAINBAR_START_DEG, ee0, CHAIN_START_DEG, START_POSE_SANITY_DEG);
+    }
     probe("pids reset; state seeded");
 
     // Kick off the START->STOW startup choreography automatically. It runs as
@@ -199,12 +250,6 @@ double Lift::get_progress() const {
     return raise_progress_;
 }
 
-bool Lift::is_scoring() const {
-    // True for the whole score macro, including the post-contact settle pause --
-    // the piece is not clear of the mechanism until the return actually starts.
-    return mode_ == Mode::SCORING || mode_ == Mode::SCORE_SETTLE;
-}
-
 // ---- Sequence interpolation ------------------------------------------------
 
 void Lift::seq_targets(double progress, double& winch_out, double& bar_out) {
@@ -220,19 +265,27 @@ void Lift::seq_targets(double progress, double& winch_out, double& bar_out) {
     bar_out = SEQ_BAR_DEG[i] + (SEQ_BAR_DEG[i + 1] - SEQ_BAR_DEG[i]) * f;
 }
 
+double Lift::seq_swing_progress(double bar) {
+    double span = SEQ_BAR_DEG[1] - SEQ_BAR_DEG[0];
+    if (std::abs(span) < 1e-9) return 0.0;
+    return std::clamp((bar - SEQ_BAR_DEG[0]) / span, 0.0, 1.0);
+}
+
 double Lift::slew_bar_toward(double current, double goal, double actual_bar,
-                             double& out_vel_dps) {
+                             double& out_vel_dps, double max_dps, double decel_deg) {
     double dt = Config::DT / 1000.0;
     double remaining = goal - current;
     double dist = std::abs(remaining);
     // Taper the rate over the decel zone so the bar decelerates into the goal;
-    // full rate outside it. The floor keeps the tail from asymptoting.
+    // full rate outside it. The floor keeps the tail from asymptoting. Rate and zone
+    // are per-call (defaulted to the CHAINBAR_APPROACH_* constants) so a long sweep
+    // can cruise at its own speed and still land on its pose -- the prime sweep runs
+    // this law at CHAINBAR_PRIME_SWEEP_DPS over CHAINBAR_PRIME_SWEEP_DECEL_DEG.
     double frac = 1.0;
-    if (CHAINBAR_APPROACH_DECEL_DEG > 0.0) {
-        frac = std::clamp(dist / CHAINBAR_APPROACH_DECEL_DEG,
-                          CHAINBAR_APPROACH_MIN_FRAC, 1.0);
+    if (decel_deg > 0.0) {
+        frac = std::clamp(dist / decel_deg, CHAINBAR_APPROACH_MIN_FRAC, 1.0);
     }
-    double rate = CHAINBAR_APPROACH_MAX_DPS * frac;  // profile speed magnitude (deg/s)
+    double rate = max_dps * frac;  // profile speed magnitude (deg/s)
     double step = rate * dt;
     // Desired velocity is the INTENDED profile rate (before the lead clamp below),
     // signed toward the goal, so the velocity feed-forward in update() commands the
@@ -256,22 +309,117 @@ double Lift::slew_bar_toward(double current, double goal, double actual_bar,
 // ---- Driver / macro entry points -------------------------------------------
 
 void Lift::prime() {
-    // The raise sequence always starts from the stow pose.
-    if (mode_ != Mode::STOW) {
-        Logger::getInstance()->log("LIFTCMD prime IGNORED (mode=%s, not STOW)",
+    // The raise sequence starts from either resting pose -- loading or matchload.
+    // Both sit at the bottom with the claw open and a piece in reach, and the
+    // clearance raise below holds the bar wherever it is, so the only difference
+    // between them is the angle the long sweep sets off from.
+    if (mode_ != Mode::STOW && mode_ != Mode::MATCHLOAD) {
+        Logger::getInstance()->log("LIFTCMD prime IGNORED (mode=%s, not STOW/MATCHLOAD)",
                                    mode_name(mode_));
         return;
     }
     Logger::getInstance()->log(
-        "LIFTCMD prime -> clearance raise, then sweep to KF0 (bar %.1f) w/ lower from %.1f",
-        SEQ_BAR_DEG[0], CHAINBAR_LOW_ZONE_DEG);
+        "LIFTCMD prime from %s -> clearance raise (bar held at %.1f, tuck to bar %.1f / "
+        "EE %.1f above winch %.0f), then sweep to KF0 (bar %.1f) w/ lower from %.1f",
+        mode_name(mode_), get_bar_angle(), CHAINBAR_PRIME_TUCK_DEG, CHAIN_PRIME_TUCK_DEG,
+        WINCH_PRIME_TUCK_POS, SEQ_BAR_DEG[0], CHAINBAR_LOW_ZONE_DEG);
     claw_.set_state(CLAW_CLOSED_STATE);  // grab the piece before raising
+    ee_family_ = EeFamily::FRONT;  // front pair of raised orientations; ee_alt_ untouched
     raise_progress_ = 0.0;
+    // Hold the bar at the pose we are leaving while the cascade climbs, rather than
+    // at a hardcoded loading angle: from matchload that would swing the bar back to
+    // loading first, across the low-clearance zone, with the cascade still on its way
+    // up. The sweep to primed then just carries on from here.
+    entry_bar_deg_ = get_bar_angle();
     // Run the clearance choreography (raise -> sweep -> lower) rather than moving
     // straight to the primed pose, so the lift is up while the bar sweeps the long
     // way from loading and clears the obstacle on the short path.
     mode_ = Mode::PRIMING;
     prime_step_ = PrimeStep::RAISE;
+    chainbar_pid_.reset();
+    winch_pid_.reset();
+}
+
+void Lift::back_prime() {
+    // Already in the back cycle: this is the pose toggle. Restarting the move at RAISE
+    // is right from ANY step, including part way through a move onto the other pose --
+    // the driver has just changed their mind, and the raise/swing/lower path handles
+    // being entered from anywhere (each step passes straight through if it has nothing
+    // to do). The claw stays as it is: a toggle is not a re-grab.
+    if (mode_ == Mode::BACK) {
+        back_pose_ = (back_pose_ == BackPose::BOTTOM) ? BackPose::TOP : BackPose::BOTTOM;
+        Logger::getInstance()->log(
+            "LIFTCMD back toggle -> %s (bar %.1f -> %.1f, winch %.1f -> %.0f) via %s",
+            back_pose_name(back_pose_), get_bar_angle(), back_bar_deg(),
+            get_winch_position(), back_winch_pos(), back_step_name(BackStep::RAISE));
+        back_step_ = BackStep::RAISE;
+        entry_bar_deg_ = get_bar_angle();  // hold here while the cascade climbs
+        bar_target_deg_ = entry_bar_deg_;
+        chainbar_pid_.reset();
+        winch_pid_.reset();
+        return;
+    }
+    // Otherwise this is the back PRIME, and like prime() it is only valid from a
+    // resting pose -- it closes the claw on a piece that is sitting in the mechanism.
+    // Both resting poses work, and for the same reason prime() takes both: the move
+    // onto BOTTOM holds the bar wherever the pose left it while the cascade climbs
+    // (entry_bar_deg_), so it never detours through the other one on the way. Coming
+    // back out to either pose is the ordinary return -- see the header doc.
+    if (mode_ != Mode::STOW && mode_ != Mode::MATCHLOAD) {
+        Logger::getInstance()->log("LIFTCMD back_prime IGNORED (mode=%s, not STOW/MATCHLOAD)",
+                                   mode_name(mode_));
+        return;
+    }
+    Logger::getInstance()->log(
+        "LIFTCMD back_prime from %s -> BOTTOM (bar %.1f, winch %.0f, ee %s %.0f)",
+        mode_name(mode_), CHAINBAR_BACK_BOTTOM_DEG, WINCH_BACK_BOTTOM_POS,
+        ee_alt_ ? "ALT" : "default", ee_alt_ ? CHAIN_BACK_ALT_DEG : CHAIN_BACK_DEG);
+    claw_.set_state(CLAW_CLOSED_STATE);  // grab the piece before moving
+    // Switch the raised-orientation pair to the back one. Only the PAIR changes -- the
+    // driver's default/alternate selection (ee_alt_) is left alone, so the flip button
+    // means the same thing on both sides and a choice made before priming survives.
+    ee_family_ = EeFamily::BACK;
+    mode_ = Mode::BACK;
+    back_pose_ = BackPose::BOTTOM;
+    back_step_ = BackStep::RAISE;
+    entry_bar_deg_ = get_bar_angle();
+    bar_target_deg_ = entry_bar_deg_;
+    back_hold_bar_ = CHAINBAR_BACK_BOTTOM_DEG;
+    back_hold_winch_ = WINCH_BACK_BOTTOM_POS;
+    chainbar_pid_.reset();
+    winch_pid_.reset();
+}
+
+void Lift::toggle_matchload() {
+    if (mode_ == Mode::MATCHLOAD) {
+        // Matchload -> loading is the return choreography, unchanged: raise, sweep
+        // the bar back past loading, lower, settle. It already handles starting from
+        // part way round (the sweep is capped at the low-zone edge until the cascade
+        // is up) and it is the tuned path, so there is no second copy of it here.
+        Logger::getInstance()->log("LIFTCMD matchload toggle -> back to loading");
+        begin_return(Mode::STOW);
+        return;
+    }
+    if (mode_ != Mode::STOW) {
+        // Anywhere else -- primed, part way up the sequence, mid-score, or already
+        // returning -- this means "come back, to matchload". Same choreography as the
+        // loading return, aimed at the other pose; no need to detour through loading
+        // and re-ask. STARTUP is the one exception: it owns the mechanism until it
+        // has a valid reference and a known pose.
+        if (mode_ == Mode::STARTUP) {
+            Logger::getInstance()->log("LIFTCMD matchload IGNORED (mode=STARTUP)");
+            return;
+        }
+        return_to_matchload();
+        return;
+    }
+    Logger::getInstance()->log(
+        "LIFTCMD matchload -> clearance raise, swing bar to %.1f / EE to %.1f, lower to %.0f",
+        CHAINBAR_MATCHLOAD_DEG, CHAIN_MATCHLOAD_DEG, WINCH_MATCHLOAD_POS);
+    mode_ = Mode::TO_MATCHLOAD;
+    matchload_step_ = MatchloadStep::RAISE;
+    entry_bar_deg_ = get_bar_angle();  // hold here while the cascade climbs
+    bar_target_deg_ = entry_bar_deg_;
     chainbar_pid_.reset();
     winch_pid_.reset();
 }
@@ -283,26 +431,64 @@ void Lift::move_lift_up() {
 
 void Lift::move_lift_down() {
     // Consumed in update(); only actually retreats while in the raise sequence.
-    // A plain manual reverse of the sequence -- no pressure detect / auto-return.
+    // A plain manual reverse of the sequence -- no release / auto-return.
     retreating_ = true;
 }
 
 void Lift::score() {
-    // Only meaningful once in the raise sequence: reverse onto the tower.
-    if (mode_ != Mode::SEQUENCE) {
-        Logger::getInstance()->log("LIFTCMD score IGNORED (mode=%s, not in sequence)",
-                                   mode_name(mode_));
+    // Release where the mechanism already is. The macro does not move anything onto
+    // the tower and does not try to detect the piece meeting it: the driver has put
+    // the mechanism where the piece should go, so the button just lets it go.
+    //
+    // Valid in the same two places it always was -- the raise sequence, and the back
+    // cycle once PARKED on a pose. Mid-move in the back cycle is still refused: the
+    // alternate-orientation retreat below would swing the bar while the cascade is in
+    // transit.
+    bool from_back = mode_ == Mode::BACK && back_step_ == BackStep::HOLD;
+    if (mode_ != Mode::SEQUENCE && !from_back) {
+        Logger::getInstance()->log(
+            "LIFTCMD score IGNORED (mode=%s%s, not in the sequence or parked in the back cycle)",
+            mode_name(mode_),
+            mode_ == Mode::BACK ? " mid-move" : "");
         return;
     }
+    double bar = get_bar_angle();
     Logger::getInstance()->log(
-        "LIFTCMD score -> reverse from p=%.2f w/ pressure detect (then %.1f deg overtravel)",
-        raise_progress_, SCORE_OVERTRAVEL_DEG);
-    claw_.set_state(CLAW_CLOSED_STATE);  // stay clamped until we hit the tower
-    mode_ = Mode::SCORING;
-    score_start_ms_ = pros::millis();
-    score_overtravel_deg_ = 0.0;  // re-arm the push past primed for this score
-    score_stall_ticks_ = 0;       // fresh debounce for this score's contact detect
+        "LIFTCMD score (%s) release @ p=%.2f bar=%.1f winch=%.1f, ee %s (tgt %.0f)%s",
+        from_back ? "back" : "front", raise_progress_, bar, get_winch_position(),
+        ee_alt_ ? "ALT" : "default", raised_ee_deg(),
+        ee_alt_ ? " -> retreat" : " -> hold for driver");
+    claw_.set_state(CLAW_OPEN_STATE);
+    if (!ee_alt_) {
+        // DEFAULT orientation: the end effector is clear of the piece as soon as the
+        // claw opens, so there is nothing to do but hold. The mode is left alone --
+        // the driver keeps the raise/lower buttons and decides when to come home.
+        return;
+    }
+    // ALTERNATE orientation: the end effector is flipped half a turn, so the piece has
+    // just been dropped out of an EE that is itself still sitting in the structure it
+    // was dropped into. Raise the cascade WINCH_ALT_RETREAT_LIFT_DEG and then swing
+    // the bar up to SCORE_ALT_RETREAT_BAR_DEG to lift it clear, and park there -- see
+    // the SCORE_RETREAT case in update() for the ordering, the clearance interlock and
+    // the park. That mode does not take itself home either; the driver leaves it
+    // with Y/X.
+    //
+    // The lift goes first so the EE comes up out of the structure rather than dragging
+    // round through it, and it is clamped to the travel: released at or near full
+    // extension there is no room for it and the swing starts straight away.
+    double winch_now = get_winch_position();
+    retreat_winch_target_ = std::clamp(winch_now + WINCH_ALT_RETREAT_LIFT_DEG,
+                                       WINCH_DOWN_POS, WINCH_MAX_POS);
+    Logger::getInstance()->log(
+        "LIFTEVT score retreat armed: lift winch %.1f -> %.0f (+%.0f, capped %.0f), "
+        "then swing bar %.1f -> %.1f",
+        winch_now, retreat_winch_target_, WINCH_ALT_RETREAT_LIFT_DEG, WINCH_MAX_POS,
+        bar, SCORE_ALT_RETREAT_BAR_DEG);
+    mode_ = Mode::SCORE_RETREAT;
+    score_retreat_parked_ = false;  // arm the park for this retreat
+    entry_bar_deg_ = bar;           // angle to sit at while the cascade lifts / waits
     chainbar_pid_.reset();
+    winch_pid_.reset();
 }
 
 void Lift::open_claw() {
@@ -312,25 +498,40 @@ void Lift::open_claw() {
     Logger::getInstance()->log("LIFTCMD open_claw (mode=%s p=%.2f bar=%.1f claw was %d)",
                                mode_name(mode_), raise_progress_, get_bar_angle(),
                                claw_.get_state() ? 1 : 0);
-    claw_.set_state(CLAW_OPEN_STATE);
+    if (claw_.get_state() == 1){
+        claw_.set_state(CLAW_OPEN_STATE);
+    } else {
+        claw_.set_state(CLAW_CLOSED_STATE);
+    }
 }
 
 void Lift::toggle_scoring_orientation() {
-    // Flip which raised orientation the end effector holds. Only the selection is
-    // stored here: every mode that commands the raised pose reads
-    // chain_scoring_deg_ each tick, so an in-flight sequence turns immediately and
-    // the choice carries into the next prime.
-    chain_scoring_deg_ = (chain_scoring_deg_ == CHAIN_SCORING_DEG) ? CHAIN_SCORING_ALT_DEG
-                                                                  : CHAIN_SCORING_DEG;
-    Logger::getInstance()->log("LIFTCMD flip scoring orientation -> %.0f (mode=%s ee=%.1f)",
-                               chain_scoring_deg_, mode_name(mode_), get_ee_angle());
+    // Flip which raised orientation the end effector holds. Only the SELECTION is
+    // stored -- default or alternate -- never an angle: which pair of angles that
+    // selection resolves to is the cycle's business (raised_ee_deg()), so this one
+    // button flips the EE in the front sequence and in the back cycle alike. Every
+    // mode that commands a raised pose reads raised_ee_deg() each tick, so an
+    // in-flight sequence turns immediately and the choice carries into the next prime.
+    ee_alt_ = !ee_alt_;
+    Logger::getInstance()->log(
+        "LIFTCMD flip scoring orientation -> %s %.0f (mode=%s ee=%.1f)",
+        ee_alt_ ? "ALT" : "default", raised_ee_deg(), mode_name(mode_), get_ee_angle());
 }
 
-void Lift::begin_return_to_loading() {
+void Lift::begin_return(Mode dest) {
+    return_dest_ = (dest == Mode::MATCHLOAD) ? Mode::MATCHLOAD : Mode::STOW;
+    bool to_match = return_dest_ == Mode::MATCHLOAD;
     Logger::getInstance()->log(
-        "LIFTCMD return_to_loading -> raise + sweep to %.1f (gated at %.1f), lower, "
-        "then settle bar to %.1f",
-        CHAINBAR_LOWER_CLEAR_DEG, CHAINBAR_LOW_ZONE_DEG, CHAINBAR_LOADING_DEG);
+        "LIFTCMD return to %s -> raise + sweep to %.1f (gated at %.1f, catch %.1f), "
+        "lower to %.0f, then settle bar to %.1f / EE to %.1f",
+        mode_name(return_dest_),
+        to_match ? CHAINBAR_MATCHLOAD_DEG : CHAINBAR_LOWER_CLEAR_DEG,
+        CHAINBAR_LOW_ZONE_DEG,
+        to_match ? CHAINBAR_MATCHLOAD_DEG + (CHAINBAR_COAST_CATCH_DEG - CHAINBAR_LOWER_CLEAR_DEG)
+                 : CHAINBAR_COAST_CATCH_DEG,
+        to_match ? WINCH_MATCHLOAD_POS : WINCH_LOADING_POS,
+        to_match ? CHAINBAR_MATCHLOAD_DEG : CHAINBAR_LOADING_DEG,
+        to_match ? CHAIN_MATCHLOAD_DEG : CHAIN_LOADING_DEG);
     start_step_ = StartStep::IDLE;  // supersede any running startup sequence
     raise_progress_ = 0.0;
     claw_.set_state(CLAW_OPEN_STATE);  // release the piece before moving
@@ -348,7 +549,11 @@ void Lift::begin_return_to_loading() {
 }
 
 void Lift::return_to_loading() {
-    begin_return_to_loading();
+    begin_return(Mode::STOW);
+}
+
+void Lift::return_to_matchload() {
+    begin_return(Mode::MATCHLOAD);
 }
 
 void Lift::start_to_loading() {
@@ -377,7 +582,13 @@ void Lift::advance_start_sequence(double bar, double winch) {
         }
         case StartStep::RAISE: {
             // Raise the cascade to give the bar room to swing down to loading.
-            winch_manual_target_ = WINCH_START_POS + WINCH_START_CLEARANCE_RAISE;
+            // An ABSOLUTE height, not start-pose plus a delta: the swing room the bar
+            // needs is a physical height, the same one every other clearance move
+            // targets, and it does not shift just because the mechanism powered on
+            // sitting lower. (This used to read WINCH_START_POS + ...; that only
+            // agreed with the other clearance moves while WINCH_START_POS was 0, and
+            // silently lowered this one the moment it was set to a real offset.)
+            winch_manual_target_ = WINCH_START_CLEARANCE_RAISE;
             if (winch >= winch_manual_target_ - WINCH_POS_TOL) {
                 start_step_ = StartStep::BAR_LOADING;
                 chainbar_pid_.reset();
@@ -425,7 +636,7 @@ void Lift::advance_start_sequence(double bar, double winch) {
             bar_target_deg_ = slew_bar_toward(bar_target_deg_, CHAINBAR_LOADING_DEG, bar,
                                               bar_target_vel_dps_);
             chain_target_deg_ = CHAIN_LOADING_DEG;
-            if (settle_bar_arrived(bar)) {
+            if (settle_bar_arrived(bar, CHAINBAR_LOADING_DEG)) {
                 start_step_ = StartStep::IDLE;
                 mode_ = Mode::STOW;
                 claw_.set_state(CLAW_OPEN_STATE);  // stow pose accepts a piece
@@ -451,13 +662,42 @@ void Lift::advance_prime_sequence(double bar, double winch) {
     PrimeStep step_before = prime_step_;
     switch (prime_step_) {
         case PrimeStep::RAISE: {
-            // Raise the lift for clearance; hold the bar at loading until the lift
-            // is up so the long sweep never starts while the bar is still low. The
-            // end effector tucks to CHAIN_PRIME_RAISE_DEG for the climb rather than
-            // staying at the loading orientation.
+            // Raise the lift for clearance; hold the bar at the pose the prime was
+            // started from (loading or matchload) while the mechanism is still down
+            // low, so the bar never detours between the two resting angles on the
+            // way. The end effector tucks to CHAIN_PRIME_RAISE_DEG for the climb
+            // rather than staying at the resting orientation.
             winch_manual_target_ = WINCH_PRIME_CLEARANCE_POS;
-            bar_target_deg_ = CHAINBAR_LOADING_DEG;
+            bar_target_deg_ = entry_bar_deg_;
             chain_target_deg_ = CHAIN_PRIME_RAISE_DEG;
+            // Hand over to TUCK part way up. A plain threshold, not the arrival
+            // tolerance the pose steps use: this is a height the cascade passes
+            // THROUGH on its way to the clearance height, not one it stops at, so
+            // there is nothing to be tolerant of -- and the winch target below is
+            // unchanged across the hand-over, which is what keeps the climb going.
+            if (winch >= WINCH_PRIME_TUCK_POS) {
+                prime_step_ = PrimeStep::TUCK;
+                chainbar_pid_.reset();  // hold -> profiled move: start the PID clean
+            }
+            break;
+        }
+        case PrimeStep::TUCK: {
+            // Same winch target as RAISE, so the lift carries straight on up to the
+            // clearance height -- the bar and the end effector move onto the tuck
+            // pose UNDERNEATH it, not after it.
+            //
+            // The bar move is SLEWED, like the matchload hop and the final settles:
+            // it is a short (~40 deg) move onto a pose, climbing away from the
+            // loading angle, so it wants the profiled / feed-forward regime rather
+            // than the step-target law the long sweeps run on. If the lift reaches
+            // the clearance height before the bar lands, SWEEP_LOWER simply takes
+            // over mid-move and carries the target on in the SAME direction (round to
+            // primed) -- there is no pose here that has to be arrived at first, which
+            // is why the exit below tests the winch only.
+            winch_manual_target_ = WINCH_PRIME_CLEARANCE_POS;
+            bar_target_deg_ = slew_bar_toward(bar_target_deg_, CHAINBAR_PRIME_TUCK_DEG, bar,
+                                              bar_target_vel_dps_);
+            chain_target_deg_ = CHAIN_PRIME_TUCK_DEG;
             if (winch >= WINCH_PRIME_CLEARANCE_POS - WINCH_POS_TOL) {
                 prime_step_ = PrimeStep::SWEEP_LOWER;
                 chainbar_pid_.reset();
@@ -471,18 +711,62 @@ void Lift::advance_prime_sequence(double bar, double winch) {
             // swinging through it, so the rest of the sweep and the whole descent
             // overlap instead of running back to back. Hand off to the raise
             // sequence once BOTH have landed.
+            //
+            // SLEWED, at its own rate: this is the one long sweep that has to LAND on
+            // a pose. It used to be a step target with nothing but a drive cap between
+            // it and the rail, so its speed was whatever the cap happened to allow and
+            // its arrival was whatever the shrinking position error happened to leave
+            // (it reached 516 deg/s on the gravity-fed half and rang for ~150 ms on
+            // arrival, log 07262026-2). Running it on the profiled law instead makes
+            // the speed COMMANDED -- tracked by the velocity feed-forward -- and tapers
+            // it over CHAINBAR_PRIME_SWEEP_DECEL_DEG so the bar decelerates into the
+            // primed pose. Its own rate, not the CHAINBAR_APPROACH_* defaults: those
+            // are sized for short hops onto a pose (~40 deg), and this is a ~265 deg
+            // sweep that would crawl at them.
+            //
+            // TWO rates, split at the top of the swing -- the same split the drive cap
+            // makes, because it is the same distinction. CLIMBING (above
+            // CHAINBAR_PRIME_CAP_START_DEG) the bar is fighting gravity with nothing to
+            // arrive at, so it is commanded faster than it can go: the profile
+            // saturates, the target sits at its full lead, and the bar climbs on
+            // essentially the whole rail, as it did before this sweep was profiled.
+            // Past the top gravity is feeding the move and there IS a pose to land on,
+            // so the rate drops to the one the taper decelerates from. The handover
+            // needs no special case: the commanded rate simply falls, the bar outruns
+            // its target for a moment, and the resulting braking command (uncapped, by
+            // design) is what sheds the speed.
+            //
+            // The gravity feed-forward, which the primed pose needs (gravity pulls the
+            // bar further negative there, so without it the bar settles past the
+            // target and the step never completes), is added either way -- it is
+            // outside the velocity/breakaway split in update(). What the profile
+            // replaces is the BREAKAWAY term, and it does so only while it is actually
+            // commanding motion.
             winch_manual_target_ = bar_clear_of_low_zone(bar) ? primed_winch
                                                              : WINCH_PRIME_CLEARANCE_POS;
-            bar_target_deg_ = primed_bar;
+            double sweep_dps = bar > CHAINBAR_PRIME_CAP_START_DEG
+                                   ? CHAINBAR_PRIME_CLIMB_DPS
+                                   : CHAINBAR_PRIME_SWEEP_DPS;
+            bar_target_deg_ = slew_bar_toward(bar_target_deg_, primed_bar, bar,
+                                              bar_target_vel_dps_, sweep_dps,
+                                              CHAINBAR_PRIME_SWEEP_DECEL_DEG);
             // Stay tucked at the raise orientation until the bar is far enough round
             // to flip to the raised one -- going back to CHAIN_LOADING_DEG here would
             // swing the EE back to 29 for a moment and then straight on to scoring.
             chain_target_deg_ = CHAIN_PRIME_RAISE_DEG;
             if (bar < CHAIN_FLIP_BAR_DEG){
-                chain_target_deg_ = chain_scoring_deg_;
+                chain_target_deg_ = raised_ee_deg();
             }
             if (std::abs(bar - primed_bar) < CHAINBAR_POS_TOL &&
                 std::abs(winch - primed_winch) < WINCH_POS_TOL) {
+                // Land the target ON the pose before handing over. The sequence holds
+                // whatever bar target it inherits until the driver drives it (see the
+                // SEQUENCE case: it only writes bar_target_deg_ while advancing /
+                // retreating, or on the release edge), and the slewed target may still
+                // be a couple of degrees short inside the arrival tolerance -- which
+                // the bar would then sit at indefinitely. The old step target was
+                // always exactly primed_bar, so this was free.
+                bar_target_deg_ = primed_bar;
                 mode_ = Mode::SEQUENCE;
                 raise_progress_ = 0.0;
             }
@@ -498,6 +782,17 @@ void Lift::advance_prime_sequence(double bar, double winch) {
 }
 
 void Lift::advance_return_sequence(double bar, double winch) {
+    // One choreography, two destinations. Matchload sits PART WAY round the return
+    // travel (-45 vs the -1 the loading return carries on to), so returning there is
+    // a shorter sweep that stops early -- every step below just aims at a different
+    // end pose. The low-clearance gate, the coast and the feed-forward finish are
+    // the same machinery either way; sweep_catch_angle() keeps the hand-off the same
+    // distance short of whichever pose is being aimed at.
+    const bool to_match = return_dest_ == Mode::MATCHLOAD;
+    const double sweep_goal = to_match ? CHAINBAR_MATCHLOAD_DEG : CHAINBAR_LOWER_CLEAR_DEG;
+    const double rest_bar   = to_match ? CHAINBAR_MATCHLOAD_DEG : CHAINBAR_LOADING_DEG;
+    const double rest_winch = to_match ? WINCH_MATCHLOAD_POS : WINCH_LOADING_POS;
+    const double rest_ee    = to_match ? CHAIN_MATCHLOAD_DEG : CHAIN_LOADING_DEG;
     ReturnStep step_before = return_step_;
     switch (return_step_) {
         case ReturnStep::RAISE_SWEEP: {
@@ -512,8 +807,9 @@ void Lift::advance_return_sequence(double bar, double winch) {
             // has to carry the bar round to the loading side; there is no pose to
             // arrive at accurately here (the final BAR_SETTLE step does that, and it
             // is the one that slews), so a ramped profile would buy nothing.
-            // The sweep lands just PAST loading (CHAINBAR_LOWER_CLEAR_DEG) so the
-            // bar is clear of the cascade for the descent in the next step.
+            // The loading sweep lands just PAST loading (CHAINBAR_LOWER_CLEAR_DEG) so
+            // the bar is clear of the cascade for the descent in the next step; the
+            // matchload sweep stops on its pose instead and descends on that.
             winch_manual_target_ = WINCH_CLEARANCE_POS;
             if (alt_return_hold_active(bar)) {
                 // Alternate orientation, bar not back round to CHAIN_FLIP_BAR_DEG
@@ -525,60 +821,249 @@ void Lift::advance_return_sequence(double bar, double winch) {
                 winch_manual_target_ = std::max(WINCH_CLEARANCE_POS, return_hold_winch_);
             }
             bool lift_clear = winch >= WINCH_CLEARANCE_POS - WINCH_POS_TOL;
-            double goal = lift_clear ? CHAINBAR_LOWER_CLEAR_DEG
+            double goal = lift_clear ? sweep_goal
                                      : std::max(bar_target_deg_, CHAINBAR_LOW_ZONE_DEG);
             bar_target_deg_ = goal;
-            chain_target_deg_ = chain_scoring_deg_;
+            chain_target_deg_ = raised_ee_deg();
             if (bar > CHAIN_FLIP_BAR_DEG){
-                chain_target_deg_ = CHAIN_LOADING_DEG;
+                chain_target_deg_ = rest_ee;
             }
-            if (std::abs(bar - CHAINBAR_LOWER_CLEAR_DEG) < CHAINBAR_POS_TOL) {
+            if (std::abs(bar - sweep_goal) < CHAINBAR_POS_TOL) {
                 return_step_ = ReturnStep::LOWER;
             }
             break;
         }
         case ReturnStep::LOWER: {
-            // Bar is parked just past loading; lower the lift to the loading height
-            // with the bar held there.
-            winch_manual_target_ = WINCH_LOADING_POS;
-            bar_target_deg_ = CHAINBAR_LOWER_CLEAR_DEG;
+            // Bar is parked on the sweep goal; lower the lift onto the destination
+            // height with the bar held there. (For matchload that descends with the
+            // bar inside the nominal low-clearance zone -- same assumption the
+            // STOW->matchload choreography makes, see CHAINBAR_MATCHLOAD_DEG.)
+            winch_manual_target_ = rest_winch;
+            bar_target_deg_ = sweep_goal;
             chain_target_deg_ = CHAIN_PRIME_RAISE_DEG;
-            if (std::abs(winch - WINCH_LOADING_POS) < WINCH_POS_TOL) {
+            if (std::abs(winch - rest_winch) < WINCH_POS_TOL) {
                 return_step_ = ReturnStep::BAR_SETTLE;
                 chainbar_pid_.reset();
             }
             break;
         }
         case ReturnStep::BAR_SETTLE: {
-            // Lift is down: bring the bar the last few degrees up onto the loading
-            // angle, then settle in STOW -- which is what arms the winch
-            // homing/respool pass, so the respool always runs with the bar already
-            // parked at loading.
-            winch_manual_target_ = WINCH_LOADING_POS;
-            bar_target_deg_ = slew_bar_toward(bar_target_deg_, CHAINBAR_LOADING_DEG, bar,
+            // Lift is down: bring the bar the last few degrees onto the resting
+            // angle and turn the EE to its resting orientation, then settle in the
+            // destination mode -- which is what arms the winch homing/respool pass,
+            // so the respool always runs with the bar already parked on a pose.
+            // Returning to matchload the sweep already stopped ON the pose, so this
+            // is a no-op move there and only the EE turn is left.
+            winch_manual_target_ = rest_winch;
+            bar_target_deg_ = slew_bar_toward(bar_target_deg_, rest_bar, bar,
                                               bar_target_vel_dps_);
-            chain_target_deg_ = CHAIN_LOADING_DEG;
-            if (settle_bar_arrived(bar)) {
-                mode_ = Mode::STOW;
+            chain_target_deg_ = rest_ee;
+            if (settle_bar_arrived(bar, rest_bar)) {
+                mode_ = return_dest_;
             }
             break;
         }
     }
-    if (return_step_ != step_before || mode_ == Mode::STOW) {
+    bool arrived = mode_ == Mode::STOW || mode_ == Mode::MATCHLOAD;
+    if (return_step_ != step_before || arrived) {
         Logger::getInstance()->log("LIFTEVT return step %s -> %s (bar=%.1f winch=%.1f)",
                                    return_step_name(step_before),
-                                   mode_ == Mode::STOW ? "STOW" : return_step_name(return_step_),
+                                   arrived ? mode_name(mode_) : return_step_name(return_step_),
                                    bar, winch);
     }
 }
 
+void Lift::advance_matchload_sequence(double bar, double winch) {
+    MatchloadStep step_before = matchload_step_;
+    switch (matchload_step_) {
+        case MatchloadStep::RAISE: {
+            // Cascade up first. The bar has to cross the low-clearance zone to reach
+            // the matchload angle, so nothing swings until the lift is clear -- same
+            // interlock the prime and startup choreographies open with, but only to
+            // WINCH_MATCHLOAD_CLEARANCE_POS: this is a short arc at the loading end
+            // of the travel, not a sweep round to the primed side, so it does not
+            // need the full clearance height. Hold the bar where the pose left it and
+            // tuck the EE for the climb.
+            winch_manual_target_ = WINCH_MATCHLOAD_CLEARANCE_POS;
+            bar_target_deg_ = entry_bar_deg_;
+            chain_target_deg_ = CHAIN_PRIME_RAISE_DEG;
+            if (winch >= WINCH_MATCHLOAD_CLEARANCE_POS - WINCH_POS_TOL) {
+                matchload_step_ = MatchloadStep::BAR_SWEEP;
+                chainbar_pid_.reset();
+            }
+            break;
+        }
+        case MatchloadStep::BAR_SWEEP: {
+            // Swing onto the matchload pose with the cascade held up. SLEWED, not a
+            // step target: this is a short move that has to LAND on a pose (~48 deg
+            // from loading), and it climbs against gravity the whole way, so it is
+            // the profiled/feed-forward regime -- the same one BAR_SETTLE uses -- not
+            // the long FF-free sweeps. A step target here would arrive at speed with
+            // nothing to decelerate it, which is exactly how the startup sweep
+            // overran its pose (log 07262026-3).
+            winch_manual_target_ = WINCH_MATCHLOAD_CLEARANCE_POS;
+            bar_target_deg_ = slew_bar_toward(bar_target_deg_, CHAINBAR_MATCHLOAD_DEG, bar,
+                                              bar_target_vel_dps_);
+            chain_target_deg_ = CHAIN_MATCHLOAD_DEG;
+            if (std::abs(bar - CHAINBAR_MATCHLOAD_DEG) < CHAINBAR_POS_TOL) {
+                matchload_step_ = MatchloadStep::LOWER;
+            }
+            break;
+        }
+        case MatchloadStep::LOWER: {
+            // Bar is on the pose; bring the cascade back down onto the matchload
+            // height with it held there. (See CHAINBAR_MATCHLOAD_DEG: this descends
+            // with the bar inside the nominal low-clearance zone, which is the one
+            // assumption in this choreography that the geometry has to bear out.)
+            winch_manual_target_ = WINCH_MATCHLOAD_POS;
+            bar_target_deg_ = CHAINBAR_MATCHLOAD_DEG;
+            chain_target_deg_ = CHAIN_MATCHLOAD_DEG;
+            if (std::abs(winch - WINCH_MATCHLOAD_POS) < WINCH_POS_TOL) {
+                mode_ = Mode::MATCHLOAD;
+                claw_.set_state(CLAW_OPEN_STATE);  // resting pose accepts a piece
+            }
+            break;
+        }
+    }
+    if (matchload_step_ != step_before || mode_ == Mode::MATCHLOAD) {
+        Logger::getInstance()->log("LIFTEVT matchload step %s -> %s (bar=%.1f winch=%.1f)",
+                                   matchload_step_name(step_before),
+                                   mode_ == Mode::MATCHLOAD ? "MATCHLOAD"
+                                                            : matchload_step_name(matchload_step_),
+                                   bar, winch);
+    }
+}
+
+void Lift::advance_back_sequence(double bar, double winch, double dt) {
+    // One path onto either back pose, entering the cycle included: raise the cascade
+    // clear, swing the bar (and EE) onto the pose, lower onto its height, hold. The
+    // steps are ordered so that the direction takes care of itself --
+    //
+    //   BOTTOM -> TOP : RAISE does the work (the destination is ABOVE the clearance
+    //                   height, so the climb just carries on through SWING and LOWER
+    //                   finds itself already there),
+    //   TOP -> BOTTOM : RAISE passes straight through (already at full extension),
+    //                   the bar swings up high, and LOWER brings the cascade down onto
+    //                   the low pose with the bar parked out of the way,
+    //   entry         : the cascade comes up off the resting pose, the bar crosses to
+    //                   the back angle, and the cascade drops onto the pose height.
+    //
+    // -- so there is one choreography here, not three, and the low-clearance interlock
+    // is satisfied in all of them by construction: the bar only ever swings in SWING,
+    // and SWING only runs once the cascade is at the clearance height.
+    const double goal_bar = back_bar_deg();
+    const double goal_winch = back_winch_pos();
+    // Height to hold during RAISE and SWING: the clearance height, or the destination
+    // if that is higher (going to TOP there is no reason to stop at 600 and set off
+    // again). Never the destination when the destination is LOW -- that is what LOWER
+    // is for, after the bar is out of the way.
+    const double clear_winch = std::max(WINCH_CLEARANCE_POS, goal_winch);
+    BackStep step_before = back_step_;
+    switch (back_step_) {
+        case BackStep::RAISE: {
+            // Cascade up first, bar held wherever the previous pose left it. Same
+            // interlock the matchload hop and the prime open with: nothing swings until
+            // the lift is clear. The EE tucks for the climb rather than turning to the
+            // back orientation down low.
+            winch_manual_target_ = clear_winch;
+            bar_target_deg_ = entry_bar_deg_;
+            chain_target_deg_ = CHAIN_PRIME_RAISE_DEG;
+            if (winch >= WINCH_CLEARANCE_POS - WINCH_POS_TOL) {
+                back_step_ = BackStep::SWING;
+                chainbar_pid_.reset();
+            }
+            break;
+        }
+        case BackStep::SWING: {
+            // Swing onto the pose with the cascade held up. SLEWED, like the matchload
+            // sweep and the final settle of the long ones: this is a move that has to
+            // LAND on a pose (~105 deg between the two back poses), and it climbs
+            // against gravity in one direction and descends in the other, so it wants
+            // the profiled / feed-forward regime rather than the step-target law the
+            // long sweeps use. The slew's decel taper is what keeps the downhill
+            // direction from arriving hot.
+            winch_manual_target_ = clear_winch;
+            bar_target_deg_ = slew_bar_toward(bar_target_deg_, goal_bar, bar,
+                                              bar_target_vel_dps_);
+            chain_target_deg_ = raised_ee_deg();
+            if (std::abs(bar - goal_bar) < CHAINBAR_POS_TOL) {
+                back_step_ = BackStep::LOWER;
+            }
+            break;
+        }
+        case BackStep::LOWER: {
+            // Bar is on the pose; bring the cascade onto the pose's height with it held
+            // there. Going to TOP this is already satisfied and passes straight through.
+            winch_manual_target_ = goal_winch;
+            bar_target_deg_ = goal_bar;
+            chain_target_deg_ = raised_ee_deg();
+            if (std::abs(winch - goal_winch) < WINCH_POS_TOL) {
+                back_step_ = BackStep::HOLD;
+                // Open the hold on the pose itself, in its own state rather than read
+                // off the pose each tick: the driver's cascade jog moves the held
+                // height, so the hold has to be able to differ from the pose.
+                back_hold_bar_ = goal_bar;
+                back_hold_winch_ = goal_winch;
+                winch_pid_.reset();
+            }
+            break;
+        }
+        case BackStep::HOLD: {
+            // Parked. The bar and EE hold their pose; the CASCADE is the driver's, via
+            // the same two buttons that walk the front raise sequence. The jog moves
+            // the held height rather than adding a transient offset, so letting go
+            // leaves the cascade where it was rather than springing back to the pose.
+            // Raising wins if both are held, matching the sequence.
+            if (advancing_) {
+                back_hold_winch_ += WINCH_BACK_JOG_DPS * dt;
+            } else if (retreating_) {
+                back_hold_winch_ -= WINCH_BACK_JOG_DPS * dt;
+            }
+            back_hold_winch_ = std::clamp(back_hold_winch_, WINCH_DOWN_POS, WINCH_MAX_POS);
+            winch_manual_target_ = back_hold_winch_;
+            bar_target_deg_ = back_hold_bar_;
+            chain_target_deg_ = raised_ee_deg();
+            break;
+        }
+    }
+    if (back_step_ != step_before) {
+        Logger::getInstance()->log(
+            "LIFTEVT back step %s -> %s (pose=%s bar=%.1f winch=%.1f)",
+            back_step_name(step_before), back_step_name(back_step_),
+            back_pose_name(back_pose_), bar, winch);
+    }
+}
+
 // ---- Helpers ---------------------------------------------------------------
+
+double Lift::unwrap_angle_near(double raw_deg, double expected_deg) {
+    double turns = std::round((raw_deg - expected_deg) / 360.0);
+    return raw_deg - turns * 360.0;
+}
 
 double Lift::apply_soft_limit(double output_mv, double angle,
                               double min_deg, double max_deg) {
     if (angle >= max_deg && output_mv > 0.0) return 0.0;  // can't rotate further up
     if (angle <= min_deg && output_mv < 0.0) return 0.0;  // can't rotate further down
     return output_mv;
+}
+
+double Lift::raised_ee_deg() const {
+    // The flip button stores a selection, the cycle supplies the pair. Nothing else in
+    // the file should ever compare an EE angle to decide "is the alternate selected" --
+    // ee_alt_ is that answer, in both families.
+    if (ee_family_ == EeFamily::BACK) {
+        return ee_alt_ ? CHAIN_BACK_ALT_DEG : CHAIN_BACK_DEG;
+    }
+    return ee_alt_ ? CHAIN_SCORING_ALT_DEG : CHAIN_SCORING_DEG;
+}
+
+double Lift::back_bar_deg() const {
+    return back_pose_ == BackPose::TOP ? CHAINBAR_BACK_TOP_DEG : CHAINBAR_BACK_BOTTOM_DEG;
+}
+
+double Lift::back_winch_pos() const {
+    return back_pose_ == BackPose::TOP ? WINCH_BACK_TOP_POS : WINCH_BACK_BOTTOM_POS;
 }
 
 bool Lift::bar_clear_of_low_zone(double bar) {
@@ -623,7 +1108,7 @@ bool Lift::bar_coast_active(double bar, double winch) const {
     return bar_sweeping() &&
            !bar_coast_done_ &&
            bar >= CHAINBAR_COAST_START_DEG &&
-           bar < CHAINBAR_COAST_CATCH_DEG &&
+           bar < sweep_catch_angle() &&
            winch >= WINCH_CLEARANCE_POS - WINCH_POS_TOL;
 }
 
@@ -634,62 +1119,48 @@ bool Lift::alt_return_hold_active(double bar) const {
     // would rotate the EE through the structure) nor to bring the cascade down on
     // top of it. The default orientation returns as it always has.
     return mode_ == Mode::RETURNING &&
-           chain_scoring_deg_ == CHAIN_SCORING_ALT_DEG &&
+           ee_alt_ &&
            bar < CHAIN_FLIP_BAR_DEG;
 }
 
-bool Lift::settle_bar_arrived(double bar) const {
-    // The settle move is only (CHAINBAR_LOADING_DEG - CHAINBAR_LOWER_CLEAR_DEG) = 4
-    // deg -- already inside CHAINBAR_POS_TOL -- so a position-only check would pass
-    // on the very first tick and skip the settle entirely. Also require the SLEWED
-    // TARGET to have arrived at loading, so the move is always commanded in full.
-    // (Nothing can hold the target back here: the return path slews unclamped, and
-    // the startup path's lead clamp only binds past CHAINBAR_MAX_LEAD_DEG of lag,
-    // which a 4 deg move starting inside the tolerance cannot reach. So this always
-    // completes.)
-    bool target_arrived = std::abs(bar_target_deg_ - CHAINBAR_LOADING_DEG) < 1e-3;
-    return target_arrived && std::abs(bar - CHAINBAR_LOADING_DEG) < CHAINBAR_POS_TOL;
+double Lift::sweep_catch_angle() const {
+    // The catch is a fixed LEAD-IN short of whatever the sweep is aiming at, not a
+    // fixed angle: -10 was only ever "9 deg before the -1 loading goal". Expressing
+    // it as that distance lets the matchload return hand over 9 deg before ITS pose
+    // (-54) instead of blowing past it and stalling short on P alone, which is what
+    // the loading return used to do before the hand-off existed (log 07262026-2).
+    constexpr double LEAD_IN = CHAINBAR_COAST_CATCH_DEG - CHAINBAR_LOWER_CLEAR_DEG;
+    if (mode_ == Mode::RETURNING && return_dest_ == Mode::MATCHLOAD) {
+        return CHAINBAR_MATCHLOAD_DEG + LEAD_IN;
+    }
+    return CHAINBAR_COAST_CATCH_DEG;
 }
 
-bool Lift::score_stalled(uint32_t now, double bar_vel_dps) {
-    // Resistance = the bar has STOPPED while the sweep is still commanding motion.
-    //
-    // The velocity collapse is the fast signal: the bar goes from its sweep speed to
-    // ~0 within a tick or two of touching the tower, so the windowed rate sees it in
-    // roughly one rate window (~50 ms). @p bar_vel_dps must therefore be that
-    // windowed slope from update(), NOT bar_velocity_dps() -- the raw rotation-sensor
-    // velocity aliases to a 0/spike sawtooth, which is too untrustworthy to trigger
-    // on and is why this detector used to lean on the position error instead.
-    //
-    // The standing error is now only a CONFIRMATION that the PID is genuinely
-    // pushing (rather than the profile having nothing to command), so
-    // SCORE_STALL_ERR_DEG is a small floor instead of the thing that sets the
-    // detection delay -- waiting for 8 deg of error to build at the 25 deg/s sweep
-    // rate cost ~320 ms of pressing into the tower before the macro noticed.
-    // SCORE_STALL_TICKS consecutive ticks are required so a single stick-slip dip
-    // cannot fire it.
-    if ((now - score_start_ms_) <= SCORE_STALL_GRACE_MS) {
-        score_stall_ticks_ = 0;  // still spinning up: nothing counts yet
-        return false;
-    }
-    bool not_moving = std::abs(bar_vel_dps) < SCORE_STALL_DPS;
-    bool pushing = std::abs(bar_target_deg_ - get_bar_angle()) > SCORE_STALL_ERR_DEG;
-    if (not_moving && pushing) {
-        ++score_stall_ticks_;
-    } else {
-        score_stall_ticks_ = 0;
-    }
-    return score_stall_ticks_ >= SCORE_STALL_TICKS;
+bool Lift::settle_bar_arrived(double bar, double rest_bar) const {
+    // The settle onto loading is only (CHAINBAR_LOADING_DEG - CHAINBAR_LOWER_CLEAR_DEG)
+    // = 4 deg -- already inside CHAINBAR_POS_TOL -- so a position-only check would
+    // pass on the very first tick and skip the settle entirely. Also require the
+    // SLEWED TARGET to have arrived at @p rest_bar, so the move is always commanded
+    // in full. (Nothing can hold the target back here: the return path slews
+    // unclamped, and the startup path's lead clamp only binds past
+    // CHAINBAR_MAX_LEAD_DEG of lag, which a 4 deg move starting inside the tolerance
+    // cannot reach. So this always completes. Returning to matchload the sweep
+    // already stopped on the pose, so both halves are true on the first tick and the
+    // step passes straight through -- which is correct, there is nothing to settle.)
+    bool target_arrived = std::abs(bar_target_deg_ - rest_bar) < 1e-3;
+    return target_arrived && std::abs(bar - rest_bar) < CHAINBAR_POS_TOL;
 }
 
 const char* Lift::mode_name(Mode m) {
     switch (m) {
         case Mode::STARTUP:  return "STARTUP";
         case Mode::STOW:     return "STOW";
+        case Mode::MATCHLOAD:    return "MATCHLD";
+        case Mode::TO_MATCHLOAD: return "TOMATCH";
         case Mode::PRIMING:  return "PRIMING";
         case Mode::SEQUENCE: return "SEQ";
-        case Mode::SCORING:  return "SCORE";
-        case Mode::SCORE_SETTLE: return "SETTLE";
+        case Mode::BACK:     return "BACK";
+        case Mode::SCORE_RETREAT: return "RETREAT";
         case Mode::RETURNING: return "RETURN";
     }
     return "?";
@@ -698,6 +1169,7 @@ const char* Lift::mode_name(Mode m) {
 const char* Lift::prime_step_name(PrimeStep s) {
     switch (s) {
         case PrimeStep::RAISE:       return "RAISE";
+        case PrimeStep::TUCK:        return "TUCK";
         case PrimeStep::SWEEP_LOWER: return "SWEEP_LOWER";
     }
     return "?";
@@ -708,6 +1180,33 @@ const char* Lift::return_step_name(ReturnStep s) {
         case ReturnStep::RAISE_SWEEP: return "RAISE_SWEEP";
         case ReturnStep::LOWER:       return "LOWER";
         case ReturnStep::BAR_SETTLE:  return "BAR_SETTLE";
+    }
+    return "?";
+}
+
+const char* Lift::matchload_step_name(MatchloadStep s) {
+    switch (s) {
+        case MatchloadStep::RAISE:     return "RAISE";
+        case MatchloadStep::BAR_SWEEP: return "BAR_SWEEP";
+        case MatchloadStep::LOWER:     return "LOWER";
+    }
+    return "?";
+}
+
+const char* Lift::back_step_name(BackStep s) {
+    switch (s) {
+        case BackStep::RAISE: return "RAISE";
+        case BackStep::SWING: return "SWING";
+        case BackStep::LOWER: return "LOWER";
+        case BackStep::HOLD:  return "HOLD";
+    }
+    return "?";
+}
+
+const char* Lift::back_pose_name(BackPose p) {
+    switch (p) {
+        case BackPose::BOTTOM: return "BOTTOM";
+        case BackPose::TOP:    return "TOP";
     }
     return "?";
 }
@@ -778,9 +1277,9 @@ void Lift::update() {
     // that gave the PID derivative nothing steady to damp against; a fixed window
     // averages that out with little lag and decays cleanly to 0 when the bar
     // stops. (get_velocity() is not used -- it badly under-reads fast bar motion.)
-    // Computed here, before the mode switch, because the score stall detector needs
-    // it too -- it is the signal that says "the bar has stopped", and the raw sensor
-    // velocity it used to read is the aliased one this window exists to replace.
+    // Computed here, before the mode switch, because the drive-cap block and the
+    // retreat's park both read it -- and the raw sensor velocity they would otherwise
+    // use is the aliased one this window exists to replace.
     for (int i = CHAINBAR_RATE_WINDOW - 1; i > 0; --i) {
         bar_angle_hist_[i] = bar_angle_hist_[i - 1];
     }
@@ -792,6 +1291,16 @@ void Lift::update() {
     // Default: no profiled bar motion this tick (holds / step targets). The slewed
     // sweeps overwrite this with their profile velocity for the velocity feed-forward.
     bar_target_vel_dps_ = 0.0;
+    // Drive cap (mV) the bar-only sequence swing wants this tick, or 0 for "not a
+    // capped swing". That swing is a big step target with nothing but the cap setting
+    // its speed, and the cap is DIRECTIONAL: SEQ_SWING_UP_MAX_MV climbing out of the
+    // primed pose, SEQ_SWING_DOWN_MAX_MV coming back down -- which is the direction a
+    // held piece comes down on whatever is under it, hence the much softer limit.
+    // Applied in the drive-cap block further down.
+    double bar_swing_cap_mv = 0.0;
+    // Set by the parked score retreat: hand the bar to its brake instead of driving
+    // it (see the SCORE_RETREAT case and SCORE_RETREAT_PARK_DEG).
+    bool bar_park_hold = false;
     switch (mode_) {
         case Mode::STARTUP:
             // The startup choreography scripts the winch/bar/chain targets step
@@ -802,6 +1311,22 @@ void Lift::update() {
             winch_manual_target_ = WINCH_LOADING_POS;
             bar_target_deg_ = CHAINBAR_LOADING_DEG;
             chain_target_deg_ = CHAIN_LOADING_DEG;
+            break;
+        case Mode::MATCHLOAD:
+            // The other resting pose. Plain PID hold, exactly like STOW -- prime()
+            // and toggle_matchload() are the only ways out.
+            winch_manual_target_ = WINCH_MATCHLOAD_POS;
+            bar_target_deg_ = CHAINBAR_MATCHLOAD_DEG;
+            chain_target_deg_ = CHAIN_MATCHLOAD_DEG;
+            break;
+        case Mode::TO_MATCHLOAD:
+            // Clearance choreography onto the matchload pose: raise, swing, lower.
+            advance_matchload_sequence(bar, winch);
+            break;
+        case Mode::BACK:
+            // The back cycle: the raise/swing/lower move onto the selected pose, then
+            // the hold that keeps it there with the cascade under the driver's thumb.
+            advance_back_sequence(bar, winch, dt);
             break;
         case Mode::PRIMING:
             // Clearance choreography: raise the lift, then sweep the bar the long
@@ -815,83 +1340,147 @@ void Lift::update() {
             // zone if the lift is still coming up), then lower; lands in STOW.
             advance_return_sequence(bar, winch);
             break;
-        case Mode::SEQUENCE:
-            // Advance the progress scalar while the raise button is held, or retreat
-            // it while the lower button is held; freeze it (and therefore both
-            // actuators) the instant neither is held. Raising wins if both are held.
-            if (advancing_) {
-                raise_progress_ = std::min(raise_progress_ + SEQ_RATE_PER_S * dt,
-                                           static_cast<double>(SEQ_KEYFRAMES - 1));
-            } else if (retreating_) {
-                raise_progress_ = std::max(raise_progress_ - SEQ_RATE_PER_S * dt, 0.0);
-            }
-            seq_targets(raise_progress_, winch_manual_target_, bar_target_deg_);
-            chain_target_deg_ = chain_scoring_deg_;
-            break;
-        case Mode::SCORING:
-            // Reverse the sequence back toward the primed pose (progress 0),
-            // watching for the piece meeting the tower (pressure = motor stall).
-            if (raise_progress_ > 0.0) {
-                raise_progress_ = std::max(raise_progress_ - SEQ_RATE_PER_S * dt, 0.0);
-                seq_targets(raise_progress_, winch_manual_target_, bar_target_deg_);
-            } else {
-                // Past the primed pose: the progress scalar has bottomed out, so
-                // carry the BAR on alone, further in the same (negative) direction,
-                // up to SCORE_OVERTRAVEL_DEG beyond the primed angle. The winch
-                // stays parked at the primed keyframe height. This is what lets the
-                // macro reach a tower that sits below the primed pose; pressure
-                // detection below is unchanged and still ends the score on contact.
-                if (score_overtravel_deg_ <= 0.0) {
-                    Logger::getInstance()->log(
-                        "LIFTEVT score reached primed (bar=%.1f) -> overtravel to %.1f",
-                        bar, SCORE_OVERTRAVEL_BAR_DEG);
+        case Mode::SEQUENCE: {
+            // Two movements, driven differently because only one of them couples two
+            // actuators:
+            //
+            //  1. KF0<->KF1 is the bar alone. Nothing has to stay in step with it, so
+            //     it is NOT walked on the clock -- the target is simply the end of
+            //     the swing and the position PID takes the bar there, speed set by
+            //     SEQ_SWING_UP_MAX_MV / SEQ_SWING_DOWN_MAX_MV (the cap is directional:
+            //     the way back down brings a held piece onto whatever is under it, so
+            //     it is far softer). raise_progress_ is read back off the bar so it
+            //     still means something, and movement 2 starts when the bar has
+            //     really arrived rather than when a timer says so.
+            //  2. KF1<->KF2 runs the cascade and the bar together, so it keeps the
+            //     timed interpolation -- that is the only way to hold their relative
+            //     positions through the move.
+            //
+            // Raising wins if both buttons are held; releasing freezes wherever it
+            // is. The junction is unambiguous: while advancing, progress 1.0 belongs
+            // to movement 2; otherwise it belongs to the swing, so retreating out of
+            // movement 2 flows straight back into it. Both keyframes sit at the same
+            // winch height, so nothing steps at the boundary.
+            bool in_swing = advancing_ ? (raise_progress_ < 1.0) : (raise_progress_ <= 1.0);
+            if (in_swing) {
+                winch_manual_target_ = SEQ_WINCH_DEG[0];
+                bool driving = advancing_ || retreating_;
+                if (driving) {
+                    bar_target_deg_ = advancing_ ? SEQ_BAR_DEG[1] : SEQ_BAR_DEG[0];
+                } else if (seq_swing_driving_) {
+                    bar_target_deg_ = bar;  // just released: hold this angle
                 }
-                score_overtravel_deg_ = std::min(score_overtravel_deg_ + SCORE_OVERTRAVEL_DPS * dt,
-                                                 SCORE_OVERTRAVEL_DEG);
-                seq_targets(0.0, winch_manual_target_, bar_target_deg_);
-                bar_target_deg_ -= score_overtravel_deg_;
+                seq_swing_driving_ = driving;
+                // Directional cap: the swing out to KF1 is a climb, the swing back to
+                // KF0 is the gravity-fed one a held piece comes down on.
+                // advancing_ wins if both buttons are held, exactly as the target does.
+                bar_swing_cap_mv = !driving           ? 0.0
+                                 : advancing_         ? SEQ_SWING_UP_MAX_MV
+                                                      : SEQ_SWING_DOWN_MAX_MV;
+                raise_progress_ = seq_swing_progress(bar);
+                if (advancing_ && std::abs(bar - SEQ_BAR_DEG[1]) < CHAINBAR_POS_TOL) {
+                    raise_progress_ = 1.0;  // arrived: hand over to movement 2
+                }
+            } else {
+                seq_swing_driving_ = false;
+                if (advancing_) {
+                    raise_progress_ = std::min(raise_progress_ + SEQ_RATE_PER_S * dt,
+                                               static_cast<double>(SEQ_KEYFRAMES - 1));
+                } else if (retreating_) {
+                    raise_progress_ = std::max(raise_progress_ - SEQ_RATE_PER_S * dt, 1.0);
+                }
+                seq_targets(raise_progress_, winch_manual_target_, bar_target_deg_);
             }
-            chain_target_deg_ = chain_scoring_deg_;
-            if (score_stalled(now, bar_vel_dps)) {
-                // Piece is against the tower: release it here and hold this exact
-                // pose for SCORE_SETTLE_MS before returning, so the piece drops onto
-                // the tower and settles instead of being dragged along by the bar
-                // sweeping out from under it.
-                Logger::getInstance()->log(
-                    "LIFTEVT score PRESSURE @ p=%.2f over=%.1f bar=%.1f vel=%.1f err=%.1f "
-                    "t=%u ms -> release + settle %u ms",
-                    raise_progress_, score_overtravel_deg_, bar, bar_vel_dps,
-                    bar_target_deg_ - bar, now - score_start_ms_, SCORE_SETTLE_MS);
-                claw_.set_state(CLAW_OPEN_STATE);
-                mode_ = Mode::SCORE_SETTLE;
-                score_settle_start_ms_ = now;
-            } else if (score_overtravel_deg_ >= SCORE_OVERTRAVEL_DEG &&
-                       (now - score_start_ms_) > SCORE_STALL_GRACE_MS) {
-                // Ran out the whole overtravel without contact: hold at primed.
-                // Also wait out the stall grace before declaring "no contact":
-                // scoring from the primed pose runs the whole overtravel in
-                // SCORE_OVERTRAVEL_DEG / SCORE_OVERTRAVEL_DPS = 400 ms, which is
-                // barely longer than the 350 ms grace, so exiting the instant the
-                // target arrives would leave the detector almost no window to fire.
-                Logger::getInstance()->log(
-                    "LIFTEVT score overtravel exhausted w/o pressure (bar=%.1f) -> hold primed",
-                    bar);
-                mode_ = Mode::SEQUENCE;
-            }
+            chain_target_deg_ = raised_ee_deg();
             break;
-        case Mode::SCORE_SETTLE:
-            // Claw is already open. Deliberately touch NOTHING: winch_manual_target_,
-            // bar_target_deg_ and chain_target_deg_ keep the values the score left
-            // them at, so every PID just holds the contact pose while the piece
-            // settles. Timed, not blocking -- the rest of update() (and the caller's
-            // loop) runs normally throughout.
-            if (now - score_settle_start_ms_ >= SCORE_SETTLE_MS) {
-                Logger::getInstance()->log(
-                    "LIFTEVT score settle done after %u ms (bar=%.1f winch=%.1f) -> return",
-                    now - score_settle_start_ms_, bar, winch);
-                begin_return_to_loading();
+        }
+        case Mode::SCORE_RETREAT: {
+            // The alternate-orientation tail of the score macro (see
+            // SCORE_ALT_RETREAT_BAR_DEG). The piece has been released, but the flipped
+            // end effector is still in the structure it was dropped into, so the bar
+            // swings back up to lift it out rather than holding the pose. The default
+            // orientation never enters this mode -- there the score moves nothing.
+            //
+            // chain_target_deg_ deliberately keeps the value the score was released
+            // at, and the cascade only ever RISES here: with the
+            // EE flipped and the bar still on the far side of the swing this is the one
+            // stretch of travel where the cascade must not be brought down on top of it
+            // and the chain must not be turned through the structure -- the same
+            // interlock alt_return_hold_active() enforces on the return. So the winch
+            // holds whatever height the release happened at -- anywhere in the raise
+            // sequence, or a back pose plus the driver's jog -- and the EE holds the
+            // orientation it was released in.
+            //
+            // Driven like movement 1 of the raise sequence, which is the same travel
+            // 50 deg shorter: a step target under the position PID, on that swing's UP
+            // cap -- it climbs the same way out of the primed pose, so it takes the
+            // same limit rather than the soft scoring one, which could not lift it.
+            // Uncapped this is a ~125 deg step over the top of the swing at the full
+            // rail. The gravity
+            // feed-forward is on the bar's side the whole way -- it points up-swing
+            // across -305..-180 and crosses zero exactly at the retreat pose.
+            //
+            // ARRIVAL IS A PARK, NOT A HOLD (see SCORE_RETREAT_PARK_DEG). The retreat
+            // angle is straight up, so there is no gravity restoring term to settle
+            // against and the drive itself was feeding a +/-20 deg limit cycle. Once
+            // the bar is inside the park band the command is cut to 0 and the motor's
+            // brake HOLD takes the pose instead; the PID only comes back if the bar
+            // escapes past SCORE_RETREAT_WAKE_DEG, and re-parks on the way through.
+            //
+            // It ENDS here: the bar stays at the retreat angle and the mode does not
+            // change itself. The driver picks the next move -- Y/X (return to loading /
+            // matchload) both work from this mode, and the retreat pose is where that
+            // return's alternate-orientation hold releases, so it comes down cleanly.
+            // The raise/lower buttons are inert: the bar is parked outside the
+            // sequence's own travel and re-raising a flipped EE from here is not a
+            // motion the sequence can express.
+            // CLEARANCE FIRST, if the retreat has to cross the low-clearance zone.
+            // A FRONT release happens between -305 and -230, well clear of it, and
+            // this is inert there. The BACK poses sit inside the zone
+            // (CHAINBAR_BACK_BOTTOM_DEG), so the swing to -180 would otherwise drag the
+            // bar across the zone at whatever height the pose was released at -- as low
+            // as WINCH_BACK_BOTTOM_POS. There is no waiting at the zone edge to be done
+            // here the way the return sweep does it: the bar is already INSIDE the zone,
+            // so the only safe move is not to move it at all until the cascade is up.
+            // The cascade may only RISE for this, never fall -- the EE is flipped.
+            // LIFT FIRST, always: rise WINCH_ALT_RETREAT_LIFT_DEG off the height the
+            // piece was released at (latched, and already clamped to the travel, by
+            // score()) so the swing carries the flipped EE up and out of the structure
+            // instead of round through it. The bar holds where it was released until
+            // the cascade has arrived.
+            winch_manual_target_ = retreat_winch_target_;
+            bool lifted = winch >= retreat_winch_target_ - WINCH_POS_TOL;
+            bool lift_clear = winch >= WINCH_CLEARANCE_POS - WINCH_POS_TOL;
+            bool wait_for_clearance = !lift_clear && !bar_clear_of_low_zone(bar);
+            if (wait_for_clearance) {
+                winch_manual_target_ = std::max(winch_manual_target_, WINCH_CLEARANCE_POS);
             }
+            // While waiting -- for the lift, or for clearance -- sit on the angle the
+            // retreat started at (entry_bar_deg_, latched by score()) rather than on
+            // the pose the sequence was holding.
+            bar_target_deg_ = (wait_for_clearance || !lifted) ? entry_bar_deg_
+                                                              : SCORE_ALT_RETREAT_BAR_DEG;
+            bar_swing_cap_mv = SEQ_SWING_UP_MAX_MV;
+            double retreat_err = std::abs(bar - SCORE_ALT_RETREAT_BAR_DEG);
+            bool park_now = score_retreat_parked_ ? (retreat_err <= SCORE_RETREAT_WAKE_DEG)
+                                                  : (retreat_err <= SCORE_RETREAT_PARK_DEG);
+            if (park_now != score_retreat_parked_) {
+                // Brake mode is already HOLD here (nothing in this mode coasts), but
+                // the park's whole behaviour rests on it, so state it on the edge
+                // rather than inheriting it. A zero command is only a hold if the
+                // brake says so -- under COAST the same 0 mV would let the bar fall.
+                chainbar_motor_.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+                Logger::getInstance()->log(
+                    "LIFTEVT score retreat %s @ bar=%.1f (tgt %.1f err=%.1f vel=%.1f) -- "
+                    "%s",
+                    park_now ? "PARK" : "WAKE", bar, SCORE_ALT_RETREAT_BAR_DEG,
+                    retreat_err, bar_vel_dps,
+                    park_now ? "drive cut, brake HOLD" : "escaped the park band, driving back");
+                score_retreat_parked_ = park_now;
+            }
+            bar_park_hold = score_retreat_parked_;
             break;
+        }
     }
     advancing_ = false;
     retreating_ = false;
@@ -911,7 +1500,10 @@ void Lift::update() {
     double winch_vel_dps = winch_vel_rpm * RPM_TO_DPS;
     double winch_current = winch_motors_.get_current_draw();  // mA (diagnostic)
 
-    bool commanded_down = (mode_ == Mode::STOW) &&
+    // MATCHLOAD counts alongside STOW here: it is a settled resting pose at the same
+    // bottom height, so a robot parked in it should still get its homing pass rather
+    // than running on a stale winch reference until someone goes back to loading.
+    bool commanded_down = (mode_ == Mode::STOW || mode_ == Mode::MATCHLOAD) &&
                           winch_target <= WINCH_DOWN_POS + WINCH_POS_TOL;
     if (!commanded_down) {
         // Going up / held up / not in stow: normal hold, re-arm for next descent.
@@ -1012,6 +1604,20 @@ void Lift::update() {
     // but the PID stays ENGAGED there to regulate that swing (see below).
     // Everywhere else it is the usual PID with the gravity + motion feed-forward.
     double bar_cmd = std::clamp(bar_target_deg_, CHAINBAR_MIN_DEG, CHAINBAR_MAX_DEG);
+    // Same config trap as the chain's clamp below -- see the comment there.
+    static bool bar_clamp_warned = false;
+    if (std::abs(bar_cmd - bar_target_deg_) > 1e-3) {
+        if (!bar_clamp_warned) {
+            Logger::getInstance()->log(
+                "LIFTWARN bar target %.1f is OUTSIDE the soft limits [%.0f, %.0f] -- "
+                "commanding %.1f instead; the bar will hold at the limit and fight the "
+                "sequence. Fix CHAINBAR_MIN_DEG/CHAINBAR_MAX_DEG or the pose constants.",
+                bar_target_deg_, CHAINBAR_MIN_DEG, CHAINBAR_MAX_DEG, bar_cmd);
+            bar_clamp_warned = true;
+        }
+    } else {
+        bar_clamp_warned = false;
+    }
     double bar_gravity_ff = 0.0;
     double bar_static_ff = 0.0;
     double bar_mv;
@@ -1047,8 +1653,18 @@ void Lift::update() {
     // 2.9 s creeping in on integral alone (log 07262026-2, 11.3-14.2). Handing over
     // at the catch gives that stretch the breakaway FF instead, which is what freed
     // the bar the instant LOWER took over in that same log.
-    bool bar_sweep = bar_sweeping() && bar < CHAINBAR_COAST_CATCH_DEG;
-    if (bar_coasting || bar_sweep) {
+    bool bar_sweep = bar_sweeping() && bar < sweep_catch_angle();
+    if (bar_park_hold) {
+        // Parked score retreat: NO command at all, so the brake (HOLD, written on the
+        // park edge) is what holds the bar. Not "PID with a small target error" -- at
+        // the top of the swing that is precisely what oscillated, since P and the
+        // breakaway feed-forward both grow as the bar drifts and neither has a gravity
+        // restoring term working with it. The PID is held in reset so no integral
+        // accumulates against a pose it is not driving, and so it re-engages clean if
+        // the bar ever escapes the park band.
+        bar_mv = 0.0;
+        chainbar_pid_.reset();
+    } else if (bar_coasting || bar_sweep) {
         // The long stretch of a bar sweep, coast included: plain position PID
         // against the step target, NO feed-forward -- no gravity term, no
         // kV/kinetic, no static breakaway. The step error rails the output, which is
@@ -1153,8 +1769,25 @@ void Lift::update() {
     //    out and the low cap for the travel is the split that matches the mechanism;
     //    same reasoning as CHAINBAR_KS_MOVING_DPS fading the breakaway FF out.
     bool bar_moving = std::abs(bar_vel_dps) > CHAINBAR_BRAKE_MIN_DPS;
+    // The sequence swing's cap gets the same break-out exemption, but LATCHED for the
+    // swing rather than re-tested every tick. It has to be latched: the down cap
+    // (SEQ_SWING_DOWN_MAX_MV = 2000) is below the bar's breakaway command, so keying it
+    // on bar_moving alone would lift the limit again the moment the piece met the tower
+    // and the bar stopped -- releasing the full rail into the tower for the contact
+    // debounce and the whole settle, which is the one place the soft cap is FOR. Keying
+    // it on nothing at all is not an option either: a sub-breakaway cap cannot start
+    // the bar out of its hold at all, so the swing would never leave the pose.
+    // Full authority to break out, then the cap for the rest of the swing.
+    if (bar_swing_cap_mv <= 0.0) {
+        bar_swing_broke_out_ = false;  // no capped swing running: re-arm for the next
+    } else if (bar_moving) {
+        bar_swing_broke_out_ = true;
+    }
     double bar_drive_cap = 12000.0;  // no cap outside the sweeps
-    if (bar_coasting || bar_sweep) {
+    if (bar_swing_cap_mv > 0.0) {
+        bool needs_break_out = bar_swing_cap_mv < CHAINBAR_KS_MV && !bar_swing_broke_out_;
+        bar_drive_cap = needs_break_out ? 12000.0 : bar_swing_cap_mv;
+    } else if (bar_coasting || bar_sweep) {
         bar_drive_cap = (mode_ == Mode::STARTUP && bar_moving) ? CHAINBAR_START_SWEEP_MAX_MV
                                                               : CHAINBAR_SWEEP_MAX_MV;
     } else if (mode_ == Mode::PRIMING && prime_step_ == PrimeStep::SWEEP_LOWER &&
@@ -1165,9 +1798,12 @@ void Lift::update() {
         // sides and the cap is what stops the motor pumping energy into a descent
         // that is already accelerating on its own.
         //
-        // The prime sweep also keeps the feed-forward law (see its constant), so
-        // unlike the other two its bar_mv already has gravity + breakaway folded in,
-        // and the cap applies to that FF-inclusive command.
+        // A BACKSTOP now, not the speed knob: the sweep is slewed
+        // (CHAINBAR_PRIME_SWEEP_DPS), so its speed is commanded by the velocity
+        // feed-forward rather than set by whatever this allows. It still applies to
+        // the FF-inclusive command, and a braking one is still exempt -- on the
+        // gravity-fed half the profile is mostly holding the bar BACK, which is
+        // exactly the command that must not be capped.
         bar_drive_cap = CHAINBAR_PRIME_SWEEP_MAX_MV;
     }
     bool bar_braking = bar_moving && bar_mv * bar_vel_dps < 0.0;
@@ -1195,6 +1831,25 @@ void Lift::update() {
                          / ((CHAIN_RATE_WINDOW - 1) * dt);
 
     double chain_cmd = std::clamp(chain_target_deg_, CHAIN_MIN_DEG, CHAIN_MAX_DEG);
+    // A pose the soft limits cannot express is a CONFIG error, and a quiet one: the
+    // clamp becomes the setpoint, so the EE drives to the limit and then holds there
+    // against the sequence -- which looks exactly like a reversed motor from the
+    // outside (log 07262026-4, scoring -260 clamped to -110). The LIFTDBG line logs
+    // the raw target, so nothing in it shows the substitution. Say so instead, once
+    // per onset rather than every tick.
+    static bool chain_clamp_warned = false;
+    if (std::abs(chain_cmd - chain_target_deg_) > 1e-3) {
+        if (!chain_clamp_warned) {
+            Logger::getInstance()->log(
+                "LIFTWARN chain target %.1f is OUTSIDE the soft limits [%.0f, %.0f] -- "
+                "commanding %.1f instead; the EE will hold at the limit and fight the "
+                "sequence. Fix CHAIN_MIN_DEG/CHAIN_MAX_DEG or the pose constants.",
+                chain_target_deg_, CHAIN_MIN_DEG, CHAIN_MAX_DEG, chain_cmd);
+            chain_clamp_warned = true;
+        }
+    } else {
+        chain_clamp_warned = false;  // re-arm for the next out-of-range pose
+    }
     // Alternate-orientation return: kill the chain entirely until the bar is back
     // round to CHAIN_FLIP_BAR_DEG (see alt_return_hold_active). Not "hold where you
     // are" -- no command at all, so the EE is never driven while it is on the far
