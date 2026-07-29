@@ -7,7 +7,7 @@
 #include <stdexcept>
 
 Robot::Robot()
-    : m_leftDrivetrain(nullptr), m_rightDrivetrain(nullptr), m_inertial(nullptr), m_driveController(nullptr), m_ramseteController(nullptr), m_localization(nullptr), m_isFollowingTrajectory(false)
+    : m_leftDrivetrain(nullptr), m_rightDrivetrain(nullptr), m_inertial(nullptr), m_driveController(nullptr), m_ramseteController(nullptr), m_localization(nullptr), m_isFollowingTrajectory(false), m_intake(nullptr), m_lift(nullptr)
 {
     // Default constructor initializes all pointers to null
     // Robot will not be functional until proper initialization
@@ -20,8 +20,9 @@ Robot::Robot(pros::MotorGroup *leftDrivetrain,
              DrivetrainController *driveController,
              RamseteController *ramseteController,
              std::unique_ptr<ILocalization> localization,
-             Intake *intake)
-    : m_leftDrivetrain(leftDrivetrain), m_rightDrivetrain(rightDrivetrain), m_controller(controller), m_inertial(inertial), m_driveController(driveController), m_ramseteController(ramseteController), m_localization(std::move(localization)), m_isFollowingTrajectory(false),m_intake(intake)
+             Intake *intake,
+             Lift *lift)
+    : m_leftDrivetrain(leftDrivetrain), m_rightDrivetrain(rightDrivetrain), m_controller(controller), m_inertial(inertial), m_driveController(driveController), m_ramseteController(ramseteController), m_localization(std::move(localization)), m_isFollowingTrajectory(false),m_intake(intake), m_lift(lift)
 {
     // Validate all pointer parameters
     if (!leftDrivetrain)
@@ -51,6 +52,10 @@ Robot::Robot(pros::MotorGroup *leftDrivetrain,
     if (!m_localization)
     {
         throw std::invalid_argument("Localization object cannot be null");
+    }
+    if (!lift)
+    {
+        throw std::invalid_argument("Lift pointer cannot be null");
     }
     m_feedbackEnabled = true;
 }
@@ -376,8 +381,17 @@ bool Robot::followTrajectory(Trajectory &trajectory, std::optional<Pose> start_p
         }
 
         // Update localization
-        m_localization->update();
-        m_intake->update();
+        if (m_localization){
+            m_localization->update();
+        }
+        if (m_intake){
+            m_intake->update();
+        }
+
+        if (m_lift)
+        {
+            m_lift->update();
+        }
 
         // Check if the current waypoint is a trajectory point or action point
         const DataPoint *point = trajectory.getNext();
@@ -421,6 +435,80 @@ bool Robot::followTrajectories(std::vector<Trajectory> &trajectories)
     return true;
 }
 
+// Lift
+bool Robot::liftMacro(Lift::Side side, const char *key)
+{
+    if (!m_lift)
+    {
+        Logger::getInstance()->logError("liftMacro('%s') ignored: no lift attached", key ? key : "(null)");
+        return false;
+    }
+    return m_lift->run_macro(side, key);
+}
+
+bool Robot::liftScoreState(Lift::Side side, const char *key)
+{
+    if (!m_lift)
+    {
+        Logger::getInstance()->logError("liftScoreState('%s') ignored: no lift attached", key ? key : "(null)");
+        return false;
+    }
+    return m_lift->run_score_state(side, key);
+}
+
+bool Robot::liftBusy() const
+{
+    return m_lift && m_lift->is_busy();
+}
+
+bool Robot::liftSettled() const
+{
+    return m_lift && m_lift->is_settled();
+}
+
+bool Robot::waitForLift(uint32_t timeout_ms)
+{
+    if (!m_lift)
+    {
+        Logger::getInstance()->logError("waitForLift ignored: no lift attached");
+        return false;
+    }
+
+    uint32_t start_time = pros::millis();
+    uint32_t loop_start_time = start_time;
+
+    // Tick the lift ourselves: between trajectories nothing else is driving its
+    // update(), so a lift command issued here would otherwise sit un-advanced.
+    // Localization is ticked too so the IMU/encoder integration does not go stale
+    // across the wait; the drivetrain is deliberately left alone.
+    while (true)
+    {
+        m_lift->update();
+        if (m_localization)
+        {
+            m_localization->update();
+        }
+
+        // Checked AFTER the first update() so the settle test reads targets the lift
+        // has actually resolved for the command just issued, not the previous pose's.
+        if (m_lift->is_settled())
+        {
+            Logger::getInstance()->log("waitForLift settled after %u ms", pros::millis() - start_time);
+            return true;
+        }
+
+        if (pros::millis() - start_time >= timeout_ms)
+        {
+            Logger::getInstance()->logError(
+                "waitForLift TIMED OUT after %u ms (busy=%d winch=%.1f bar=%.1f ee=%.1f)",
+                timeout_ms, m_lift->is_busy() ? 1 : 0,
+                m_lift->get_winch_position(), m_lift->get_bar_angle(), m_lift->get_ee_angle());
+            return false;
+        }
+
+        pros::Task::delay_until(&loop_start_time, Config::DT);
+    }
+}
 
 void Robot::tuneTrackWidth()
 {

@@ -13,6 +13,7 @@
 #include "pros/motor_group.hpp"
 
 #include "hardware/intake.hpp"
+#include "hardware/lift.hpp"
 
 #include "controllers/ramsete_controller.hpp"
 #include "controllers/drivetrain_controller.hpp"
@@ -52,6 +53,7 @@ private:
 
 
     Intake *m_intake;         ///< Intake class w/ color sorting
+    Lift *m_lift;             ///< Lift / chainbar / end-effector mechanism
 
     /**
      * @brief Process a trajectory point from the trajectory
@@ -84,6 +86,9 @@ public:
      * @param driveController Pointer to drivetrain velocity controller
      * @param ramseteController Pointer to Ramsete controller for path following
      * @param localization Unique pointer to localization interface
+     * @param intake Pointer to the intake subsystem
+     * @param lift Pointer to the lift subsystem. Robot ticks its update() during
+     *             trajectory following, so the lift is live in autonomous.
      *
      * @pre All pointer parameters must be valid and properly initialized
      * @post Robot is fully initialized and ready for autonomous operation
@@ -97,7 +102,8 @@ public:
           DrivetrainController *driveController,
           RamseteController *ramseteController,
           std::unique_ptr<ILocalization> localization,
-          Intake *intake);
+          Intake *intake,
+          Lift *lift);
 
     /**
      * @brief Destructor for Robot class
@@ -176,6 +182,51 @@ public:
      */
 
     void tuneTrackWidth();
+
+    // ---- Lift ---------------------------------------------------------------
+    //
+    // Autonomous drives the lift through these. Both commands are NON-BLOCKING: they
+    // arm the move and return, and the lift advances one step per followTrajectory()
+    // tick -- so the mechanism can be moving to a scoring pose while the robot is still
+    // driving to it. Use waitForLift() where the two must be sequenced.
+    //
+    // Between trajectories nothing is ticking the lift, so a command issued there does
+    // not start moving until the next followTrajectory() or waitForLift().
+
+    /**
+     * @brief Run a lift macro by name (@ref Lift::run_macro).
+     * @param side FRONT or BACK; selects the front/back variant where one exists
+     * @param key  "prime", "matchload", "score", "return", "return_matchload",
+     *             "claw", "flip", "up", "down"
+     * @return false if the lift is not attached or the key is unknown (both logged)
+     */
+    bool liftMacro(Lift::Side side, const char *key);
+
+    /**
+     * @brief Send the lift to a named scoring pose (@ref Lift::run_score_state).
+     * @param side which score-state table to search
+     * @param key  a key from Lift::FRONT_SCORE_STATES / Lift::BACK_SCORE_STATES
+     * @return false if the lift is not attached, the key is unknown, or the lift is
+     *         still in its power-on startup choreography (all logged)
+     */
+    bool liftScoreState(Lift::Side side, const char *key);
+
+    /// True while a lift choreography is still playing out.
+    bool liftBusy() const;
+
+    /// True when the lift is on its target and nothing is in flight.
+    bool liftSettled() const;
+
+    /**
+     * @brief Block until the lift settles, ticking it at Config::DT.
+     *
+     * Use between trajectories, where nothing else is driving Lift::update(). The
+     * drivetrain is not commanded here -- this only turns the lift.
+     *
+     * @param timeout_ms give up after this long
+     * @return true if the lift settled, false on timeout (logged) or no lift attached
+     */
+    bool waitForLift(uint32_t timeout_ms);
 
     // Disable copy constructor and assignment operator
     Robot(const Robot &) = delete;

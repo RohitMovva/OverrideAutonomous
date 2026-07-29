@@ -62,6 +62,28 @@
  *   - @ref return_to_matchload() any state -> MATCHLOAD (release + matchload pose)
  *   - @ref open_claw()        manual claw toggle, any state (no motion, no mode change)
  *
+ * Autonomous interface
+ * --------------------
+ * The macros above are written for a driver holding a button. Autonomous drives them
+ * through two string-keyed entry points instead, both taking the same two arguments --
+ * a @ref Side and a key:
+ *
+ *   - @ref run_macro(side, key)        one of the driver macros above, by name
+ *                                      ("prime", "score", "return", ...). @p side picks
+ *                                      the front/back variant where one exists.
+ *   - @ref run_score_state(side, key)  drive to a named pose from that side's
+ *                                      score-state table (@ref FRONT_SCORE_STATES /
+ *                                      @ref BACK_SCORE_STATES).
+ *
+ * Both are NON-BLOCKING: they arm the move and return, and @ref update() walks it as
+ * the caller keeps ticking. @ref is_busy() / @ref is_settled() are how the caller waits
+ * (Robot::waitForLift wraps that loop).
+ *
+ * TO ADD A SCORE STATE: add one row to the table for its side -- key, winch height, bar
+ * angle, end-effector angle -- and rebuild. Nothing else changes; a row whose pose falls
+ * outside the soft limits is a COMPILE error (@ref score_table_valid), not a mechanism
+ * that silently drives into a limit and holds there.
+ *
  * @ref update() must be called every loop iteration (every Config::DT ms) for
  * the PID holds, sequencing and stall detection to work. Call @ref initialize()
  * once, at startup, with the mechanism physically in the START pose (it seeds all
@@ -75,6 +97,38 @@
  */
 class Lift {
 public:
+    /**
+     * @brief Which side of the robot a keyed call is aimed at.
+     *
+     * The mechanism already works both sides -- the front raise sequence out of the
+     * primed pose, and the back cycle's two poses -- so this is the same distinction
+     * the driver makes with two different prime buttons, named. It selects the
+     * front/back variant of a macro (@ref run_macro), which score-state table is
+     * searched (@ref run_score_state), and which pair of raised end-effector
+     * orientations the flip button resolves against afterwards (@ref EeFamily).
+     */
+    enum class Side { FRONT, BACK };
+
+    /**
+     * @brief One named scoring pose: the three joint positions, and nothing else.
+     *
+     * Adding a score state is one row in @ref FRONT_SCORE_STATES or
+     * @ref BACK_SCORE_STATES -- no new enum member, no new branch, no new constants.
+     * The move onto it is the same raise -> swing -> lower clearance choreography the
+     * back cycle and the matchload hop use, so the low-clearance interlock is satisfied
+     * for any pose in the table by construction.
+     *
+     * Every field is in the same frame as the hand-written pose constants below, and
+     * each is range-checked against its soft limits at COMPILE time -- see
+     * @ref score_table_valid for why that check is worth having.
+     */
+    struct ScoreState {
+        const char* key;    ///< name passed to @ref run_score_state()
+        double winch_pos;   ///< cascade height, motor deg, LOADING-referenced
+        double bar_deg;     ///< chainbar angle, output deg (LOADING = 0)
+        double ee_deg;      ///< end-effector angle, EE deg (1:1)
+    };
+
     /**
      * @brief Construct the lift/chainbar mechanism.
      *
@@ -101,12 +155,18 @@ public:
     /**
      * @brief Configure encoder units, brake modes, and tare all three encoders.
      *
-     * Call once at startup with the mechanism physically in the START pose. It seeds
-     * the WINCH encoders to their START-pose value (not zero), so winch positions
-     * stay measured from the LOADING reference -- the winch is on motor IMEs, which
-     * come up at 0 every boot, so the robot MUST be in the START pose when this runs
-     * for the winch reference to be right (and it is re-homed anyway by the
-     * seek/respool pass once the mechanism first settles in STOW).
+     * Call once at startup with the mechanism physically in the START pose. It zeroes
+     * the WINCH encoders and seeds the software reference (winch_ref_offset_) to
+     * WINCH_START_POS, so winch positions are measured from the taut bottom from the
+     * very first tick -- the winch is on motor IMEs, which come up at 0 every boot, so
+     * the robot MUST be in the START pose when this runs for the winch reference to be
+     * right.
+     *
+     * That seed is now the AUTHORITY on the winch frame, not a placeholder: autonomous
+     * may never visit the loading pose, so it cannot wait for the seek/respool pass
+     * that used to establish the reference on the first descent into STOW. That pass
+     * still runs when the mechanism does reach STOW, but only as a bounded correction
+     * (WINCH_REZERO_MAX_DEG) on top of this seed.
      *
      * The bar and end-effector rotation sensors are NOT seeded: they hold their
      * reading across a power cycle, so the code takes them as given and only
@@ -385,6 +445,91 @@ public:
      */
     void start_to_loading();
 
+    // ---- Autonomous interface (keyed macros) --------------------------------
+
+    /**
+     * @brief Run one of the driver macros above by name.
+     *
+     * A thin dispatcher, not new behaviour: every key forwards to the macro that
+     * already exists, with its own gating and logging unchanged.
+     *
+     *   "prime"             @ref prime() (FRONT) / @ref back_prime() (BACK)
+     *   "matchload"         @ref toggle_matchload()
+     *   "score"             @ref score()
+     *   "return"            @ref return_to_loading()
+     *   "return_matchload"  @ref return_to_matchload()
+     *   "claw"              @ref open_claw()
+     *   "flip"              @ref toggle_scoring_orientation()
+     *   "up" / "down"       @ref move_lift_up() / @ref move_lift_down(), ONE tick each
+     *                       (those two are hold-to-run, so a single call advances the
+     *                       sequence by one Config::DT and no further)
+     *
+     * @param side  picks the front/back variant where one exists -- today only
+     *              "prime". The rest are side-agnostic (the cycle in force already
+     *              determines what they mean), and @p side is logged and ignored.
+     * @param key   one of the names above; anything else is logged and refused.
+     * @return true if the key was recognised and the macro was called. NOT a
+     *         statement that the macro did anything -- a macro invalid from the
+     *         current mode logs "IGNORED" and still returns true here.
+     */
+    bool run_macro(Side side, const char* key);
+
+    /**
+     * @brief Drive to a named pose from @p side's score-state table and hold it.
+     *
+     * NON-BLOCKING: this arms the move and returns; @ref update() walks it. Poll
+     * @ref is_settled() (or call Robot::waitForLift) to wait for arrival.
+     *
+     * The move is the raise -> swing -> lower clearance choreography: the cascade
+     * comes up to WINCH_CLEARANCE_POS (or the pose height, whichever is higher) with
+     * the bar held wherever the previous pose left it, the bar and end effector then
+     * swing onto the pose with the cascade held up, and only then does the cascade come
+     * down onto the pose's height. So the bar never crosses the low-clearance zone
+     * (CHAINBAR_LOW_ZONE_DEG) with the cascade down, whatever the pose is.
+     *
+     * It does NOT touch the claw. A scoring cycle is: "prime" to grab, this to place
+     * the mechanism, "score" to release, "return" to come home.
+     *
+     * Valid from anywhere except STARTUP -- from either resting pose, part way up the
+     * raise sequence, from the back cycle, or from another score state. STARTUP is
+     * refused because that choreography owns the mechanism until it has a known pose.
+     *
+     * @param side  which table to search, and which raised-orientation family
+     *              (@ref EeFamily) the flip button resolves against afterwards
+     * @param key   a `ScoreState::key` from that table
+     * @return true if the pose was found and the move armed; false for an unknown key
+     *         or a call from STARTUP (both logged).
+     */
+    bool run_score_state(Side side, const char* key);
+
+    /// Look up a score state by side + key, or nullptr if there is no such row.
+    /// Exposed so a caller can validate a key (or read a pose) without commanding it.
+    static const ScoreState* find_score_state(Side side, const char* key);
+
+    /**
+     * @brief True while a choreography is still playing out.
+     *
+     * The multi-step moves -- startup, prime, return, the matchload hop, the move onto
+     * a back pose or a score state, and the alternate-orientation score retreat -- are
+     * busy until they reach their final step. The resting poses are not, and neither is
+     * the raise SEQUENCE: that one is walked by the driver's buttons and has no
+     * destination of its own to arrive at.
+     */
+    bool is_busy() const;
+
+    /**
+     * @brief True when nothing is in flight AND all three joints are on their targets.
+     *
+     * The arrival test @ref run_score_state callers wait on. Tolerances are the ones
+     * the sequences already use: WINCH_POS_TOL, CHAINBAR_POS_TOL, CHAIN_POS_TOL.
+     */
+    bool is_settled() const;
+
+    /// Key of the score state currently being moved onto / held, or nullptr if the
+    /// mechanism is not in a score state. Points into the constexpr table (static
+    /// lifetime), so it is safe to hold on to.
+    const char* current_score_state() const;
+
     // ---- Loop + telemetry ---------------------------------------------------
 
     /**
@@ -408,24 +553,63 @@ public:
     // -- Winch (motor degrees) --
     /// Fully-down / flat height (the tare reference).
     static constexpr double WINCH_DOWN_POS = 0.0;
-    /// Winch height in the power-on START pose, measured in the LOADING-referenced
-    /// frame (so NEGATIVE if the cascade powers on sitting below the loading rest
-    /// height). THIS IS THE SINGLE KNOB for that offset: initialize() seeds the motor
-    /// IMEs with it, so every other WINCH_* height, the SEQ_WINCH_DEG keyframes and
-    /// the clearance heights stay as they are -- they are all absolute in this frame.
-    /// Measure it once as (start height - loading height) and put it here.
+    /// Winch reading in the power-on START pose, in the TAUT-BOTTOM-referenced frame
+    /// (negative, because the cascade powers on with string paid out below the taut
+    /// bottom). THIS IS THE SINGLE KNOB for that offset: initialize() seeds
+    /// winch_ref_offset_ with it, so every other WINCH_* height, the SEQ_WINCH_DEG
+    /// keyframes and the clearance heights stay as they are -- they are all absolute in
+    /// this frame.
     ///
-    /// Only the reference the mechanism runs on until its first descent: the respool
-    /// re-zeros at the taut bottom once STOW is reached, so a slightly wrong value
-    /// here washes out then (bounded by WINCH_REZERO_MAX_DEG). It still has to be
-    /// close enough that the startup choreography's heights are sane before that.
+    /// WHY IT IS NOW NON-ZERO. The reference used to be established only by the STOW
+    /// respool: boot at 0, run the startup choreography, ground the lift, reel in until
+    /// the string goes taut, call THAT 0. Autonomous does not necessarily visit the
+    /// loading pose at all, so it cannot rely on that pass ever running -- and until it
+    /// does, every winch height is off by however much slack the boot state happens to
+    /// carry. Seeding the offset here makes the frame correct from the first tick and
+    /// leaves the respool as a refinement rather than a prerequisite.
     ///
-    /// NOTE a negative value is below WINCH_DOWN_POS, and update() clamps every winch
-    /// target to [WINCH_DOWN_POS, WINCH_MAX_POS] -- so the cascade will be commanded
-    /// up to WINCH_DOWN_POS on the first tick rather than holding exactly where it
-    /// powered on. Harmless (it is moving toward the flat pose it is about to use),
-    /// but it is why the lift twitches up a little at boot.
-    static constexpr double WINCH_START_POS = 0.0;
+    /// MEASUREMENT (tests/logs/07282026.txt, the boot at 00:00:03-04):
+    ///   - initialize() seeded the reference to 0 in the START pose
+    ///     ("LIFTINIT refs: ... winch=0.0"),
+    ///   - the startup choreography ran and settled in STOW, and the homing pass then
+    ///     reeled in until the string went taut and the spool stalled at reading
+    ///     +251.2 ("LIFTEVT respool TAUT ... @ winch=251.2 vel=10.1 cur=1198").
+    /// That taut bottom IS WINCH_DOWN_POS by definition, so the START pose sits 251.2
+    /// motor degrees below it: WINCH_START_POS = 0 - 251.2.
+    ///
+    /// CAVEAT -- this number is only as repeatable as the boot state. The 251.2 is the
+    /// slack the spool carries at power-on, and the first-homing-after-boot readings
+    /// across the 20-odd boots in tests/logs/ range from about 129 to 447 deg. This is
+    /// the value from the run named above, as measured; re-measure it the same way
+    /// (boot, let the startup choreography finish, read the "respool TAUT @ winch=" in
+    /// the log) whenever the string, spool or start pose changes, and expect the
+    /// bounded respool correction to absorb the run-to-run remainder.
+    ///
+    /// NOTE a negative value is below WINCH_DOWN_POS. update() therefore floors the
+    /// winch target clamp at min(WINCH_DOWN_POS, WINCH_START_POS) rather than at
+    /// WINCH_DOWN_POS -- otherwise the first tick would command the cascade up by the
+    /// whole offset, and at winch kP=300 that is a railed 12000 mV yank on a slack
+    /// string rather than the gentle WINCH_RESPOOL_MV take-up it deserves.
+    static constexpr double WINCH_START_POS = -251.2;
+    /// Floor of the commandable winch range -- the LOWER of the taut bottom and the
+    /// seeded START reading, not WINCH_DOWN_POS.
+    ///
+    /// Below the taut bottom a hard stop holds the cascade and the spool simply pays out
+    /// string, so readings down here are real (that is what WINCH_START_POS is) and
+    /// commanding into them is legal: it means "sit on the stop with this much slack
+    /// out", which is how the mechanism powers on. update() clamps every winch target to
+    /// [this, WINCH_MAX_POS], and @ref score_table_valid checks table rows against the
+    /// same bound -- they MUST agree, or the validator rejects poses the clamp would
+    /// have honoured (or, worse, passes ones it would silently alter).
+    ///
+    /// NOTE a pose below WINCH_DOWN_POS is not a lower HEIGHT. The cascade is already
+    /// grounded there; two rows at 0 and -200 park at the same place and differ only in
+    /// how much slack the string carries.
+    ///
+    /// Written with a conditional rather than std::min so this header does not need
+    /// <algorithm>.
+    static constexpr double WINCH_TARGET_FLOOR =
+        (WINCH_START_POS < WINCH_DOWN_POS) ? WINCH_START_POS : WINCH_DOWN_POS;
     /// Winch height the cascade settles at in the STOW (loading) pose. Set to
     /// the bottom: with the bar in loading a physical hard stop holds the lift
     /// up, so driving the winch fully down just pays out string, which the
@@ -438,7 +622,18 @@ public:
     /// "Fully extended" keyframe height (top of the lift). Defaults to the travel
     /// limit; lower it if the sequence should top out short of the hard stop.
     static constexpr double WINCH_FULL_POS = WINCH_MAX_POS;
-    /// Clearance height when lift moves near bottom of it's arc
+    /// Clearance height when lift moves near bottom of it's arc.
+    ///
+    /// RE-CHECK THIS (and WINCH_MAX_POS) NOW THAT WINCH_START_POS IS SEEDED. Every
+    /// height here is absolute in the taut-bottom frame, and until the seed existed
+    /// that frame was wrong by however much slack the boot carried -- in
+    /// tests/logs/07282026.txt the startup RAISE reached a reading of 592 while the taut
+    /// bottom was still 251 above the boot zero, so the cascade physically rose only
+    /// ~341 above the bottom, not the 600 this constant asks for. With the frame
+    /// corrected these numbers finally mean what they say, which means the cascade will
+    /// travel FURTHER than it used to on every clearance raise. Confirm on the robot
+    /// that 600 (and 900 at WINCH_MAX_POS) still clear the hard stop before running the
+    /// mechanism at speed.
     static constexpr double WINCH_CLEARANCE_POS = 600.0;
     /// Height the cascade raises TO during startup for bar swing room -- an absolute
     /// height in the LOADING frame like every other clearance target, not a delta off
@@ -467,6 +662,26 @@ public:
     // (string taut), then re-zero here and resume the position hold. Runs once per
     // descent; re-arms whenever the lift is next raised. Only ever runs in STOW so
     // it can never re-zero the encoder mid-sequence.
+    //
+    // IT IS A CORRECTION, NOT THE REFERENCE. It used to be the only thing that ever
+    // established the winch frame, which made every winch height meaningless until the
+    // mechanism had been to STOW once. Autonomous drives the lift through score states
+    // and may never go there at all, so the frame is now seeded outright at boot from
+    // WINCH_START_POS and this pass only trims it, by at most WINCH_REZERO_MAX_DEG per
+    // descent. Nothing outside STOW depends on it any more.
+    /// Master switch for the whole STOW homing pass (seek + respool + re-zero).
+    ///
+    /// Set FALSE to run purely on the boot seed (WINCH_START_POS) with nothing ever
+    /// trimming it. That is the honest test of the seed: with homing on, a boot that
+    /// happens to reach STOW quietly corrects the frame by up to WINCH_REZERO_MAX_DEG,
+    /// so a score state commanded afterwards is testing the trimmed frame rather than
+    /// the seeded one. With it off, whatever the seed says is what the mechanism runs
+    /// on for the whole session -- which is exactly the situation autonomous is in when
+    /// it never visits the loading pose.
+    ///
+    /// Leave TRUE for matches: the trim is free accuracy whenever the lift does happen
+    /// to come home.
+    static constexpr bool WINCH_STOW_HOMING_ENABLED = true;
     /// Gentle raise voltage (mV, positive = up) applied while taking up slack.
     static constexpr double WINCH_RESPOOL_MV = 3000.0;
     /// Below this |motor velocity| (RPM) during a respool counts as taut.
@@ -509,7 +724,9 @@ public:
     /// ~0 (near grounded), so this only needs to pay out a little slack.
     static constexpr uint32_t WINCH_SEEK_MS = 150;
     /// Safety cap: end the pre-roll early if the winch over-travels this far below
-    /// the nominal bottom (motor deg), so a fault can't pay out a birds-nest.
+    /// WHERE THE SEEK STARTED (motor deg), so a fault can't pay out a birds-nest.
+    /// Relative, not absolute: with the frame seeded from WINCH_START_POS a grounded
+    /// lift with its slack out reads a long way below WINCH_DOWN_POS already.
     static constexpr double WINCH_SEEK_MAX_TRAVEL = 250.0;
 
     // -- Chainbar (output degrees, read directly from the axle rotation sensor) --
@@ -846,7 +1063,7 @@ public:
     /// CHAINBAR_PRIME_CLIMB_DPS. PLACEHOLDER -- TUNE on robot: this is a driver-facing
     /// macro, so it is a feel trade. The old step-target sweep reached 516 deg/s on
     /// this half.
-    static constexpr double CHAINBAR_PRIME_SWEEP_DPS = 200.0;
+    static constexpr double CHAINBAR_PRIME_SWEEP_DPS = 150.0;
     /// Commanded cruise speed of the PRIME sweep's CLIMB (output deg/s): the stretch
     /// from the loading side up to CHAINBAR_PRIME_CAP_START_DEG, where the bar is
     /// working against gravity and there is nothing to arrive at.
@@ -868,7 +1085,7 @@ public:
     /// default because the sweep cruises faster than a short hop does and so has more
     /// speed to shed; this is the constant to widen if the bar still arrives hot at
     /// primed, and to narrow if the last stretch of the prime feels slow.
-    static constexpr double CHAINBAR_PRIME_SWEEP_DECEL_DEG = 60.0;
+    static constexpr double CHAINBAR_PRIME_SWEEP_DECEL_DEG = 90.0;
     /// Bar angle that splits the prime sweep in two -- the top of the swing. It is
     /// where the drive cap above starts applying AND where the sweep hands over from
     /// CHAINBAR_PRIME_CLIMB_DPS to CHAINBAR_PRIME_SWEEP_DPS, which are the same
@@ -911,6 +1128,17 @@ public:
     /// with the EE physically at rest, which kD turns into ~850 mV of buzz
     /// (log 07242026-5, holding 270 deg). 5 ticks = 50 ms.
     static constexpr int CHAIN_RATE_WINDOW = 5;
+
+    /// "Reached target" tolerance for the end effector -- the EE's counterpart to
+    /// WINCH_POS_TOL and CHAINBAR_POS_TOL. Nothing in the sequences gates on the EE
+    /// arriving (they gate on the bar and the cascade, and the EE turns underneath
+    /// them), so this exists for @ref is_settled(): a caller waiting on a score state
+    /// wants to know the CLAW is oriented, not just that the arm stopped. Loose enough
+    /// that the chain's standing error under load does not hang the wait -- the EE is
+    /// back-driven by the bar and its 5.5 W motor gives up position under load -- tight
+    /// enough that a genuinely un-turned end effector does not read as arrived.
+    /// TUNE on robot.
+    static constexpr double CHAIN_POS_TOL = 8.0;
 
     // -- Matchloading pose --
     // A second resting pose alongside STOW, for taking a piece from the match
@@ -1068,6 +1296,87 @@ public:
     /// arrived, within WINCH_POS_TOL. TUNE on robot.
     static constexpr double WINCH_ALT_RETREAT_LIFT_DEG = 75.0;
 
+    // ========================================================================
+    //  SCORE STATES -- the named poses @ref run_score_state() can be sent to.
+    //
+    //  ADD A ROW, THAT IS ALL. Each row is one pose: a key, a cascade height, a bar
+    //  angle and an end-effector angle, in exactly the frames the constants above use
+    //  (winch = motor deg referenced to LOADING, bar = output deg with LOADING = 0,
+    //  EE = degrees on the EE axle). The move onto any of them is the same
+    //  raise -> swing -> lower clearance choreography, so a new row needs no new code
+    //  and cannot break the low-clearance interlock.
+    //
+    //  The values below are seeded from the poses the hand-written macros already use
+    //  -- the top of the front raise sequence, and the two back poses -- so the first
+    //  build has working entries. They are STARTING POINTS: measure the real scoring
+    //  poses on the robot and replace them.
+    // ========================================================================
+
+    /// Case-sensitive equality for score-state keys. A hand-rolled compare rather than
+    /// std::strcmp so it also works during constant evaluation, which is what lets
+    /// @ref score_table_valid run the duplicate-key check at compile time.
+    static constexpr bool keys_equal(const char* a, const char* b) {
+        while (*a != '\0' && *a == *b) { ++a; ++b; }
+        return *a == *b;
+    }
+
+    /**
+     * @brief Compile-time sanity check on a score-state table.
+     *
+     * Every pose must sit inside the soft limits, because a pose outside its own limit
+     * is NOT merely truncated: update() clamps the target, the clamp silently becomes
+     * the setpoint, and the mechanism drives to the LIMIT and holds there against the
+     * sequence -- which reads as the motor running the wrong way. That is exactly what
+     * CHAIN_MIN_DEG = -110 did to the re-signed EE poses (log 07262026-4). A
+     * hand-written pose at least gets read in context next to its limit; a table row is
+     * one careless number away from the same failure, so it is checked here instead.
+     *
+     * Also rejects a duplicate key, which would otherwise silently shadow the later row
+     * (@ref find_score_state returns the first match).
+     *
+     * @return true if the table is usable. Called only from static_assert -- a bad row
+     *         is a build error, never a runtime surprise.
+     */
+    static constexpr bool score_table_valid(const ScoreState* table, int count) {
+        for (int i = 0; i < count; ++i) {
+            const ScoreState& s = table[i];
+            if (s.key == nullptr || *s.key == '\0') { return false; }
+            // Against WINCH_TARGET_FLOOR, the same bound update() clamps to -- NOT
+            // WINCH_DOWN_POS. A row below the taut bottom is legal (see the floor's
+            // comment); a row the clamp would alter is not.
+            if (s.winch_pos < WINCH_TARGET_FLOOR || s.winch_pos > WINCH_MAX_POS) { return false; }
+            if (s.bar_deg   < CHAINBAR_MIN_DEG || s.bar_deg   > CHAINBAR_MAX_DEG) { return false; }
+            if (s.ee_deg    < CHAIN_MIN_DEG    || s.ee_deg    > CHAIN_MAX_DEG)    { return false; }
+            for (int j = 0; j < i; ++j) {
+                if (keys_equal(s.key, table[j].key)) { return false; }
+            }
+        }
+        return true;
+    }
+
+    /// Poses on the FRONT of the robot -- the side the raise sequence works.
+    /// Seeded from the top of that sequence (SEQ_WINCH_DEG[2] / SEQ_BAR_DEG[2]) with
+    /// the default raised orientation, plus a lower variant on the same bar angle.
+    static constexpr ScoreState FRONT_SCORE_STATES[] = {
+        //   key        winch     bar       ee
+        {"neutral_one_pin",         0.0,  -280.0,  -260.0},
+    };
+    /// Poses on the BACK of the robot -- seeded from the back cycle's two poses.
+    static constexpr ScoreState BACK_SCORE_STATES[] = {
+        //   key        winch     bar       ee
+        {"neutral_one_pin",         850.0,  -28.0,   -85.0},
+        {"alliance_empty",        70.0,  -28.0,   -85.0},
+
+    };
+    static constexpr int FRONT_SCORE_STATE_COUNT =
+        static_cast<int>(sizeof(FRONT_SCORE_STATES) / sizeof(ScoreState));
+    static constexpr int BACK_SCORE_STATE_COUNT =
+        static_cast<int>(sizeof(BACK_SCORE_STATES) / sizeof(ScoreState));
+
+    // The static_asserts that enforce all of the above are just past the closing brace
+    // of this class -- a constexpr member function is not usable in a constant
+    // expression until the class is complete, so they cannot sit here.
+
 private:
     /// What the mechanism is doing right now.
     /// STARTUP is the power-on START->STOW choreography; the mechanism leaves it
@@ -1082,6 +1391,10 @@ private:
         SEQUENCE,  ///< In the coordinated raise sequence (position = raise_progress_)
         BACK,      ///< In the back cycle: holding, or moving between, the BOTTOM and
                    ///< TOP back poses (@ref back_prime()). back_step_ says which
+        SCORE_STATE, ///< Moving onto, or holding, a named pose from a score-state
+                     ///< table (@ref run_score_state()). score_step_ says which; the
+                     ///< pose itself is score_target_. The autonomous counterpart of
+                     ///< the back cycle -- same choreography, arbitrary pose
         SCORE_RETREAT, ///< ALTERNATE orientation only: @ref score() has released the
                        ///< piece and the bar is swinging back to
                        ///< SCORE_ALT_RETREAT_BAR_DEG to lift the flipped end effector
@@ -1150,6 +1463,22 @@ private:
         LOWER,  ///< Cascade onto the destination height, bar held on the pose
         HOLD    ///< Arrived: hold the pose, L1/L2 cascade jog live, score armed
     };
+    /// Steps of the move onto a score state -- deliberately the same raise / swing /
+    /// lower shape as @ref BackStep, because it is the same clearance problem: the bar
+    /// may have to cross the low-clearance zone (CHAINBAR_LOW_ZONE_DEG) to reach the
+    /// pose and cannot do that with the cascade down. Each step's arrival test passes
+    /// straight through when it has nothing to do, so one path covers a pose above the
+    /// clearance height, a pose below it, and being entered from any angle.
+    ///
+    /// The one difference from the back cycle is HOLD: there it is a live driver pose
+    /// with the cascade on L1/L2: here it is a plain hold. A score state is commanded
+    /// by autonomous, which has no jog buttons, so advancing_ / retreating_ are ignored.
+    enum class ScoreStep {
+        RAISE,  ///< Cascade up to the clearance height, bar held where it is
+        SWING,  ///< Bar (and EE) onto the pose, cascade held up
+        LOWER,  ///< Cascade onto the pose's height, bar held on the pose
+        HOLD    ///< Arrived: hold all three. score() is armed here (and only here)
+    };
     /// Which PAIR of raised end-effector orientations is in force. The flip button
     /// picks between the two members of a pair (@ref ee_alt_); this picks the pair.
     /// Set by whichever prime started the cycle and left alone after that, so a score,
@@ -1185,6 +1514,12 @@ private:
     MatchloadStep matchload_step_; ///< ->matchload clearance step (valid while TO_MATCHLOAD)
     BackStep back_step_;           ///< Where the back cycle is in its move onto a pose
                                    ///< (HOLD = arrived); valid while BACK
+    ScoreStep score_step_;         ///< Where the score-state move is (HOLD = arrived);
+                                   ///< valid while SCORE_STATE
+    const ScoreState* score_target_; ///< Pose being moved onto / held, or nullptr if the
+                                   ///< mechanism has never been in a score state. Points
+                                   ///< into the constexpr tables, which have static
+                                   ///< lifetime -- nothing to copy and nothing to own
     BackPose back_pose_;           ///< Back pose the cycle is on / heading for
     double back_hold_bar_;         ///< Bar angle held in BackStep::HOLD -- the pose's
                                    ///< own angle. Kept in state rather than read off
@@ -1251,11 +1586,32 @@ private:
                                    ///< + brake HOLD rather than being balanced by the
                                    ///< PID. Latched, with SCORE_RETREAT_WAKE_DEG of
                                    ///< hysteresis; re-armed on entry to SCORE_RETREAT
+    /// Offset added to the raw winch encoder average to get @ref get_winch_position().
+    ///
+    /// The winch reference lives HERE, in software, rather than in the motors. It has
+    /// to: the winch group is `{-16, 17}`, one motor reversed, and
+    /// MotorGroup::set_zero_position_all() writes the requested value into each motor
+    /// WITHOUT the reversal -- so the reversed motor then reads -p while its partner
+    /// reads +p, and motor_group_position() averages them back to ~0 for ANY p. That is
+    /// not a guess: the four capped re-zeros in the logs asked for 63, 127, 135 and 151
+    /// (tests/logs/07262026-2, -4, 07262026, 07282026) and every one of them landed on a
+    /// reading of ~0 on the very next tick. The re-zero cap has therefore never actually
+    /// worked, and seeding a non-zero WINCH_START_POS through that call would have done
+    /// nothing at all.
+    ///
+    /// So initialize() zeroes the encoders (p = 0, the one value the bug cannot corrupt)
+    /// and puts the reference in this member instead; the respool re-zero shifts it
+    /// rather than rewriting the motors. Both paths are then reversal-proof.
+    double winch_ref_offset_;
     uint32_t last_update_ms_;      ///< millis() of previous update (for dt)
     WinchMode winch_mode_;         ///< Winch control mode (HOLD / SEEK / RESPOOL)
     bool winch_respooled_;         ///< Homed (sought + respooled) since last raise
     uint32_t respool_start_ms_;    ///< millis() when the current respool began
     uint32_t seek_start_ms_;       ///< millis() when the current home-seek began
+    double seek_start_pos_;        ///< Winch reading the current home-seek began at.
+                                   ///< The over-travel backstop is measured from here,
+                                   ///< since a grounded lift with slack out already
+                                   ///< sits well below WINCH_DOWN_POS
     double bar_angle_hist_[CHAINBAR_RATE_WINDOW];  ///< recent bar angles (idx 0 newest) for the windowed rate
     double chain_angle_hist_[CHAIN_RATE_WINDOW];   ///< recent EE angles (idx 0 newest) for the windowed rate
 
@@ -1320,6 +1676,9 @@ private:
     /// then the HOLD that keeps it there and applies the L1/L2 cascade jog (@p dt is
     /// the control step the jog integrates over).
     void advance_back_sequence(double bar, double winch, double dt);
+    /// Advance the move onto score_target_ one tick: the same raise / swing / lower
+    /// clearance shape the back cycle uses, then a plain hold on the pose.
+    void advance_score_state_sequence(double bar, double winch);
     /// Bar angle / cascade height of the back pose currently selected.
     double back_bar_deg() const;
     double back_winch_pos() const;
@@ -1355,6 +1714,7 @@ private:
     static const char* return_step_name(ReturnStep s);
     static const char* matchload_step_name(MatchloadStep s);
     static const char* back_step_name(BackStep s);
+    static const char* score_step_name(ScoreStep s);
     static const char* back_pose_name(BackPose p);
     static const char* winch_mode_name(WinchMode m);
     /// Emit one CSV-style debug line covering every command/target/actual/output.
@@ -1364,5 +1724,20 @@ private:
                          double bar_gravity_ff, double bar_static_ff,
                          double ee, double chain_mv, double chain_vel_dps) const;
 };
+
+// Score-state tables are checked here, at namespace scope, rather than inside the class:
+// Lift::score_table_valid is a constexpr MEMBER function, and a member function defined
+// in-class is not complete -- so not usable in a constant expression -- until the class
+// itself is. Keep these next to the class, and keep the failure messages pointing back at
+// the table: a bad row must be a build error rather than a mechanism that quietly drives
+// into a soft limit and holds there (see the comment on score_table_valid).
+static_assert(Lift::score_table_valid(Lift::FRONT_SCORE_STATES, Lift::FRONT_SCORE_STATE_COUNT),
+              "FRONT_SCORE_STATES: a row has an empty or duplicate key, or a pose outside "
+              "[WINCH_TARGET_FLOOR, WINCH_MAX_POS] / [CHAINBAR_MIN_DEG, CHAINBAR_MAX_DEG] / "
+              "[CHAIN_MIN_DEG, CHAIN_MAX_DEG]");
+static_assert(Lift::score_table_valid(Lift::BACK_SCORE_STATES, Lift::BACK_SCORE_STATE_COUNT),
+              "BACK_SCORE_STATES: a row has an empty or duplicate key, or a pose outside "
+              "[WINCH_TARGET_FLOOR, WINCH_MAX_POS] / [CHAINBAR_MIN_DEG, CHAINBAR_MAX_DEG] / "
+              "[CHAIN_MIN_DEG, CHAIN_MAX_DEG]");
 
 #endif // LIFT_HPP

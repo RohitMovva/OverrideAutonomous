@@ -127,7 +127,7 @@ void initialize()
         Config::KS_ANGULAR, Config::KV_ANGULAR,
         Config::KA_DECEL);
 
-    robot = new Robot(&left_mg, &right_mg, &imu_sensor, &master, drive_controller, ramsete_controller, std::move(localization), &intake);
+    robot = new Robot(&left_mg, &right_mg, &imu_sensor, &master, drive_controller, ramsete_controller, std::move(localization), &intake, &lift);
     logger->log("init: robot created, usedHeap=%d", mallinfo().uordblks);
     logger->flush();
 
@@ -245,7 +245,6 @@ void opcontrol()
             logger->log("LOOP STALL: period=%u ms at count=%lld usedHeap=%d",
                         period, count, mallinfo().uordblks);
 
-        // Heartbeat (~4 Hz) with heap-in-use and the worst timing this window.
         if (count % 25 == 0)
         {
             logger->log("hb count=%lld usedHeap=%d worstPeriod=%u worstWork=%u",
@@ -312,11 +311,13 @@ void opcontrol()
         {
             lift.prime();
         }
-        // X is the matchload button. Sitting at a resting pose it swaps to the other
-        // one (loading <-> matchload); from anywhere else -- primed, part way up the
-        // sequence, mid-score -- it returns to matchload, the way Y returns to
-        // loading. Every path runs the lift-clearance choreography, so it is a macro
-        // like the rest, not an instant pose change.
+        // R2 is the matchload button (NOT X -- this comment used to say X, which has
+        // never been the binding and is now the score-state test button below).
+        // Sitting at a resting pose it swaps to the other one (loading <-> matchload);
+        // from anywhere else -- primed, part way up the sequence, mid-score -- it
+        // returns to matchload, the way Y returns to loading. Every path runs the
+        // lift-clearance choreography, so it is a macro like the rest, not an instant
+        // pose change.
         //
         // A score started from matchload also RETURNS to matchload on its own, so X
         // is only needed to change your mind mid-cycle.
@@ -359,6 +360,70 @@ void opcontrol()
             lift.open_claw();
         }
 
+        // ================== TEMPORARY: SCORE-STATE TEST HARNESS ==================
+        // Delete this whole block (and the two lines it adds to the LCD) when done.
+        //
+        // Two spare buttons drive the keyed autonomous interface by hand, so a score
+        // state can be commanded WITHOUT priming and without going to loading first --
+        // which is the point of the test: run_score_state() is legal from any mode
+        // except STARTUP, and its raise/swing/lower choreography is supposed to reach
+        // any pose in the table from wherever the mechanism happens to be.
+        //
+        //   LEFT  cycle the selection through every row of both tables
+        //         (FRONT_SCORE_STATES then BACK_SCORE_STATES). New rows appear here
+        //         automatically -- nothing below hardcodes a key or a count.
+        //   X     fire the selected one: lift.run_score_state(side, key)
+        //
+        // Deliberately plain `if`s, NOT part of the else-if macro chain above, so this
+        // block neither shadows nor is shadowed by the driver bindings.
+        //
+        // WHAT TO WATCH, in the SD log:
+        //   LIFTINIT refs: ... winch raw=.. + offset=.. -> ..   the seeded frame
+        //   LIFTEVT respool TAUT ... @ winch=X                  X should now be ~0,
+        //       not ~+251 as in tests/logs/07282026.txt -- that is the seed being right
+        //   LIFTCMD score_state ... / LIFTEVT score_state step RAISE->SWING->LOWER->HOLD
+        //
+        // To test the seed with NOTHING trimming it -- the real "never went to loading"
+        // case -- set Lift::WINCH_STOW_HOMING_ENABLED = false in lift.hpp and re-flash.
+        static int score_test_sel = 0;
+        constexpr int kScoreTestCount =
+            Lift::FRONT_SCORE_STATE_COUNT + Lift::BACK_SCORE_STATE_COUNT;
+        auto score_test_side = [](int i) {
+            return i < Lift::FRONT_SCORE_STATE_COUNT ? Lift::Side::FRONT : Lift::Side::BACK;
+        };
+        auto score_test_state = [](int i) -> const Lift::ScoreState & {
+            return i < Lift::FRONT_SCORE_STATE_COUNT
+                       ? Lift::FRONT_SCORE_STATES[i]
+                       : Lift::BACK_SCORE_STATES[i - Lift::FRONT_SCORE_STATE_COUNT];
+        };
+
+        if (master.get_digital_new_press(DIGITAL_LEFT))
+        {
+            score_test_sel = (score_test_sel + 1) % kScoreTestCount;
+            const Lift::ScoreState &s = score_test_state(score_test_sel);
+            logger->log("TEST select [%d/%d] %s '%s' (winch=%.0f bar=%.1f ee=%.1f)",
+                        score_test_sel + 1, kScoreTestCount,
+                        score_test_side(score_test_sel) == Lift::Side::BACK ? "BACK" : "FRONT",
+                        s.key, s.winch_pos, s.bar_deg, s.ee_deg);
+        }
+        if (master.get_digital_new_press(DIGITAL_X))
+        {
+            const Lift::ScoreState &s = score_test_state(score_test_sel);
+            bool ok = lift.run_score_state(score_test_side(score_test_sel), s.key);
+            logger->log("TEST fire '%s' -> %s (winch now %.1f)",
+                        s.key, ok ? "ACCEPTED" : "REFUSED", lift.get_winch_position());
+        }
+        if (count % 25 == 0)
+        {
+            const Lift::ScoreState &s = score_test_state(score_test_sel);
+            pros::lcd::print(6, "SEL %d/%d %s%s w:%.0f",
+                             score_test_sel + 1, kScoreTestCount,
+                             score_test_side(score_test_sel) == Lift::Side::BACK ? "B:" : "F:",
+                             s.key, s.winch_pos);
+            pros::lcd::print(7, "winch act:%.0f %s", lift.get_winch_position(),
+                             lift.is_settled() ? "SETTLED" : (lift.is_busy() ? "BUSY" : "--"));
+        }
+        // ================ END TEMPORARY SCORE-STATE TEST HARNESS =================
 
         intake.update();
         lift.update();
