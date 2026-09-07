@@ -42,6 +42,8 @@ private:
     int intake_decay_state_ = 0;     ///< State to revert to after decay
     int time_since_state_set_ = 0;   ///< Time since last state change
     bool color_sorting_active_ = false; ///< Flag indicating if color sorting is running
+    /// Another subsystem is asking for a gentle forward feed this tick (@ref set_assist_feed)
+    bool assist_feed_ = false;
 
     bool skills_;
 
@@ -49,6 +51,9 @@ private:
 
     /// Voltage (mV) used for a gentle outtake (state 4), e.g. while the lift lowers.
     static constexpr int OUTTAKE_SLOW_SPEED = 4000;
+    /// Voltage (mV) of the assist feed. THE knob for how hard the intake pushes the piece
+    /// into the claw while the lift pulls it out on its way to primed
+    static constexpr int ASSIST_FEED_SPEED = 12000;
 
     /**
      * @brief Apply motor speeds based on current intake state
@@ -74,6 +79,20 @@ public:
      * @param state Integer state value (0-10 range)
      */
     void set_state(int state);
+
+    /**
+     * @brief Ask for a gentle forward feed, whatever state the intake is in.
+     *
+     * A transient OVERRIDE, not a state: the state the driver or an auton action point
+     * commanded is left untouched underneath, so clearing this puts the intake straight
+     * back on it. Set it EVERY tick it should apply (it isn't latched)
+     *
+     * Used while the lift runs its loading->prime sequence, so the piece stays pressed
+     * into the claw as the mechanism pulls it out of the intake
+     *
+     * @param on true to feed forward at ASSIST_FEED_SPEED, false for the commanded state
+     */
+    void set_assist_feed(bool on);
 
     /**
      * @brief Temporarily set a state, wait, then revert to another state

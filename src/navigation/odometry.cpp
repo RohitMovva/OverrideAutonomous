@@ -36,8 +36,10 @@ void Odometry::reset()
 
 void Odometry::seedSensorBaseline()
 {
-    prevLeftPos = getMotorPositionsInches(leftDrive.get_position_all());
-    prevRightPos = getMotorPositionsInches(rightDrive.get_position_all());
+    prevLeftPos = getMotorPositionsInches(leftDrive.get_position_all(),
+                                          Config::LEFT_ODOM_MOTOR_INDEX);
+    prevRightPos = getMotorPositionsInches(rightDrive.get_position_all(),
+                                           Config::RIGHT_ODOM_MOTOR_INDEX);
 
     const double lateral = latTicksToInches(lateralEncoder.get_position());
     prevLateralPos = std::isfinite(lateral) ? lateral : 0.0;
@@ -80,9 +82,10 @@ void Odometry::update()
         Logger::getInstance()->logWarning("Invalid IMU reading; holding heading this tick");
     }
 
-    // Absolute encoder positions
-    std::vector<double> leftPositions = getMotorPositionsInches(leftDrive.get_position_all());
-    std::vector<double> rightPositions = getMotorPositionsInches(rightDrive.get_position_all());
+    std::vector<double> leftPositions =
+        getMotorPositionsInches(leftDrive.get_position_all(), Config::LEFT_ODOM_MOTOR_INDEX);
+    std::vector<double> rightPositions =
+        getMotorPositionsInches(rightDrive.get_position_all(), Config::RIGHT_ODOM_MOTOR_INDEX);
 
     double lateralPos = latTicksToInches(lateralEncoder.get_position());
     if (!std::isfinite(lateralPos))
@@ -98,7 +101,7 @@ void Odometry::update()
     Logger::getInstance()->log("Right Positions: %f %f %f", rightDrive.get_position_all()[0],
                                rightDrive.get_position_all()[1], rightDrive.get_position_all()[2]);
 
-    // getMotorPositionsInches drops unreadable motors. If a whole side dced (kinda cooked), 
+    // getMotorPositionsInches ignores unreadable motors. If a whole side dced (worst case), 
     // hold its previous position so the delta is zero
     if (leftPositions.empty())
     {
@@ -119,6 +122,19 @@ void Odometry::update()
     double deltaLeft = currentLeftPos - getAveragePosition(prevLeftPos);
     double deltaRight = currentRightPos - getAveragePosition(prevRightPos);
     Logger::getInstance()->log("DeltaLeft: %f, DeltaRight: %f", deltaLeft, deltaRight);
+
+    // Validate readings to ignore jumps in IME readings
+    const double maxPlausibleDelta = Config::FREE_WHEEL_VELOCITY * deltaTime * 1.5;
+    if (!std::isfinite(deltaLeft) || !std::isfinite(deltaRight) ||
+        std::abs(deltaLeft) > maxPlausibleDelta || std::abs(deltaRight) > maxPlausibleDelta)
+    {
+        Logger::getInstance()->logWarning(
+            "Implausible encoder delta (L=%f R=%f in over %f s, max %f); dropping tick",
+            deltaLeft, deltaRight, deltaTime, maxPlausibleDelta);
+        deltaLeft = 0.0;
+        deltaRight = 0.0;
+    }
+
     double deltaLateral = lateralPos - prevLateralPos;
 
     // Update velocities with optional filtering.
@@ -234,16 +250,24 @@ double Odometry::getAveragePosition(const std::vector<double> &positions)
     return (count > 0) ? (sum / count) : 0.0;
 }
 
-std::vector<double> Odometry::getMotorPositionsInches(const std::vector<double> &motorPositions)
+std::vector<double> Odometry::getMotorPositionsInches(const std::vector<double> &motorPositions,
+                                                      int trustedIndex)
 {
     // Ignores dced motors to not make everything NaN
     std::vector<double> positions;
     positions.reserve(motorPositions.size());
-    for (double pos : motorPositions)
+    for (std::size_t i = 0; i < motorPositions.size(); ++i)
     {
-        if (std::isfinite(pos))
+        // Pin the side to one encoder when a motor's is known bad. Filtering at the read
+        // keeps this in one place: every consumer of prevLeftPos/prevRightPos then sees
+        // the same channels the current reading came from.
+        if (trustedIndex >= 0 && static_cast<int>(i) != trustedIndex)
         {
-            positions.push_back(ticksToInches(pos));
+            continue;
+        }
+        if (std::isfinite(motorPositions[i]))
+        {
+            positions.push_back(ticksToInches(motorPositions[i]));
         }
     }
     return positions;

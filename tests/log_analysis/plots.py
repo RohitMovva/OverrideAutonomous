@@ -193,8 +193,17 @@ def wheels_figure(run: Run, integral: bool = False) -> plt.Figure:
 # ------------------------------------------------------------------ encoders
 
 def encoders_figure(run: Run) -> plt.Figure:
-    """Per-motor encoder deltas and cumulative side positions
-    (was drivetrain_readings_visualizer.py)."""
+    """Per-motor encoder divergence and cumulative side positions
+    (was drivetrain_readings_visualizer.py).
+
+    The top panel plots each motor's travel *relative to its own first sample*,
+    minus the side's mean. 'Left/Right Positions' are absolute untared counts,
+    so plotting them raw just shows one thick line per side (the position
+    dominates) with the per-motor offsets baked in; the residual is what
+    actually shows a motor drifting away from its partners.
+    """
+    from .metrics import encoder_disagreement
+
     ts_pos, lefts, rights = [], [], []
     ts_cum, cum_l, cum_r = [], [], []
     t0 = run.ticks[0].t
@@ -208,16 +217,30 @@ def encoders_figure(run: Run) -> plt.Figure:
             cum_l.append(tk.cum_left)
             cum_r.append(tk.cum_right)
 
+    ed = encoder_disagreement(run)
+
     fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(12, 8))
     if ts_pos:
-        la = np.array(lefts, dtype=float)
-        ra = np.array(rights, dtype=float)
-        for i in range(la.shape[1]):
-            ax1.plot(ts_pos, la[:, i], lw=0.7, alpha=0.7, label=f"L motor {i}")
-        for i in range(ra.shape[1]):
-            ax1.plot(ts_pos, ra[:, i], lw=0.7, alpha=0.7, ls="--", label=f"R motor {i}")
-        ax1.set_ylabel("encoder ticks / 10 ms")
+        for side, rows, ls in (("left", lefts, "-"), ("right", rights, "--")):
+            live = ed[side].get("channels")
+            if not live:
+                continue
+            arr = np.array([[r[i] for i in live] for r in rows], dtype=float)
+            arr = arr - arr[0]                      # drop the untared offset
+            resid = arr - arr.mean(axis=1, keepdims=True)
+            for col, motor in enumerate(live):
+                ax1.plot(ts_pos, resid[:, col], lw=0.9, alpha=0.8, ls=ls,
+                         label=f"{side[0].upper()} motor {motor}")
+        ax1.axhline(0, color="gray", lw=0.6, alpha=0.6)
+        ax1.set_ylabel("ticks from side mean\n(offset removed)")
         ax1.legend(loc="upper right", fontsize=7, ncol=2)
+        subs = []
+        for side in ("left", "right"):
+            sf = ed[side].get("slip_fraction")
+            if sf is not None and not np.isnan(sf):
+                subs.append(f"{side} {100*sf:.2f}% of travel")
+        if subs:
+            ax1.set_title("net divergence: " + ", ".join(subs), fontsize=9)
     else:
         ax1.text(0.5, 0.5, "log has no Left/Right Positions lines",
                  ha="center", transform=ax1.transAxes)

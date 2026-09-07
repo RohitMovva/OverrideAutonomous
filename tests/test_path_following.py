@@ -449,9 +449,17 @@ def test_no_unintended_reverse_driving(log_runs):
 
 
 def test_encoder_consistency(log_runs):
-    """Same-side motor encoders should agree; a p95 spread above ~12 ticks
-    per 10 ms means one motor slips or reads wrong, and the odometry average
-    (Odometry::getAveragePosition) silently absorbs the error."""
+    """Motors on one side are geared to the same wheels, so their encoders
+    cannot legitimately travel different distances. Net divergence above 1% of
+    that side's travel means one motor slips or reads wrong, and
+    Odometry::getAveragePosition averages the bad reading into
+    forwardDisplacement.
+
+    Asserted on the *fraction* of travel, not raw ticks: 'Left/Right Positions'
+    are absolute untared counts, so raw spread scales with route length and is
+    not comparable between a 95 in straight and a 230 in curve route. Healthy
+    sides measure 0.00-0.07% across the whole corpus; a bad one measures 2-7%.
+    """
     name, runs = log_runs
     checked = False
     failures = []
@@ -459,14 +467,55 @@ def test_encoder_consistency(log_runs):
         ed = metrics.encoder_disagreement(run)
         for side in ("left", "right"):
             st = ed[side]
-            if st.get("n", 0) < 100:
+            # <2 live encoders is the expected shape once a motor has been cut
+            # out of the average -- nothing to cross-check, so nothing to assert.
+            if st.get("n", 0) < 100 or st.get("motors", 0) < 2:
+                continue
+            # Short/slow runs accumulate too little travel for the ratio to mean
+            # anything (square.txt moves ~11 in total).
+            if st["travel_in"] < 40.0:
                 continue
             checked = True
-            if st["p95"] > 12.0:
-                failures.append(f"run{i} {side}: p95={st['p95']:.0f} max={st['max']:.0f} ticks")
+            if st["slip_fraction"] > 0.01:
+                failures.append(
+                    f"run{i} {side}: {100*st['slip_fraction']:.1f}% of travel "
+                    f"({st['net_divergence_ticks']:.0f} ticks = "
+                    f"{st['net_divergence_in']:.1f} in over {st['travel_in']:.0f} in, "
+                    f"per-motor net {[round(x) for x in st['per_motor_net_ticks']]})")
+    if not checked:
+        pytest.skip(f"{name}: no usable multi-motor Left/Right Positions lines")
+    assert not failures, (
+        f"{name}: same-side encoder divergence (motors on one side are geared "
+        f"together and cannot really travel different distances): {failures}")
+
+
+def test_encoder_columns_are_integral(log_runs):
+    """Encoder counts are whole numbers. Fractional values in the logged
+    'Left/Right Positions' columns are memory garbage, not readings.
+
+    Odometry::update logs get_position_all()[0], [1] and [2] but the drivetrain
+    has two motors per side (main.cpp), so [2] is an out-of-bounds read on a
+    2-element vector. It prints 0.0 most ticks and occasionally whatever float
+    was adjacent (-1984.052930, 25.331436). Log only the elements that exist --
+    iterate the vector instead of indexing a fixed three.
+    """
+    name, runs = log_runs
+    checked = False
+    failures = []
+    for i, run in enumerate(runs):
+        ed = metrics.encoder_disagreement(run)
+        for side in ("left", "right"):
+            st = ed[side]
+            if "corrupt_samples" not in st:
+                continue
+            checked = True
+            if st["corrupt_samples"] > 0:
+                failures.append(f"run{i} {side}: {st['corrupt_samples']} non-integral samples")
     if not checked:
         pytest.skip(f"{name}: no Left/Right Positions lines in this log")
-    assert not failures, f"{name}: same-side encoder disagreement: {failures}"
+    assert not failures, (
+        f"{name}: non-integral encoder samples -- out-of-bounds read at "
+        f"odometry.cpp:96-99: {failures}")
 
 
 def test_distance_integral_drift_bounded(log_runs):

@@ -69,6 +69,23 @@ public:
                                   double leftAcceleration,
                                   double rightAcceleration);
 
+    /**
+     * @brief Clear the PID state and re-base the dt clock. Call once before every run.
+     *
+     * The controller is constructed in initialize() but first USED seconds later, when
+     * autonomous() starts. prevTime is constructed to 0, so without this the first
+     * calculateVoltages() call measures dt as the whole time since program start --
+     * 2.294 s in 08012026-3, 2.110 s in 08012026-4. That weights the opening tick's
+     * integral contribution by ~230x, by an amount that varies with however long
+     * initialize() happened to take. Harmless while kI was 0; a fresh run-to-run
+     * variable the moment kI is not.
+     *
+     * The integrals and previous errors also survive across trajectory segments and
+     * across a re-run without a reboot, so a segment would inherit whatever disturbance
+     * the last one was still fighting.
+     */
+    void reset();
+
 private:
     // Feedforward constants
     const double kS;       ///< Static friction compensation (motor units)

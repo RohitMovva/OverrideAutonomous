@@ -38,6 +38,7 @@ STATIC = ["tracking", "theta", "outputs", "wheels", "encoders", "field", "dashbo
 POOLED = ["gains"]   # per-file figures pooling all selected runs
 ANIMS = ["animate", "animate-mp", "animate-wheels"]
 LIFT = ["lift"]      # lift/chainbar debug stream (own parser, not trajectory)
+HEALTH = ["health"]  # drive motor health stream (spans auton AND driver)
 
 
 def resolve_log(name: str) -> Path:
@@ -53,7 +54,7 @@ def resolve_log(name: str) -> Path:
 def main():
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=STATIC + POOLED + ANIMS + LIFT + ["all"],
+    ap.add_argument("command", choices=STATIC + POOLED + ANIMS + LIFT + HEALTH + ["all"],
                     help="plot type ('all' = every static plot)")
     ap.add_argument("log", help="log file name (resolved against tests/logs/) or path")
     ap.add_argument("--session", type=int, default=None,
@@ -111,6 +112,46 @@ def main():
                 plt.show()
             else:
                 path = out_dir / f"boot{sess.index}_lift.png"
+                fig.savefig(path, dpi=130, bbox_inches="tight")
+                print(path)
+            plt.close(fig)
+        return
+
+    # Drive health stream: like lift, its own parser and its own selection
+    # ("run" = a boot carrying health samples). Deliberately NOT split by
+    # trajectory run -- the stream spans auton and driver, and the heat/wear
+    # story only reads correctly across a whole boot.
+    if args.command in HEALTH:
+        from log_analysis.health_parser import (
+            parse_health_log, health_sessions_with_data, all_partner_imbalances)
+        from log_analysis.health_plots import health_dashboard
+
+        have = health_sessions_with_data(parse_health_log(log_path))
+        if not have:
+            sys.exit("error: no DRIVEHEALTH samples in this log. Capture a run with "
+                     "a build that includes Robot::logDriveHealth.")
+        if args.run == "all":
+            chosen = have
+        else:
+            try:
+                chosen = [have[int(args.run)]]
+            except (ValueError, IndexError):
+                sys.exit(f"error: run {args.run} out of range ({len(have)} boots with health data)")
+
+        out_dir = Path(args.out) / log_path.stem
+        if not args.show:
+            out_dir.mkdir(parents=True, exist_ok=True)
+        for sess in chosen:
+            for pi in all_partner_imbalances(sess):
+                flag = "  <-- CHECK" if (pi.current_ratio > 1.4 or pi.cutout_frac > 0.10) else ""
+                print(f"boot {sess.index} {pi.side} pair: engaged current x{pi.current_ratio:.2f} "
+                      f"({pi.n_engaged}/{pi.n} samples), cut-out {pi.cutout_frac * 100:.0f}% "
+                      f"on port {pi.cutout_port}{flag}")
+            fig = health_dashboard(sess)
+            if args.show:
+                plt.show()
+            else:
+                path = out_dir / f"boot{sess.index}_health.png"
                 fig.savefig(path, dpi=130, bbox_inches="tight")
                 print(path)
             plt.close(fig)

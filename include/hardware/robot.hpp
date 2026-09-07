@@ -178,6 +178,43 @@ public:
     bool isInitialized() const;
 
     /**
+     * @brief Log drive temperature, current, power, efficiency and over-temp,
+     *        ONE LINE PER MOTOR, tagged with its physical port.
+     *
+     * Self-throttling to DRIVE_HEALTH_LOG_MS, so it is safe to call every tick.
+     *
+     * Motivated by 08/01: the left side needed 27.1 then 37.1 motor units MORE than the
+     * kS+kV model to hold 30-40 in/s (08012026-8 and -9) against 5.8-8.9 in -3..-6, while
+     * the right side was unchanged across all seven runs. That was only recoverable by
+     * back-calculating PWM-per-in/s from the velocity logs, and only because the fault was
+     * one-sided and large.
+     *
+     * The fields are logged PER MOTOR because the two motors on a side are mechanically
+     * coupled: they turn at the same speed under the same command, so the healthy one is
+     * the control for the sick one, and no separate baseline run is needed. Read them
+     * together -- each alone is ambiguous:
+     *
+     *   current  the load the motor is actually carrying
+     *   power    P/I recovers the volts the motor really saw, so a motor that is not
+     *            getting its command (bad connector, damaged wire, failing winding) shows
+     *            up as low power for the same command while its partner is normal
+     *   eff      mechanical out over electrical in; the direct read on a motor burning
+     *            its input as heat (bearings, internal drag). Compare only at MATCHED
+     *            speed -- efficiency is near zero at stall for a perfectly good motor
+     *   temp/ovt the V5 derates torque in steps as it heats, and nothing else says so
+     *
+     * Costs two smart-port reads per motor per metric, hence the throttle rather than a
+     * per-tick line: the control loop has a 10 ms budget.
+     *
+     * @param context Short tag identifying the caller, e.g. "auton" or "driver"
+     */
+    void logDriveHealth(const char *context);
+
+    /// Sampling period for logDriveHealth(). 100 ms gives ~17 samples across the first
+    /// trajectory segment -- enough to see a derate develop -- for ~1% more log volume.
+    static constexpr uint32_t DRIVE_HEALTH_LOG_MS = 100;
+
+    /**
      * @brief Tune track width for the robot
      */
 
@@ -203,15 +240,37 @@ public:
     bool liftMacro(Lift::Side side, const char *key);
 
     /**
-     * @brief Send the lift to a named scoring pose (@ref Lift::run_score_state).
-     * @param side which score-state table to search
-     * @param key  a key from Lift::FRONT_SCORE_STATES / Lift::BACK_SCORE_STATES
+     * @brief Send the lift to a named pose (@ref Lift::run_lift_state).
+     *
+     * The state carries the CLAW as well as the three angles, and it is commanded
+     * before the move starts -- so a state whose claw is open releases immediately.
+     *
+     * @param side which lift-state table to search
+     * @param key  a key from Lift::FRONT_LIFT_STATES / Lift::BACK_LIFT_STATES
      * @return false if the lift is not attached, the key is unknown, or the lift is
      *         still in its power-on startup choreography (all logged)
      */
-    bool liftScoreState(Lift::Side side, const char *key);
+    bool liftState(Lift::Side side, const char *key);
 
-    /// True while a lift choreography is still playing out.
+    /**
+     * @brief Run a scripted sequence of lift states (@ref Lift::run_lift_chain).
+     *
+     * Non-blocking: the chain plays out inside Lift::update(), so the drivetrain keeps
+     * following the trajectory while it runs. An action point selects one of these by
+     * passing a value in the chain band (|value| >= Lift::LIFT_CHAIN_ID_MIN_ABS) as its
+     * lift_state parameter -- see Robot::processAction
+     *
+     * @param id a Lift::LiftChain::id from Lift::LIFT_CHAINS
+     * @return false if the lift is not attached or no chain has that id (both logged)
+     */
+    bool liftChain(double id);
+
+    /// @copydoc liftChain(double)
+    /// @param name a Lift::LiftChain::name from Lift::LIFT_CHAINS
+    bool liftChain(const char *name);
+
+    /// True while a lift choreography is still playing out. A running CHAIN counts for
+    /// its whole run, dwells between steps included
     bool liftBusy() const;
 
     /// True when the lift is on its target and nothing is in flight.

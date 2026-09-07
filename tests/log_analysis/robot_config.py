@@ -110,6 +110,17 @@ KP, KI, KD = _C["KP"], _C["KI"], _C["KD"]
 DT_MS = _C["DT"]
 DT_NOMINAL = DT_MS / 1000.0
 
+#: Encoder counts per motor revolution (Config::TICKS_PER_ROTATION).
+TICKS_PER_ROTATION = _C.get("TICKS_PER_ROTATION", 300.0)
+
+#: Wheel travel per raw encoder count, in inches. This is the same conversion
+#: Odometry::ticksToInches applies, so per-motor 'Left/Right Positions' columns
+#: can be compared against the averaged 'Left:/Right:' inches the firmware logs.
+INCHES_PER_TICK = (GEAR_RATIO * WHEEL_DIAMETER * math.pi / TICKS_PER_ROTATION)
+
+#: Voltage command range of a V5 motor (DrivetrainController::MOTOR_VOLTAGE_LIMIT).
+MOTOR_VOLTAGE_LIMIT = 127
+
 #: Free (no-load) wheel speed implied by the configured gearing, in in/s.
 #: 600 rpm blue cartridge * 36/48 * pi * 2.76" / 60 ~= 65.0 in/s.
 #: Prefers Config::FREE_WHEEL_VELOCITY when the firmware defines it.
@@ -132,3 +143,46 @@ UNPHYSICAL_WHEEL_SPEED = FREE_WHEEL_SPEED * 1.10
 USABLE_SPEED_FRACTION = _C.get("USABLE_SPEED_FRACTION", 0.85)
 USABLE_WHEEL_SPEED = _C.get(
     "MAX_WHEEL_VELOCITY", FREE_WHEEL_SPEED * USABLE_SPEED_FRACTION)
+
+
+# --------------------------------------------------------------- motor ports
+
+_MAIN_CPP = Path(__file__).resolve().parents[2] / "src" / "main.cpp"
+
+#: Fallback drive ports, used only when main.cpp cannot be read.
+_DEFAULT_DRIVE_PORTS = {"L": [-18, 19], "R": [15, -9]}
+
+_MG_RE = re.compile(r"pros::MotorGroup\s+(\w+)\s*\(\s*\{([^}]*)\}")
+
+
+def _load_drive_ports() -> dict[str, list[int]]:
+    """Signed smart ports of each drive side, parsed from main.cpp.
+
+    Sign carries reversal (-18 = port 18 reversed), and ORDER matters: it is the
+    index the firmware reports as L0/L1/R0/R1 and the same order the odometry
+    stream's "Left Positions:" columns use. Parsed rather than hardcoded so a
+    rewire cannot leave the analysis naming the wrong physical motor.
+    """
+    ports = {k: list(v) for k, v in _DEFAULT_DRIVE_PORTS.items()}
+    try:
+        text = _MAIN_CPP.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ports
+    for name, body in _MG_RE.findall(text):
+        side = {"left_mg": "L", "right_mg": "R"}.get(name)
+        if side is None:
+            continue
+        found = [int(p) for p in re.findall(r"-?\d+", body)]
+        if found:
+            ports[side] = found
+    return ports
+
+
+#: {"L": [-18, 19], "R": [15, -9]} — see _load_drive_ports().
+DRIVE_PORTS = _load_drive_ports()
+
+
+def drive_port(side: str, index: int) -> int | None:
+    """The signed smart port for a side's Nth drive motor, or None if unknown."""
+    seq = DRIVE_PORTS.get(side, [])
+    return seq[index] if 0 <= index < len(seq) else None

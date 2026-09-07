@@ -1,17 +1,48 @@
 #include "main.h"
 #include <malloc.h>  // mallinfo() — heap-usage diagnostics (temporary)
+#include <cmath>
+
+/// Tare the drive encoders and wait for them to report zero/timeout
+static bool tareDriveEncodersBlocking(pros::MotorGroup &left, pros::MotorGroup &right,
+                                      int timeout_ms = 250)
+{
+    left.tare_position_all();
+    right.tare_position_all();
+
+    const auto settled = [](const std::vector<double> &positions)
+    {
+        for (double pos : positions)
+        {
+            if (std::isfinite(pos) && std::abs(pos) > 5.0)
+            {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    for (int waited = 0; waited < timeout_ms; waited += 10)
+    {
+        pros::delay(10);
+        if (settled(left.get_position_all()) && settled(right.get_position_all()))
+        {
+            return true;
+        }
+    }
+    return false;
+}
 
 // Robot config
 bool skills = false;
 pros::Controller master(pros::E_CONTROLLER_MASTER);
 pros::MotorGroup left_mg({-18, 19});
-pros::MotorGroup right_mg({14, -15});
+pros::MotorGroup right_mg({15, -9});
 pros::MotorGroup intake_motors({-20});
-pros::MotorGroup winch_motors({-16, 17});                     // two 200 RPM lift winch motors
-pros::Motor chainbar_motor(-10, pros::v5::MotorGears::red); // 11W bar pivot, geared 100->50; PLACEHOLDER port
-pros::Rotation chainbar_rotation(11);                      // bar-axle angle sensor, 1:1; PLACEHOLDER port
-pros::Motor chain_motor(-13, pros::v5::MotorGears::green);  // 5.5W 200 RPM chain, 1:1 end effector; PLACEHOLDER port
-pros::Rotation chain_rotation(1);                          // EE-axle angle sensor, 1:1; PLACEHOLDER port
+pros::MotorGroup winch_motors({-16, 17});
+pros::Motor chainbar_motor(-10, pros::v5::MotorGears::red);
+pros::Rotation chainbar_rotation(11);
+pros::Motor chain_motor(-13, pros::v5::MotorGears::green);
+pros::Rotation chain_rotation(1);
 
 pros::Optical color_sort_os(21);
 pros::Distance color_sort_ds(10);
@@ -61,7 +92,7 @@ std::string program_type = "autonomous";
 
 std::vector<std::vector<double>> route;
 // std::string route_name = "";
-std::string route_name = "sawp";
+std::string route_name = "threepin";
 // std::vector< std::string > routes = std::vector< std::string >{"skills8.1", "skills8.2"};
 std::vector<std::string> routes;
 std::vector<Trajectory> trajectories;
@@ -95,14 +126,22 @@ void initialize()
     left_mg.set_encoder_units_all(pros::E_MOTOR_ENCODER_COUNTS);
     right_mg.set_encoder_units_all(pros::E_MOTOR_ENCODER_COUNTS);
 
-    left_mg.tare_position_all();
-    right_mg.tare_position_all();
+    if (!tareDriveEncodersBlocking(left_mg, right_mg))
+    {
+        // Not fatal -- odometry still works off deltas, and its implausible-delta guard
+        // will absorb the tare if it lands later. But every absolute position is now
+        // offset by an unknown amount, so say so rather than starting a match quietly.
+        logger->logError("init: drive encoders did NOT tare within timeout; "
+                         "odometry baseline offset is unknown");
+    }
+    logger->flush();
 
     imu_sensor.reset();
     logger->log("init: imu.reset issued, usedHeap=%d", mallinfo().uordblks);
     logger->flush();
 
     lift.initialize();
+    
     logger->log("init: lift.initialize done, usedHeap=%d", mallinfo().uordblks);
     logger->flush();
 
@@ -152,7 +191,9 @@ void initialize()
  * the VEX Competition Switch, following either autonomous or opcontrol. When
  * the robot is enabled, this task will exit.
  */
-void disabled() {}
+void disabled() {
+    lift.open_claw();
+}
 
 /**
  * Runs after initialize(), and before autonomous when connected to the Field
@@ -220,17 +261,22 @@ void opcontrol()
     int intake_pressed_dur = 0;
     bool intaking = false;
 
-    // --- Diagnostic instrumentation (temporary) -----------------------------
-    // A post-freeze SD log (/usd/robot_log_*.txt) then shows: heap-in-use over
-    // time (a leak/exhaustion makes usedHeap climb), the worst loop period/work
-    // time per window (a blocking call or stall spikes these), and the last
-    // heartbeat count before the log stops (pinpoints when it died). Logging is
-    // queued to the background logger task, so it adds no blocking SD I/O here.
     uint32_t last_loop_ms = pros::millis();
     uint32_t worst_period_ms = 0;
     uint32_t worst_work_ms = 0;
     logger->log("=== OPCONTROL START (diagnostic build) === usedHeap=%d",
                 mallinfo().uordblks);
+
+    if (lift.needs_startup())
+    {
+        logger->log("opcontrol: lift untouched by auton -> leaving it in STARTUP "
+                    "(matchload / back_prime move there directly)");
+        // lift.start_to_loading();
+    }
+    else
+    {
+        logger->log("opcontrol: lift already moved -> skipping start_to_loading()");
+    }
 
     while (true)
     {
@@ -254,23 +300,25 @@ void opcontrol()
             worst_work_ms = 0;
         }
 
-        // Update the LCD at ~4 Hz, not every 10ms — hammering pros::lcd::print
-        // (an LVGL wrapper) from opcontrol races the LVGL render daemon.
+        // Sampled here too, not just in auton. Motors keep heating while the robot is
+        // driven back to the start between runs, so the driver period is where a session's
+        // heat soak actually accumulates -- and a derate that only shows up by run 8 is
+        // invisible if the log starts over at every autonomous().
+        if (robot)
+            robot->logDriveHealth("driver");
+
+        // Update the LCD at ~4 Hz
         if (count % 25 == 0)
             pros::lcd::print(1, "count: %lld", count);
         ++count;
         left_mg.move(master.get_analog(ANALOG_LEFT_Y));
         right_mg.move(master.get_analog(ANALOG_RIGHT_Y));
 
-        // R1 is a combined tap/hold control. Disambiguate on RELEASE by how
-        // long it was held so a hold-to-outtake never corrupts the toggle:
-        //   - tap  (< 150 ms) -> toggle intake on/off
-        //   - hold (>= 150 ms) -> outtake while held, then restore toggle state
-        // `intaking` is the persistent toggle; it is only ever flipped by a tap.
+        
         if (master.get_digital(DIGITAL_R1))
         {
             intake_pressed_dur += 10;
-            if (intake_pressed_dur >= 150)
+            if (intake_pressed_dur >= 300)
                 intake_state = 2; // held long enough -> outtake
         }
         else
@@ -283,52 +331,23 @@ void opcontrol()
             intake_pressed_dur = 0;
         }
         intake.set_state(intake_state);
+        // While the lift pulls a piece out of the intake on its way to primed, feed it
+        // gently forward so the piece stays pressed into the claw. An override, so the
+        // driver's toggle above is untouched and comes straight back when the prime ends.
+        intake.set_assist_feed(lift.is_priming_from_rest());
 
 
-        // Lift: hold L1 to advance the coordinated lift/chainbar raise sequence
-        // (starts from primed). It advances while held and freezes wherever it is
-        // on release; the winch is otherwise fully owned by lift.update().
         if (master.get_digital(DIGITAL_L1))
         {
             lift.move_lift_up();
         }
-        // Hold L2 to retreat the raise sequence back toward primed -- a plain manual
-        // reverse (no release / auto-return, unlike DOWN/score). Raising (L1)
-        // wins if both are held.
+            
         if (master.get_digital(DIGITAL_L2))
         {
             lift.move_lift_down();
         }
 
-        // Chainbar macros: B primes (grab + bar 45, winch flat), Y returns to
-        // loading (claw open), DOWN scores (swings the bar out of primed, extends
-        // the cascade to full height, releases, then returns to the pose it primed
-        // from).
-        //
-        // B primes from EITHER resting pose -- loading or matchload -- so the driver
-        // uses the same button whichever one they picked up from.
         if (master.get_digital_new_press(DIGITAL_B))
-        {
-            lift.prime();
-        }
-        // R2 is the matchload button (NOT X -- this comment used to say X, which has
-        // never been the binding and is now the score-state test button below).
-        // Sitting at a resting pose it swaps to the other one (loading <-> matchload);
-        // from anywhere else -- primed, part way up the sequence, mid-score -- it
-        // returns to matchload, the way Y returns to loading. Every path runs the
-        // lift-clearance choreography, so it is a macro like the rest, not an instant
-        // pose change.
-        //
-        // A score started from matchload also RETURNS to matchload on its own, so X
-        // is only needed to change your mind mid-cycle.
-        // UP runs the BACK cycle -- the other side of the mechanism, reached without
-        // swinging the bar the long way round to the front primed pose. From a resting
-        // pose it is the back prime (grab + move onto the BOTTOM back pose); pressed
-        // again it toggles BOTTOM <-> TOP, each move running its own clearance
-        // choreography. Once parked, L1/L2 jog the cascade freely, DOWN scores with the
-        // same pressure detection, and RIGHT flips the end effector between the back
-        // orientations. Y/X still bring it home.
-        else if (master.get_digital_new_press(DIGITAL_UP))
         {
             lift.back_prime();
         }
@@ -342,88 +361,29 @@ void opcontrol()
         }
         else if (master.get_digital_new_press(DIGITAL_DOWN))
         {
-            lift.score();
+            if (lift.is_matchloading())
+                lift.open_claw();
+            else
+                lift.score();
         }
-        // RIGHT flips the end-effector orientation used by the raised poses
-        // (270 <-> 90) so a piece can be presented from either side. Takes effect
-        // at once -- before priming, while primed, or part-way up the sequence --
-        // and sticks until pressed again.
+
         else if (master.get_digital_new_press(DIGITAL_RIGHT))
         {
             lift.toggle_scoring_orientation();
         }
 
-        // A manually releases the piece wherever the lift happens to be -- primed,
-        // part-way up the sequence, or mid-score -- without moving anything or
-        // changing the mode. The next prime/score re-clamps.
+        else if (master.get_digital_new_press(DIGITAL_LEFT))
+        {
+            lift.bar_pose();
+        }
+
         if (master.get_digital_new_press(DIGITAL_A)){
             lift.open_claw();
         }
 
-        // ================== TEMPORARY: SCORE-STATE TEST HARNESS ==================
-        // Delete this whole block (and the two lines it adds to the LCD) when done.
-        //
-        // Two spare buttons drive the keyed autonomous interface by hand, so a score
-        // state can be commanded WITHOUT priming and without going to loading first --
-        // which is the point of the test: run_score_state() is legal from any mode
-        // except STARTUP, and its raise/swing/lower choreography is supposed to reach
-        // any pose in the table from wherever the mechanism happens to be.
-        //
-        //   LEFT  cycle the selection through every row of both tables
-        //         (FRONT_SCORE_STATES then BACK_SCORE_STATES). New rows appear here
-        //         automatically -- nothing below hardcodes a key or a count.
-        //   X     fire the selected one: lift.run_score_state(side, key)
-        //
-        // Deliberately plain `if`s, NOT part of the else-if macro chain above, so this
-        // block neither shadows nor is shadowed by the driver bindings.
-        //
-        // WHAT TO WATCH, in the SD log:
-        //   LIFTINIT refs: ... winch raw=.. + offset=.. -> ..   the seeded frame
-        //   LIFTEVT respool TAUT ... @ winch=X                  X should now be ~0,
-        //       not ~+251 as in tests/logs/07282026.txt -- that is the seed being right
-        //   LIFTCMD score_state ... / LIFTEVT score_state step RAISE->SWING->LOWER->HOLD
-        //
-        // To test the seed with NOTHING trimming it -- the real "never went to loading"
-        // case -- set Lift::WINCH_STOW_HOMING_ENABLED = false in lift.hpp and re-flash.
-        static int score_test_sel = 0;
-        constexpr int kScoreTestCount =
-            Lift::FRONT_SCORE_STATE_COUNT + Lift::BACK_SCORE_STATE_COUNT;
-        auto score_test_side = [](int i) {
-            return i < Lift::FRONT_SCORE_STATE_COUNT ? Lift::Side::FRONT : Lift::Side::BACK;
-        };
-        auto score_test_state = [](int i) -> const Lift::ScoreState & {
-            return i < Lift::FRONT_SCORE_STATE_COUNT
-                       ? Lift::FRONT_SCORE_STATES[i]
-                       : Lift::BACK_SCORE_STATES[i - Lift::FRONT_SCORE_STATE_COUNT];
-        };
-
-        if (master.get_digital_new_press(DIGITAL_LEFT))
-        {
-            score_test_sel = (score_test_sel + 1) % kScoreTestCount;
-            const Lift::ScoreState &s = score_test_state(score_test_sel);
-            logger->log("TEST select [%d/%d] %s '%s' (winch=%.0f bar=%.1f ee=%.1f)",
-                        score_test_sel + 1, kScoreTestCount,
-                        score_test_side(score_test_sel) == Lift::Side::BACK ? "BACK" : "FRONT",
-                        s.key, s.winch_pos, s.bar_deg, s.ee_deg);
+        if (master.get_digital_new_press(DIGITAL_UP)){
+            lift.toggle_kill_switch();
         }
-        if (master.get_digital_new_press(DIGITAL_X))
-        {
-            const Lift::ScoreState &s = score_test_state(score_test_sel);
-            bool ok = lift.run_score_state(score_test_side(score_test_sel), s.key);
-            logger->log("TEST fire '%s' -> %s (winch now %.1f)",
-                        s.key, ok ? "ACCEPTED" : "REFUSED", lift.get_winch_position());
-        }
-        if (count % 25 == 0)
-        {
-            const Lift::ScoreState &s = score_test_state(score_test_sel);
-            pros::lcd::print(6, "SEL %d/%d %s%s w:%.0f",
-                             score_test_sel + 1, kScoreTestCount,
-                             score_test_side(score_test_sel) == Lift::Side::BACK ? "B:" : "F:",
-                             s.key, s.winch_pos);
-            pros::lcd::print(7, "winch act:%.0f %s", lift.get_winch_position(),
-                             lift.is_settled() ? "SETTLED" : (lift.is_busy() ? "BUSY" : "--"));
-        }
-        // ================ END TEMPORARY SCORE-STATE TEST HARNESS =================
 
         intake.update();
         lift.update();

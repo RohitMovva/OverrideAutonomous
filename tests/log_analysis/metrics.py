@@ -42,6 +42,7 @@ from .parser import Run
 from .robot_config import (
     DT_NOMINAL,
     FREE_WHEEL_SPEED,
+    INCHES_PER_TICK,
     TRACK_WIDTH,
     UNPHYSICAL_WHEEL_SPEED,
     USABLE_WHEEL_SPEED,
@@ -583,23 +584,133 @@ def reverse_driving(run: Run, min_speed_in: float = 0.05,
             "unintended_fraction": unintended / n if n else 0.0}
 
 
-def encoder_disagreement(run: Run) -> dict:
-    """Spread between same-side motor encoders per tick.
+def _live_channels(columns: list[list[float]]) -> tuple[list[int], list[int], int]:
+    """Split per-motor columns into (live, dead, corrupt_sample_count).
 
-    Units are raw encoder ticks per 10 ms interval (Odometry tares the
-    motors every update, so each logged 'Positions' line is a per-iteration
-    delta). (Data source ported from drivetrain_readings_visualizer.py.)
-    A large spread means one motor slips or reads wrong — the odometry
-    average silently absorbs it. Requires 'Left/Right Positions' lines
-    (square/init-style logs).
+    Odometry::update logs a fixed three columns per side but indexes
+    get_position_all() at [0], [1] and [2], and the drivetrain has only two
+    motors per side (main.cpp). The third index is an out-of-bounds read on a
+    2-element vector: it prints a constant 0.0 most ticks and occasionally
+    whatever float happened to be adjacent in memory (-1984.052930, 25.331436,
+    ...). Older logs (square.txt, init.txt) genuinely do have three motors a
+    side, so the channel count must be discovered, not hardcoded.
+
+    A live encoder moves. The discriminator is how often a column *changes*:
+    a real motor steps nearly every tick while the robot drives, whereas the
+    phantom column changed on 6 of 1396 ticks in 07302026-4. Keep columns that
+    change at least a fifth as often as the busiest column on that side.
+
+    Encoder counts are whole numbers, so non-integral samples are also counted
+    and reported separately — they are direct evidence of the out-of-bounds
+    read rather than something to silently discard.
     """
-    spreads_l, spreads_r = [], []
-    for tk in run.ticks:
-        if tk.left_positions and len(tk.left_positions) > 1:
-            spreads_l.append(max(tk.left_positions) - min(tk.left_positions))
-        if tk.right_positions and len(tk.right_positions) > 1:
-            spreads_r.append(max(tk.right_positions) - min(tk.right_positions))
-    return {"left": _stats(spreads_l), "right": _stats(spreads_r)}
+    activity, corrupt = [], 0
+    for col in columns:
+        changes = 0
+        for a, b in zip(col, col[1:]):
+            if math.isnan(a) or math.isnan(b) or math.isinf(a) or math.isinf(b):
+                continue
+            if a != b:
+                changes += 1
+        corrupt += sum(1 for v in col
+                       if not math.isnan(v) and not math.isinf(v) and v != int(v))
+        activity.append(changes)
+
+    busiest = max(activity, default=0)
+    live, dead = [], []
+    for i, changes in enumerate(activity):
+        if busiest > 0 and changes >= 0.2 * busiest:
+            live.append(i)
+        else:
+            dead.append(i)
+    return live, dead, corrupt
+
+
+def _side_disagreement(ticks: list, attr: str) -> dict:
+    """Per-motor agreement for one side of the drivetrain.
+
+    'Left/Right Positions' are ABSOLUTE encoder counts. The odometry no longer
+    tares the motors each tick — it keeps a running baseline (prevLeftPos /
+    prevRightPos in Odometry::update, seeded once by seedSensorBaseline) and
+    differences against it — so these columns carry an arbitrary per-motor
+    offset that says nothing about drivetrain health. Every statistic here is
+    therefore built from *differences*, never from the raw level:
+
+    - ``delta_spread``   spread of the per-tick increments. Offset-free. Catches
+      a frozen or wildly noisy encoder, but note that the two motors on a side
+      are sampled a few hundred microseconds apart, so at speed this alternates
+      sign tick to tick and largely cancels. Do not read a large p95 here as
+      slip on its own.
+    - ``net_divergence_ticks``  how far the motors' *net travel* drifted apart
+      over the run (last minus first, so the offset cancels). Motors bolted to
+      the same gearbox cannot really travel different distances, so anything
+      that accumulates monotonically here is mechanical: a stripped pinion, a
+      loose set screw, or a bad cartridge.
+    - ``slip_fraction``  net divergence as a fraction of that side's total
+      travel. This is the scale-free number to compare across runs — a long
+      route naturally accumulates more raw ticks than a short one.
+    """
+    rows = [getattr(tk, attr) for tk in ticks if getattr(tk, attr)]
+    width = min((len(r) for r in rows), default=0)
+    if width < 2 or len(rows) < 2:
+        return {"n": 0, "motors": 0}
+    columns = [[r[i] for r in rows] for i in range(width)]
+    live, dead, corrupt = _live_channels(columns)
+    if len(live) < 2:
+        # One live encoder is the expected shape once a bad motor has been cut
+        # out of the odometry average; there is simply nothing to cross-check.
+        return {"n": 0, "motors": len(live), "channels": live,
+                "dropped_channels": dead, "corrupt_samples": corrupt}
+
+    # --- per-tick increment spread (offset-free)
+    spreads, travel = [], 0.0
+    for a, b in zip(rows, rows[1:]):
+        deltas = [b[i] - a[i] for i in live]
+        if any(math.isnan(d) or math.isinf(d) for d in deltas):
+            continue
+        spreads.append(max(deltas) - min(deltas))
+        travel += abs(sum(deltas) / len(deltas))
+
+    # --- net travel per motor (first-to-last, so the untared offset cancels)
+    net = [columns[i][-1] - columns[i][0] for i in live]
+    divergence = max(net) - min(net)
+
+    return {
+        "n": len(spreads),
+        "motors": len(live),
+        "channels": live,
+        "dropped_channels": dead,
+        "corrupt_samples": corrupt,
+        "delta_spread": _stats(spreads),
+        "per_motor_net_ticks": net,
+        "net_divergence_ticks": divergence,
+        "net_divergence_in": divergence * INCHES_PER_TICK,
+        "travel_ticks": travel,
+        "travel_in": travel * INCHES_PER_TICK,
+        "slip_fraction": divergence / travel if travel > 0 else math.nan,
+        # Spread of the very first sample. With no per-tick tare this is just the
+        # startup baseline, so it is reported and never asserted on: it is only
+        # meaningful right after main.cpp's tare_position_all(), where a large
+        # value means the tare did not land on every motor.
+        "initial_offset_ticks": (max(columns[i][0] for i in live)
+                                 - min(columns[i][0] for i in live)),
+    }
+
+
+def encoder_disagreement(run: Run) -> dict:
+    """Agreement between the motors on each side of the drivetrain.
+
+    Motors on the same side are geared to the same wheels, so their encoders
+    must track each other. When they don't, Odometry::getAveragePosition
+    averages the good reading with the bad one and the error goes silently into
+    forwardDisplacement. Heading is unaffected (it comes from the IMU), so this
+    shows up as a distance/position error, not a heading error.
+
+    See ``_side_disagreement`` for the meaning of each field. Requires
+    'Left/Right Positions' lines; returns n=0 per side for logs without them.
+    """
+    return {"left": _side_disagreement(run.ticks, "left_positions"),
+            "right": _side_disagreement(run.ticks, "right_positions")}
 
 
 def distance_integral_drift(run: Run) -> dict:

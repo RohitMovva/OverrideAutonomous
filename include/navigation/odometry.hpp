@@ -89,7 +89,15 @@ private:
     double getAveragePosition(const std::vector<double> &positions);
     /// Absolute per-motor position in inches. No longer folds in a previous offset --
     /// that only existed to undo the per-tick tare.
-    std::vector<double> getMotorPositionsInches(const std::vector<double> &motorPositions);
+    ///
+    /// `trustedIndex` selects a single motor's encoder (-1 keeps every readable one).
+    /// Selection happens HERE, at the read, so that prevLeftPos/prevRightPos and the
+    /// reading they are differenced against always describe the same channels. Doing it
+    /// later -- seeding the baseline from every channel but averaging one for the
+    /// current position -- makes the first tick report the gap between the two
+    /// conventions as motion.
+    std::vector<double> getMotorPositionsInches(const std::vector<double> &motorPositions,
+                                               int trustedIndex);
     /// Capture the current absolute sensor readings as the baseline for the next delta.
     void seedSensorBaseline();
     bool isValidEncoderReading(double newPos, double oldPos, double deltaTime);

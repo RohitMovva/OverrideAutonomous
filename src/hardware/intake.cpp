@@ -36,6 +36,10 @@ void Intake::set_state(int state) {
     intake_state_ = state;
 }
 
+void Intake::set_assist_feed(bool on) {
+    assist_feed_ = on;
+}
+
 void Intake::state_decay(int start_state, int end_state, int delay_ms) {
     if (start_state == 3 && (intake_state_ == 3 || intake_state_ == 13) && intake_decay_ms_ > 0){
         return;
@@ -50,6 +54,13 @@ int Intake::get_state() const {
 }
 
 void Intake::apply_state_motors() {
+    // Assist feed wins over the commanded state while it is set, and only while it is set:
+    // intake_state_ is never written here, so dropping the flag hands the intake straight
+    // back to whatever the driver / auton had it doing.
+    if (assist_feed_) {
+        intake_motors_.move_voltage(ASSIST_FEED_SPEED);
+        return;
+    }
     switch (intake_state_) {
         case 0:
             intake_motors_.move_voltage(0);

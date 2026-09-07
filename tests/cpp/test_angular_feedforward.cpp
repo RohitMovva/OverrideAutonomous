@@ -115,18 +115,40 @@ int main() {
     }
 
     // 7. Magnitude at the scrub measured in 07132026-4.txt: at w = 2 rad/s the outer
-    //    wheel was ~2.4 in/s short. The term should hand it back roughly
-    //    KV_ANGULAR * w / (KP + KV) in/s of authority.
+    //    wheel was ~2.4 in/s short with this term switched off.
+    //
+    //    Assert on the VOLTAGE, not on the in/s it buys back. Injecting A motor units
+    //    moves the wheel by A / (KP + KV) in/s, because the velocity PID sees the
+    //    resulting speed change and backs off by KP times it -- so the same term "buys"
+    //    half as much velocity at KP = 8 as it did at KP = 3. That is not the term
+    //    getting weaker. Scrub is a disturbance, and the residual it leaves is
+    //    (D - A) / (KP + KV): the feedforward's share and the leftover error are divided
+    //    by the SAME factor, so raising KP strictly reduces the under-rotation. Pinning
+    //    this case to an in/s band silently made it a test of KP.
+    //
+    //    D is recovered from the logged shortfall at the KP that was in force when it was
+    //    measured, so it stays a property of the robot rather than of today's gains.
     {
+        constexpr double SCRUB_SHORTFALL_IN_S = 2.4;  ///< outer-wheel deficit, term off
+        constexpr double KP_WHEN_MEASURED = 3.0;      ///< Config::KP at that log
+
+        const double scrubVolts = SCRUB_SHORTFALL_IN_S * (KP_WHEN_MEASURED + Config::KV);
+
         double w = 2.0;
         double delta = w * W / 2.0;
         Result r = run(30.0 - delta, 30.0 + delta);
         double perWheel = (r.angDiff - r.baseDiff) / 2.0;
-        double recovered = perWheel / (Config::KP + Config::KV);
-        std::printf("      w=2 rad/s -> %.1f motor units/wheel, ~%.2f in/s recovered\n",
-                    perWheel, recovered);
-        check(recovered > 1.0 && recovered < 2.5,
-              "w = 2 rad/s recovers 1-2.5 in/s of outer-wheel shortfall");
+        double coverage = perWheel / scrubVolts;
+        double residual = (scrubVolts - perWheel) / (Config::KP + Config::KV);
+        std::printf("      w=2 rad/s -> %.1f of %.1f motor units of scrub (%.0f%%); "
+                    "residual %.2f in/s at KP=%.1f (was %.2f at KP=%.1f)\n",
+                    perWheel, scrubVolts, coverage * 100.0, residual, Config::KP,
+                    (scrubVolts - perWheel) / (KP_WHEN_MEASURED + Config::KV),
+                    KP_WHEN_MEASURED);
+        check(coverage > 0.5 && coverage <= 1.0,
+              "w = 2 rad/s cancels 50-100% of the measured scrub voltage");
+        check(residual <= SCRUB_SHORTFALL_IN_S,
+              "residual under-rotation never exceeds the uncompensated shortfall");
     }
 
     std::printf("%s (%d failure%s)\n", failures ? "FAILED" : "OK", failures,

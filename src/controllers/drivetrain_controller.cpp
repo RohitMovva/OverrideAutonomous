@@ -21,6 +21,15 @@ DrivetrainController::DrivetrainController(
 {
 }
 
+void DrivetrainController::reset()
+{
+    prevLeftVelocityError = 0.0;
+    prevRightVelocityError = 0.0;
+    leftIntegralError = 0.0;
+    rightIntegralError = 0.0;
+    prevTime = pros::millis();
+}
+
 DrivetrainController::MotorVoltages DrivetrainController::calculateVoltages(
     double leftVelocitySetpoint,
     double rightVelocitySetpoint,
@@ -29,10 +38,16 @@ DrivetrainController::MotorVoltages DrivetrainController::calculateVoltages(
     double leftAcceleration,
     double rightAcceleration)
 {
-    // Get current time and calculate delta
+    // Get current time and calculate delta.
+    //
+    // The upper bound is what makes a missed reset() survivable rather than silent: this
+    // runs on a Config::DT (10 ms) tick, so anything past 0.1 s is a stale clock or a
+    // stalled loop, not a real interval. Integrating one scales that tick's contribution
+    // by up to 230x and can slam the integrator into its clamp before the robot has
+    // moved. Same bound Odometry::update() uses on its own delta, for the same reason.
     uint32_t currentTime = pros::millis();
     double dt = Units::millisecondsToSeconds(currentTime - prevTime);
-    if (dt <= 0) dt = Units::millisecondsToSeconds(Config::DT);
+    if (dt <= 0 || dt > 0.1) dt = Units::millisecondsToSeconds(Config::DT);
 
     // Calculate errors in ticks/sec
     double leftVelocityError = leftVelocitySetpoint - leftVelocityActual;

@@ -4,7 +4,65 @@
 #include "utilities/math/angle.hpp"
 #include "navigation/distance_reset_odometry.hpp"
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
 #include <stdexcept>
+#include <vector>
+
+namespace
+{
+    /// Tolerance for matching a route's lift action code. The codes are spaced 0.1 apart at
+    /// their closest, and the values arrive as float, so anything between ~1e-6 and 0.05
+    /// works; 1e-3 leaves room on both sides.
+    constexpr double LIFT_ACTION_EPSILON = 1e-3;
+
+    const char *fmtVal(char *buf, std::size_t n, double v, const char *fmt)
+    {
+        if (n == 0) return "";
+        const bool unreadable = !std::isfinite(v) ||
+                                std::abs(v) >= static_cast<double>(INT32_MAX);
+        if (unreadable)
+        {
+            std::snprintf(buf, n, "--");
+        }
+        else
+        {
+            std::snprintf(buf, n, fmt, v);
+        }
+        return buf;
+    }
+
+    template <typename T>
+    double at(const std::vector<T> &v, std::size_t i)
+    {
+        return i < v.size() ? static_cast<double>(v[i])
+                            : std::numeric_limits<double>::quiet_NaN();
+    }
+
+    void logSideHealth(const char *context, const char *side, pros::MotorGroup &group)
+    {
+        const std::vector<double> temp = group.get_temperature_all();
+        const std::vector<std::int32_t> cur = group.get_current_draw_all();
+        const std::vector<double> pwr = group.get_power_all();
+        const std::vector<double> eff = group.get_efficiency_all();
+        const std::vector<std::int32_t> ovt = group.is_over_temp_all();
+        const std::vector<std::int8_t> ports = group.get_port_all();
+
+        for (std::size_t i = 0; i < ports.size(); ++i)
+        {
+            char t[12], c[12], w[12], e[12], o[8];
+            Logger::getInstance()->log(
+                "DRIVEHEALTH %s %s%u port=%d tempC=%s curMA=%s W=%s eff=%s ovt=%s",
+                context, side, static_cast<unsigned>(i),
+                static_cast<int>(ports[i]),
+                fmtVal(t, sizeof(t), at(temp, i), "%.0f"),
+                fmtVal(c, sizeof(c), at(cur, i), "%.0f"),
+                fmtVal(w, sizeof(w), at(pwr, i), "%.1f"),
+                fmtVal(e, sizeof(e), at(eff, i), "%.0f"),
+                fmtVal(o, sizeof(o), at(ovt, i), "%.0f"));
+        }
+    }
+}
 
 Robot::Robot()
     : m_leftDrivetrain(nullptr), m_rightDrivetrain(nullptr), m_inertial(nullptr), m_driveController(nullptr), m_ramseteController(nullptr), m_localization(nullptr), m_isFollowingTrajectory(false), m_intake(nullptr), m_lift(nullptr)
@@ -142,6 +200,19 @@ bool Robot::isInitialized() const
             m_localization != nullptr);
 }
 
+void Robot::logDriveHealth(const char *context)
+{
+    if (m_leftDrivetrain == nullptr || m_rightDrivetrain == nullptr) return;
+
+    static uint32_t last_sample_ms = 0;
+    const uint32_t now = pros::millis();
+    if (now - last_sample_ms < DRIVE_HEALTH_LOG_MS) return;
+    last_sample_ms = now;
+
+    logSideHealth(context, "L", *m_leftDrivetrain);
+    logSideHealth(context, "R", *m_rightDrivetrain);
+}
+
 void Robot::processTrajectory(const TrajectoryPoint &tp)
 {
     // Process trajectory
@@ -235,24 +306,98 @@ void Robot::processAction(const ActionPoint &ap)
         Logger::getInstance()->log("Action: %f", action);
     }
 
-    if (ap.actions.size() < 8)
+    if (ap.actions.size() < 5)
     {
-        Logger::getInstance()->logError("Insufficient action parameters, expected at least 9");
+        Logger::getInstance()->logError("Insufficient action parameters, expected at least 5");
         return;
     }
 
     int intake_action = static_cast<int>(ap.actions[0]); // Convert to int for easier handling
     m_intake->set_state(intake_action); // Set intake state based on action
 
-    if (intake_action == 3){
-        m_intake->set_state(15);
-        m_intake->state_decay(15, 16, 50);
-    }
-
-    if (ap.actions[1] == 1.0)
+    if (ap.actions[1] != 0.0)
     {
+        // safe comparison with tolerance
+        const double lift_action = ap.actions[1];
+        const auto is = [lift_action](double code)
+        { return std::fabs(lift_action - code) < LIFT_ACTION_EPSILON; };
 
+        if (Lift::is_chain_id(lift_action)){
+            this->liftChain(lift_action);
+        } else if (is(.1)){
+            this->liftState(Lift::Side::BACK, "trigger_roller");
+        }
+        else if (is(.5)){
+            this->liftState(Lift::Side::FRONT, "pickup_stack");
+        } else if (is(.51)){
+            this->liftState(Lift::Side::FRONT, "pickup_stack_closed");
+        }
+        else if (is(1)){
+            this->liftState(Lift::Side::FRONT, "neutral_one_pin");
+        }
+        else if (is(6.9)){
+            this->liftState(Lift::Side::FRONT, "toggle");
+        } 
+        else if (is(-.1)){
+            this->liftState(Lift::Side::BACK, "move_out");
+        }
+        else if (is(-.5)){
+            this->liftState(Lift::Side::BACK, "pickup_stack");
+        } else if (is(-1)){
+            this->liftState(Lift::Side::BACK, "neutral_one_pin");
+        } else if (is(-2)){
+            this->liftState(Lift::Side::BACK, "alliance_empty");
+        } else if (is(-2.5)){
+            this->liftState(Lift::Side::BACK, "alliance_empty_down");
+        } else if (is(-3)){
+            this->liftState(Lift::Side::BACK, "load_stack");
+        } else if (is(-4)){
+            this->liftState(Lift::Side::BACK, "alliance_one_pin");
+        } else if (is(-5)){
+            this->liftState(Lift::Side::BACK, "alliance_two_pin");
+        } else if (is(-5.01)){
+            this->liftState(Lift::Side::BACK, "alliance_two_pin_down");
+        } else if (is(-5.02)){
+            this->liftState(Lift::Side::BACK, "alliance_two_pin_open");
+        }
+        
+        else if (is(-5.3)){
+            this->liftState(Lift::Side::BACK, "alliance_three_pin");
+        }  else if (is(-5.32)){
+            this->liftState(Lift::Side::BACK, "alliance_three_pin_released");
+        }
+        
+        
+        else if (is(-5.4)){
+            this->liftState(Lift::Side::BACK, "alliance_four_pin");
+        } else if (is(-5.41)){
+            this->liftState(Lift::Side::BACK, "alliance_four_pin_down");
+        } else if (is(-5.42)){
+            this->liftState(Lift::Side::BACK, "alliance_four_pin_released");
+        }
+        
+        
+        else if (is(-6)){
+            this->liftState(Lift::Side::BACK, "flip_clearance");
+        } else if (is(-7)){
+            this->liftState(Lift::Side::BACK, "flipped_clearance");
+        } else if (is(-8)){
+            this->liftState(Lift::Side::BACK, "alliance_empty_alt");
+        } else if (is(-8.1)){
+            this->liftState(Lift::Side::BACK, "alliance_empty_alt_down");
+        } else if (is(-8.2)){
+            this->liftState(Lift::Side::BACK, "alliance_empty_alt_down_open");
+        } else if (is(-9.9)){
+            this->liftState(Lift::Side::BACK, "center_one_pin");
+        } else if (is(-9.91)){
+            this->liftState(Lift::Side::BACK, "center_one_pin_lowered");
+        } else if (is(-9.92)){
+            this->liftState(Lift::Side::BACK, "center_one_pin_lowered_open");
+        } else {
+            Logger::getInstance()->logError("Invalid lift action parameter: %f", lift_action);
+        }
     }
+
     if (ap.actions[2] == 1.0)
     {
         if (auto distance_reset_odometry = dynamic_cast<DistanceResetOdometry*>(m_localization.get())) {
@@ -272,42 +417,10 @@ void Robot::processAction(const ActionPoint &ap)
 
     if (ap.actions[4] != 0.0)
     {
-        if (ap.actions[4] == 16){
-            m_intake->state_decay(ap.actions[0], 13, ap.actions[4] * 1000);
-        } else {
-            m_intake->state_decay(ap.actions[0], 8, ap.actions[4] * 1000);
-        }
-    }
-
-    if (ap.actions[5] != 0.0)
-    {
-        m_min_voltage = static_cast<int>(ap.actions[5]);
-        Logger::getInstance()->log("Setting min voltage to %d", m_min_voltage);
-    } else {
-        m_min_voltage = 0;
-    }
-
-    // if (ap.actions[6] != 0.0)
-    // {
-    //     m_intake->set_intake_speed(static_cast<int>(ap.actions[6]));
-    // }
-
-    if (ap.actions[6] == 1.0){
-    }
-
-    if (ap.actions[7] != 0.0){
         if (auto distance_reset_odometry = dynamic_cast<DistanceResetOdometry*>(m_localization.get())) {
             distance_reset_odometry->resetFront();
         } else {
             Logger::getInstance()->logError("Failed to cast to DistanceResetOdometry");
-        }
-    }
-
-    if (ap.actions[8] != 0.0){
-        if (m_intake->is_color_sorting_active()){
-            m_intake->stop_color_sorting();
-        } else {
-            m_intake->start_color_sorting(ap.actions[9] == 1.0 ? "red" : "blue");
         }
     }
 }
@@ -348,6 +461,14 @@ bool Robot::followTrajectory(Trajectory &trajectory, std::optional<Pose> start_p
     uint32_t loop_start_time = pros::millis();
 
     m_localization->reset();
+    // Same reason localization is reset here: the drive PID's integrals, previous errors
+    // and dt clock are all carried from construction in initialize(), seconds ago and
+    // possibly a whole previous segment ago. Reset alongside it so a run starts from the
+    // same controller state every time.
+    if (m_driveController)
+    {
+        m_driveController->reset();
+    }
     size_t trajectory_index = 0;
     try
     {
@@ -380,11 +501,16 @@ bool Robot::followTrajectory(Trajectory &trajectory, std::optional<Pose> start_p
             break;
         }
 
+        logDriveHealth("auton");
+
         // Update localization
         if (m_localization){
             m_localization->update();
         }
         if (m_intake){
+            // Same gentle forward feed the driver gets while a prime pulls a piece out of
+            // the intake. An override, so the state the last action point set is untouched.
+            m_intake->set_assist_feed(m_lift && m_lift->is_priming_from_rest());
             m_intake->update();
         }
 
@@ -430,7 +556,7 @@ bool Robot::followTrajectories(std::vector<Trajectory> &trajectories)
             return false;
         }
 
-        next_start_pose = this->m_localization->getPose();
+    next_start_pose = this->m_localization->getPose();
     }
     return true;
 }
@@ -446,14 +572,35 @@ bool Robot::liftMacro(Lift::Side side, const char *key)
     return m_lift->run_macro(side, key);
 }
 
-bool Robot::liftScoreState(Lift::Side side, const char *key)
+bool Robot::liftState(Lift::Side side, const char *key)
 {
     if (!m_lift)
     {
-        Logger::getInstance()->logError("liftScoreState('%s') ignored: no lift attached", key ? key : "(null)");
+        Logger::getInstance()->logError("liftState('%s') ignored: no lift attached", key ? key : "(null)");
         return false;
     }
-    return m_lift->run_score_state(side, key);
+    return m_lift->run_lift_state(side, key);
+}
+
+bool Robot::liftChain(double id)
+{
+    if (!m_lift)
+    {
+        Logger::getInstance()->logError("liftChain(%.2f) ignored: no lift attached", id);
+        return false;
+    }
+    return m_lift->run_lift_chain(id);
+}
+
+bool Robot::liftChain(const char *name)
+{
+    if (!m_lift)
+    {
+        Logger::getInstance()->logError("liftChain('%s') ignored: no lift attached",
+                                        name ? name : "(null)");
+        return false;
+    }
+    return m_lift->run_lift_chain(name);
 }
 
 bool Robot::liftBusy() const
@@ -487,6 +634,13 @@ bool Robot::waitForLift(uint32_t timeout_ms)
         if (m_localization)
         {
             m_localization->update();
+        }
+        // The intake for the same reason: a prime waited on here is exactly when its
+        // assist feed should be running, and nothing else is ticking it during the wait.
+        if (m_intake)
+        {
+            m_intake->set_assist_feed(m_lift->is_priming_from_rest());
+            m_intake->update();
         }
 
         // Checked AFTER the first update() so the settle test reads targets the lift
