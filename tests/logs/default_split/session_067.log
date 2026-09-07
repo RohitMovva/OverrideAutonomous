@@ -1,5 +1,0 @@
-[00:00:00.021] [LOG] Robot initialized
-[00:00:29.384] [LOG] Program type: autonomous
-[00:00:29.384] [LOG] Starting autonomous
-[00:00:29.384] [LOG] Starting trajectory following
-[00:00:29.384] [ERROR] Trajectory is empty, cannot follow
