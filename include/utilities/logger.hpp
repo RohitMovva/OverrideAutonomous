@@ -68,9 +68,11 @@
      Logger();
  
      /**
-      * @brief Generates a unique filename based on current timestamp
+      * @brief Picks this boot's log file name (one file per boot)
       * 
-      * Creates a filename in the format: /usd/robot_log_YYYYMMDD_HHMMSS.txt
+      * One file per boot: /usd/logs/boot_NNNN.txt (or /usd/boot_NNNN.txt when the
+      * card has no logs folder), numbered after the highest boot already on the
+      * card. The brain has no clock, so a date-based name is not possible.
       */
      void generateLogFilename();
  
@@ -98,10 +100,16 @@
      void processLogQueue();
 
      /**
-      * @brief Format one message with its timestamp and write+flush it to file.
-      *        Called only from the logging task (single writer).
+      * @brief Format one message with its timestamp and write it to file (no flush;
+      *        processLogQueue flushes per batch). Called only from the logging task.
       */
      void writeMessage(const LogMessage& msg);
+
+     /// fflush the log file under the SD lock. Logging task only.
+     void flushFile();
+
+     /// Longest the logging task goes without a flush while draining a backlog (ms)
+     static constexpr uint32_t FLUSH_INTERVAL_MS = 100;
 
      /**
       * @brief Adds a message to the logging queue

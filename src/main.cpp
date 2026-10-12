@@ -1,6 +1,60 @@
 #include "main.h"
 #include <malloc.h>  // mallinfo() — heap-usage diagnostics (temporary)
+#include <array>
 #include <cmath>
+
+// LLEMU debug lines. Any task may format them; only LVGL's own task draws them.
+// PROS builds LVGL with LV_OS_NONE, so lv_lock() is a no-op and llemu's lcd_print
+// calls LVGL with no lock at all. Printing straight from opcontrol() raced the
+// display task's redraw of the route selector page as it was hidden, and froze
+// driver control on its first tick (boots 0323, 0325-0328, 0330, 0331).
+static constexpr int LCD_DEBUG_LINES = 8;
+static pros::Mutex lcd_debug_mutex;
+static std::array<std::string, LCD_DEBUG_LINES> lcd_debug_text;
+static std::array<bool, LCD_DEBUG_LINES> lcd_debug_dirty{};
+
+/// Queue a formatted LLEMU line; drawn on LVGL's task by lcdDebugTick()
+__attribute__((format(printf, 2, 3)))
+static void lcdDebugPrint(int line, const char *format, ...)
+{
+    if (line < 0 || line >= LCD_DEBUG_LINES)
+        return;
+    char buffer[64];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+    lcd_debug_mutex.take();
+    if (lcd_debug_text[line] != buffer)
+    {
+        lcd_debug_text[line] = buffer;
+        lcd_debug_dirty[line] = true;
+    }
+    lcd_debug_mutex.give();
+}
+
+/// lv_timer callback: runs on LVGL's task, the only place llemu is safe to call
+static void lcdDebugTick(lv_timer_t *)
+{
+    std::array<std::string, LCD_DEBUG_LINES> text;
+    std::array<bool, LCD_DEBUG_LINES> dirty{};
+    // Try-lock only, so a writer can never stall the display
+    if (!lcd_debug_mutex.take(5))
+        return;
+    for (int i = 0; i < LCD_DEBUG_LINES; ++i)
+    {
+        if (lcd_debug_dirty[i])
+            text[i] = lcd_debug_text[i];
+        dirty[i] = lcd_debug_dirty[i];
+        lcd_debug_dirty[i] = false;
+    }
+    lcd_debug_mutex.give();
+    for (int i = 0; i < LCD_DEBUG_LINES; ++i)
+    {
+        if (dirty[i])
+            pros::lcd::set_text(i, text[i]);
+    }
+}
 
 /// Tare the drive encoders and wait for them to report zero/timeout
 static bool tareDriveEncodersBlocking(pros::MotorGroup &left, pros::MotorGroup &right,
@@ -35,64 +89,84 @@ static bool tareDriveEncodersBlocking(pros::MotorGroup &left, pros::MotorGroup &
 // Robot config
 bool skills = false;
 pros::Controller master(pros::E_CONTROLLER_MASTER);
-pros::MotorGroup left_mg({-18, 19});
-pros::MotorGroup right_mg({15, -9});
-pros::MotorGroup intake_motors({-20});
-pros::MotorGroup winch_motors({-16, 17});
-pros::Motor chainbar_motor(-10, pros::v5::MotorGears::red);
-pros::Rotation chainbar_rotation(11);
-pros::Motor chain_motor(-13, pros::v5::MotorGears::green);
-pros::Rotation chain_rotation(1);
+pros::MotorGroup left_mg({-14, -16});
+pros::MotorGroup right_mg({12, 15});
 
-pros::Optical color_sort_os(21);
-pros::Distance color_sort_ds(10);
-pros::Distance left_distance_sensor(3);
-pros::Distance right_distance_sensor(5);
-pros::Distance front_distance_sensor(16);
+pros::MotorGroup pto_motors({-18, -19, 17});                     ///< shared lift / intake power (all 3)
+pros::Rotation lift_winch_rotation(13);                          ///< on the winch axle; lift height reference (PLACEHOLDER port)
+pros::Motor lift_claw_motor(7, pros::v5::MotorGears::green);    ///< claw open/close (Lift::CLAW_DIRECTION)
 
-DistanceResetOdometry::DistanceSensor left_sensor(&left_distance_sensor, 5.9272, 0);
-DistanceResetOdometry::DistanceSensor right_sensor(&right_distance_sensor, 6.3209, 0);
-DistanceResetOdometry::DistanceSensor front_sensor(&front_distance_sensor, 2.8, -4.5);
+EnhancedDigitalOut sunroof_solenoid(5, false);
+EnhancedDigitalOut pto_solenoid(3, false);
+EnhancedDigitalOut intake_lift_solenoid(2, false);
+EnhancedDigitalOut sticks(1, false);
+pros::Distance intake_distance_sensor(16);     ///< watches for a piece under the raised intake
+pros::Distance lift_tower_distance_sensor(3); ///< on the end effector, sees the tower while scoring
+pros::Distance lift_loader_distance_sensor(4); ///< sees a piece in the match loader while the lift waits in MATCHLOAD
+pros::Optical roller_optical(2);                ///< reads the field roller colour
+pros::Rotation roller_rotation(9);              ///< on the roller axle; roll-boundary reference
 
-EnhancedDigitalOut claw(8, false);   // single open/1close claw solenoid; PLACEHOLDER ADI port
-EnhancedDigitalOut flipper(3, false);
-EnhancedDigitalOut bobby_wheel(7, false);
+// Wall-reset distance sensors (DistanceResetOdometry). TUNE ports and offsets here.
+// Offsets are in inches from the tracking centre to the sensor face, measured relative
+// to each sensor's beam (see DistanceResetOdometry::DistanceSensor):
+//   ALONG  = along the beam, positive toward the wall (face outside the centre)
+//   ACROSS = across the beam, positive to the beam's RIGHT when looking along it
+// Gates and wall position live in config.hpp (DISTANCE_RESET_*).
+// 2026-10-09: the tracking centre moved 1.75 in back with the single-traction rebuild
+// (config.hpp, LATERAL_WHEEL_OFFSET), so every sensor sits 1.75 in further forward of it:
+// front ALONG 3 -> 4.75, left ACROSS 1 -> 2.75 (its beam's right is forward), right ACROSS
+// -2 -> -3.75 (its beam's right is backward). Keep make_suite.py RESET_SENSORS in step.
+constexpr int FRONT_DISTANCE_PORT = 11;
+constexpr double FRONT_DISTANCE_ALONG = 4.75;
+constexpr double FRONT_DISTANCE_ACROSS = 5.75; ///< 5.75 in to the robot's right
 
-PIDController winch_pid(300, 0, 0, -12000, 12000, 50.0, 0.3);
+constexpr int LEFT_DISTANCE_PORT = 8;
+constexpr double LEFT_DISTANCE_ALONG = 5.5;
+constexpr double LEFT_DISTANCE_ACROSS = 2.75;
 
-// kD is the bar's only source of deceleration BEFORE it reaches a target. With
-// kD=0 the return sweep could brake only by overshooting (P * how far past it
-// already was), so it crossed the low-zone gate at 560 deg/s and took 36 deg to
-// stop -- inside the clearance zone the gate exists to keep it out of, and hard
-// enough to recoil the mechanism backwards (log 07262026, 09.58-09.93). At kD=10
-// that same 560 deg/s contributes -5600 mV of braking while the bar is still
-// short of the target. TUNE: raise if it still overruns, lower if the sweep gets
-// sluggish or buzzes -- Lift feeds it the 50 ms windowed rate (9 the velocity
-// ERROR on profiled moves), so there is real phase lag to respect.
-PIDController chainbar_pid(200, 60, 10, -12000, 12000, 100.0, 0.3, 10.0);
+constexpr int RIGHT_DISTANCE_PORT = 1;
+constexpr double RIGHT_DISTANCE_ALONG = 6.0;
+constexpr double RIGHT_DISTANCE_ACROSS = -3.75;
 
-PIDController chain_pid(120, 20, 6, -12000, 12000, 50.0, 0.3);
-Lift lift(winch_motors, chainbar_motor, chainbar_rotation, chain_motor, chain_rotation,
-          claw, winch_pid, chainbar_pid, chain_pid);
-Intake intake(intake_motors, color_sort_os, color_sort_ds);
+pros::Distance front_distance_sensor(FRONT_DISTANCE_PORT);
+pros::Distance left_distance_sensor(LEFT_DISTANCE_PORT);
+pros::Distance right_distance_sensor(RIGHT_DISTANCE_PORT);
+
+DistanceResetOdometry::DistanceSensor front_sensor(&front_distance_sensor, FRONT_DISTANCE_ALONG, FRONT_DISTANCE_ACROSS);
+DistanceResetOdometry::DistanceSensor left_sensor(&left_distance_sensor, LEFT_DISTANCE_ALONG, LEFT_DISTANCE_ACROSS);
+DistanceResetOdometry::DistanceSensor right_sensor(&right_distance_sensor, RIGHT_DISTANCE_ALONG, RIGHT_DISTANCE_ACROSS);
+
+Pto pto(pto_motors, pto_solenoid, Pto::Mode::LIFT);
+Lift lift(lift_winch_rotation, lift_claw_motor, lift_tower_distance_sensor,
+          lift_loader_distance_sensor, pto);
+Intake intake(pto, intake_lift_solenoid, intake_distance_sensor);
+RollerMech roller_mech(pto, roller_optical, roller_rotation);
 
 Trajectory trajectory;
 Trajectory goal_to_matchloader;
 Trajectory low_goal;
 
-pros::Imu imu_sensor(12);
+pros::Imu imu_sensor(20);
 
 Logger *logger = Logger::getInstance();
 
-pros::Rotation side_encoder(5);
+// Tracking wheels (Odometry). PLACEHOLDER ports and directions: a negative port reverses
+// the sensor. Pushing the robot forward must raise vertical_encoder and pushing it to
+// its left must raise lateral_encoder; test_tracking_wheel_directions flags a reversed
+// one from any log. Diameters and offsets are in config.hpp.
+pros::Rotation vertical_encoder(6); ///< 2 in forward/back wheel, on the tracking centre line
+pros::Rotation lateral_encoder(-5);  ///< 2.75 in sideways wheel, ~3 in in front of the tracking centre
 
 std::string program_type = "autonomous";
 
 // Routes
 
 std::vector<std::vector<double>> route;
-// std::string route_name = "";
-std::string route_name = "threepin";
+// Default route when the card has no saved choice yet. The brain-screen selector
+// (RouteSelector) lists /usd/routes and remembers the last pick in
+// /usd/route_select.txt, so this is only a first-boot fallback.
+std::string route_name = "turn_test";
+RouteSelector route_selector(trajectory);
 // std::vector< std::string > routes = std::vector< std::string >{"skills8.1", "skills8.2"};
 std::vector<std::string> routes;
 std::vector<Trajectory> trajectories;
@@ -118,6 +192,7 @@ void initialize()
                 mallinfo().uordblks);
 
     pros::lcd::initialize();
+    lv_timer_create(lcdDebugTick, 100, nullptr);
     logger->log("init: lcd::initialize done, usedHeap=%d", mallinfo().uordblks);
     logger->flush();  // persist each step before the next, so a crash pins the spot
     // pros::lcd::clear()
@@ -136,22 +211,33 @@ void initialize()
     }
     logger->flush();
 
+    // Rotation sensors default to a 20 ms data rate, so at the 10 ms odometry tick the
+    // tracking wheels alternated between a stale zero and a two-tick jump (boot 989).
+    vertical_encoder.set_data_rate(5);
+    lateral_encoder.set_data_rate(5);
+
     imu_sensor.reset();
     logger->log("init: imu.reset issued, usedHeap=%d", mallinfo().uordblks);
     logger->flush();
 
     lift.initialize();
-    
+    roller_mech.set_target_color(RollerMech::Color::BLUE); // TODO: pick from alliance selector
+
     logger->log("init: lift.initialize done, usedHeap=%d", mallinfo().uordblks);
     logger->flush();
 
-    bobby_wheel.set_value(true);
-
     DistanceResetOdometry::DistanceSensors distance_sensors = {front_sensor, nullptr, left_sensor, right_sensor};
 
+    // create() returns nullptr, rather than failing to compile, when the arguments match
+    // no constructor. Pin the arguments below to DistanceResetOdometry's signature.
+    static_assert(std::is_constructible_v<DistanceResetOdometry,
+                                          pros::MotorGroup &, pros::MotorGroup &,
+                                          pros::Rotation &, pros::Rotation &, pros::Imu &,
+                                          DistanceResetOdometry::DistanceSensors &, bool, bool>,
+                  "LocalizationManager::create arguments no longer match DistanceResetOdometry");
     auto localization = LocalizationManager::create(
         LocalizationType::DISTANCE_RESET_ODOMETRY,
-        left_mg, right_mg, side_encoder, imu_sensor, distance_sensors,
+        left_mg, right_mg, vertical_encoder, lateral_encoder, imu_sensor, distance_sensors,
         false, true
     );
     logger->log("init: localization created, usedHeap=%d", mallinfo().uordblks);
@@ -166,14 +252,14 @@ void initialize()
         Config::KS_ANGULAR, Config::KV_ANGULAR,
         Config::KA_DECEL);
 
-    robot = new Robot(&left_mg, &right_mg, &imu_sensor, &master, drive_controller, ramsete_controller, std::move(localization), &intake, &lift);
+    robot = new Robot(&left_mg, &right_mg, &imu_sensor, &master, drive_controller, ramsete_controller, std::move(localization), &intake, &lift, &roller_mech);
     logger->log("init: robot created, usedHeap=%d", mallinfo().uordblks);
     logger->flush();
 
     pros::delay(5);
-    trajectory.loadFromFile("/usd/routes/" + route_name + ".txt");
-    logger->log("init: trajectory '%s' loaded size=%d, usedHeap=%d",
-                route_name.c_str(), trajectory.size(), mallinfo().uordblks);
+    route_selector.initialize(route_name);
+    logger->log("init: route selector up, selected '%s', usedHeap=%d",
+                route_selector.selected().c_str(), mallinfo().uordblks);
     logger->flush();
     // trajectory.loadFromVector();
     // if (trajectory.empty())
@@ -192,7 +278,11 @@ void initialize()
  * the robot is enabled, this task will exit.
  */
 void disabled() {
-    lift.open_claw();
+    lift.stop();
+    intake.set_state(0);
+    intake.lower_lift();
+    // Back to the route picker between runs (opcontrol hides it).
+    route_selector.show();
 }
 
 /**
@@ -206,6 +296,7 @@ void disabled() {
  */
 void competition_initialize()
 {
+    route_selector.show();
 }
 
 /**
@@ -223,12 +314,23 @@ void autonomous()
 {
     logger->log("Program type: %s", program_type.c_str());
 
+    // The roller only runs where the route enables it (action slot `roller`), and may
+    // shift the PTO itself since no driver is running the intake to do it.
+    roller_mech.set_enabled(false);
+    roller_mech.set_shifts_pto(true);
+
     if (program_type == "autonomous")
     {
         logger->log("Starting autonomous");
 
         if (trajectories.size() == 0){
-            robot->followTrajectory(trajectory);
+            // Runs whatever the brain-screen selector has loaded; a selection made
+            // during the run is picked up after it.
+            if (route_selector.prepareForRun())
+            {
+                robot->followTrajectory(trajectory);
+            }
+            route_selector.finishRun();
         } else {
             robot->followTrajectories(trajectories);
         }
@@ -252,8 +354,12 @@ void autonomous()
  */
 void opcontrol()
 {
-    bobby_wheel.set_value(false);
     double drivetrain_slow = 0.5;
+    // Uncover the LLEMU debug lines the loop below prints to.
+    route_selector.hide();
+    // Driver control: always armed, but never shifts the PTO (autonomous changes both)
+    roller_mech.set_enabled(true);
+    roller_mech.set_shifts_pto(false);
     left_mg.set_brake_mode_all(MOTOR_BRAKE_COAST);
     right_mg.set_brake_mode_all(MOTOR_BRAKE_COAST);
     long long count = 0;
@@ -267,17 +373,6 @@ void opcontrol()
     logger->log("=== OPCONTROL START (diagnostic build) === usedHeap=%d",
                 mallinfo().uordblks);
 
-    if (lift.needs_startup())
-    {
-        logger->log("opcontrol: lift untouched by auton -> leaving it in STARTUP "
-                    "(matchload / back_prime move there directly)");
-        // lift.start_to_loading();
-    }
-    else
-    {
-        logger->log("opcontrol: lift already moved -> skipping start_to_loading()");
-    }
-
     while (true)
     {
         uint32_t iter_start = pros::millis();
@@ -285,8 +380,7 @@ void opcontrol()
         last_loop_ms = iter_start;
         if (period > worst_period_ms)
             worst_period_ms = period;
-        // Nominal period is ~10 ms; flag any single stalled iteration the instant
-        // it happens so the log's last line lands near the freeze.
+        // Check to see if anything is blocking
         if (period > 30)
             logger->log("LOOP STALL: period=%u ms at count=%lld usedHeap=%d",
                         period, count, mallinfo().uordblks);
@@ -300,21 +394,35 @@ void opcontrol()
             worst_work_ms = 0;
         }
 
-        // Sampled here too, not just in auton. Motors keep heating while the robot is
-        // driven back to the start between runs, so the driver period is where a session's
-        // heat soak actually accumulates -- and a derate that only shows up by run 8 is
-        // invisible if the log starts over at every autonomous().
         if (robot)
             robot->logDriveHealth("driver");
 
         // Update the LCD at ~4 Hz
         if (count % 25 == 0)
-            pros::lcd::print(1, "count: %lld", count);
+        {
+            lcdDebugPrint(1, "count: %lld", count);
+            lcdDebugPrint(2, "Lift %s / %s", Lift::state_name(lift.state()), Lift::mode_name(lift.mode()));
+            lcdDebugPrint(3, "winch %.1f  claw %s %.0f deg %d mV", lift.get_position(),
+                          Lift::clamp_name(lift.clamp_target()), lift.get_claw_position(),
+                          lift.last_claw_mv());
+            lcdDebugPrint(4, "tower %d  loader %d mm  home=%d max=%d", lift.get_tower_distance_mm(),
+                          lift.get_loader_distance_mm(), lift.is_home() ? 1 : 0, lift.is_at_max_height() ? 1 : 0);
+            lcdDebugPrint(5, "PTO %s  intake st=%d lift=%d", pto.mode() == Pto::Mode::LIFT ? "LIFT" : "INTAKE",
+                          intake.get_state(), intake.is_lifted() ? 1 : 0);
+            // Commanded = what the code sent; measured = what the motors report back
+            lcdDebugPrint(6, "cmd mV: winch %d  pto %d", lift.last_winch_mv(), pto.last_command_mv());
+            {
+                const auto pto_v = pto_motors.get_voltage_all();
+                lcdDebugPrint(7, "meas mV pto: %d %d %d",
+                              pto_v.size() > 0 ? pto_v[0] : 0, pto_v.size() > 1 ? pto_v[1] : 0,
+                              pto_v.size() > 2 ? pto_v[2] : 0);
+            }
+        }
         ++count;
         left_mg.move(master.get_analog(ANALOG_LEFT_Y));
         right_mg.move(master.get_analog(ANALOG_RIGHT_Y));
 
-        
+        // ------------- INTAKE: R1 tap toggles intake, R1 hold outtakes -------------
         if (master.get_digital(DIGITAL_R1))
         {
             intake_pressed_dur += 10;
@@ -323,78 +431,62 @@ void opcontrol()
         }
         else
         {
-            if (intake_pressed_dur > 0 && intake_pressed_dur < 150)
+            if (intake_pressed_dur > 0 && intake_pressed_dur < 300)
                 intaking = !intaking; // it was a tap -> flip the toggle
             // On any release (tap or after a hold) settle back to the toggle state.
             if (intake_pressed_dur > 0)
                 intake_state = intaking ? 1 : 0;
             intake_pressed_dur = 0;
         }
-        intake.set_state(intake_state);
-        // While the lift pulls a piece out of the intake on its way to primed, feed it
-        // gently forward so the piece stays pressed into the claw. An override, so the
-        // driver's toggle above is untouched and comes straight back when the prime ends.
-        intake.set_assist_feed(lift.is_priming_from_rest());
 
+        // Intake raise. Will drop itself once the distance sensor sees a stack come through
+        if (master.get_digital_new_press(DIGITAL_R2))
+            intake.raise_lift();
 
+        // ------------- LIFT: L1 hold = up, L2 hold = down, Y = score macro -------------
         if (master.get_digital(DIGITAL_L1))
-        {
-            lift.move_lift_up();
-        }
-            
+            lift.move_up();
         if (master.get_digital(DIGITAL_L2))
-        {
-            lift.move_lift_down();
-        }
-
+            lift.hold_down();
+        if (master.get_digital_new_press(DIGITAL_Y))
+            lift.score();
         if (master.get_digital_new_press(DIGITAL_B))
-        {
-            lift.back_prime();
-        }
-        else if (master.get_digital_new_press(DIGITAL_R2))
-        {
-            lift.toggle_matchload();
-        }
-        else if (master.get_digital_new_press(DIGITAL_Y))
-        {
-            lift.return_to_loading();
-        }
-        else if (master.get_digital_new_press(DIGITAL_DOWN))
-        {
-            if (lift.is_matchloading())
-                lift.open_claw();
-            else
-                lift.score();
+            lift.matchload();
+
+        if (master.get_digital_new_press(DIGITAL_DOWN))
+            sticks.toggle();
+            
+        if (master.get_digital_new_press(DIGITAL_RIGHT)){
+            sunroof_solenoid.toggle();
         }
 
-        else if (master.get_digital_new_press(DIGITAL_RIGHT))
+        // Motors shared by PTO so winch takes priority if moving. Commanding the lift
+        // cancels the intake outright rather than just pausing it: the driver asked for
+        // the lift, so releasing L1 must leave the intake stopped instead of handing the
+        // PTO back and spinning it up again underneath them. R1 is likewise dead while
+        // the lift holds the PTO -- the toggle is cleared again on the next tick.
+        if (lift.wants_pto())
         {
-            lift.toggle_scoring_orientation();
+            intaking = false;
+            intake_state = 0;
         }
-
-        else if (master.get_digital_new_press(DIGITAL_LEFT))
-        {
-            lift.bar_pose();
-        }
-
-        if (master.get_digital_new_press(DIGITAL_A)){
-            lift.open_claw();
-        }
-
-        if (master.get_digital_new_press(DIGITAL_UP)){
-            lift.toggle_kill_switch();
-        }
+        intake.set_state(intake_state);
+        // wants_pto(), not is_busy(): move_up()/hold_down() above only set a flag, so on
+        // the tick the button is first read is_busy() is still false and the intake would
+        // get one more full-voltage tick on the shared motors before the lift shifts.
+        intake.set_inhibited(lift.wants_pto());
+        // Roller mech is lowest priority
+        roller_mech.set_inhibited(lift.wants_pto() || intake.get_state() != 0);
 
         intake.update();
+        roller_mech.update();
         lift.update();
 
-        // Work time this iteration (excludes the 10 ms sleep). A blocking device
-        // read or SD stall shows up here as a spike even if the period looks fine.
+        // Work time this iteration (excludes the 10 ms sleep)
         uint32_t work_ms = pros::millis() - iter_start;
         if (work_ms > worst_work_ms)
             worst_work_ms = work_ms;
 
         pros::delay(10);
-        // ------------- END MATCH DRIVER CONTROLS --------------------
     }
 }

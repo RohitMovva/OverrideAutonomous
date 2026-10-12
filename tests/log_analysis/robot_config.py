@@ -186,3 +186,50 @@ def drive_port(side: str, index: int) -> int | None:
     """The signed smart port for a side's Nth drive motor, or None if unknown."""
     seq = DRIVE_PORTS.get(side, [])
     return seq[index] if 0 <= index < len(seq) else None
+
+
+# ------------------------------------------------------- wall-reset sensors
+
+#: Beam direction of each wall-reset sensor relative to the robot's heading, degrees
+#: CCW. Fixed by DistanceResetOdometry::resetFront/Back/Left/Right.
+RESET_SENSOR_ANGLES = {"front": 0.0, "back": 180.0, "left": 90.0, "right": 270.0}
+
+_SENSOR_OFFSET_RE = re.compile(
+    r"constexpr\s+double\s+(FRONT|BACK|LEFT|RIGHT)_DISTANCE_(ALONG|ACROSS)\s*=\s*([^;]+);")
+
+
+def _load_reset_sensors() -> dict[str, tuple[float, float, float]]:
+    """{name: (beam angle deg, along in, across in)} for the sensors main.cpp defines.
+
+    Offsets are the DistanceResetOdometry::DistanceSensor ones: ALONG the beam from the
+    tracking centre to the face, ACROSS positive to the beam's right. Parsed from
+    main.cpp so a re-measured mount cannot leave the analysis on stale geometry.
+    """
+    try:
+        text = _MAIN_CPP.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {}
+    found: dict[str, dict[str, float]] = {}
+    for name, kind, expr in _SENSOR_OFFSET_RE.findall(text):
+        val = _evaluate(expr)
+        if val is not None:
+            found.setdefault(name.lower(), {})[kind] = val
+    return {name: (RESET_SENSOR_ANGLES[name], d.get("ALONG", 0.0), d.get("ACROSS", 0.0))
+            for name, d in found.items()}
+
+
+#: See _load_reset_sensors(). Empty if main.cpp cannot be read.
+RESET_SENSORS = _load_reset_sensors()
+
+#: Config::DISTANCE_RESET_WALL_POSITION: field centre to wall face (in).
+WALL_POSITION = _C.get("DISTANCE_RESET_WALL_POSITION", 70.25)
+
+#: Config::LATERAL_WHEEL_OFFSET / VERTICAL_WHEEL_OFFSET: tracking wheels' offsets from the
+#: pivot (in; lateral +forward, vertical +left). Checked by metrics.tracking_wheel_offsets.
+LATERAL_WHEEL_OFFSET = _C.get("LATERAL_WHEEL_OFFSET", 0.0)
+VERTICAL_WHEEL_OFFSET = _C.get("VERTICAL_WHEEL_OFFSET", 0.0)
+#: Config::KS_ANGULAR / KV_ANGULAR: the turning-scrub feedforward metrics.spin_scrub fits.
+KS_ANGULAR = _C.get("KS_ANGULAR", 0.0)
+KV_ANGULAR = _C.get("KV_ANGULAR", 0.0)
+#: Config::DISTANCE_RESET_MAX_BEAM_ANGLE_DEG: widest beam angle a reset accepts.
+MAX_BEAM_ANGLE_DEG = _C.get("DISTANCE_RESET_MAX_BEAM_ANGLE_DEG", 20.0)

@@ -14,6 +14,7 @@
 
 #include "hardware/intake.hpp"
 #include "hardware/lift.hpp"
+#include "hardware/roller_mech.hpp"
 
 #include "controllers/ramsete_controller.hpp"
 #include "controllers/drivetrain_controller.hpp"
@@ -51,9 +52,24 @@ private:
 
     bool m_feedbackEnabled;
 
+    /// A wait_lift action point is holding followTrajectory() at the current sample
+    /// until liftWaitDone() (or LIFT_WAIT_TIMEOUT_MS).
+    bool m_liftWaitPending = false;
+    uint32_t m_liftWaitStartMs = 0;              ///< pros::millis() when the hold began
+    /// Wall resets on a point that starts a wait_lift hold: done during the hold, once
+    /// the robot is still (Robot::retryPendingResets); bits are RESET_PENDING_*.
+    /// Dropped when the hold ends.
+    uint8_t m_pendingResets = 0;
+    /// Last sample followTrajectory() drove to; the hold keeps driving to it at rest
+    std::optional<TrajectoryPoint> m_lastTrajectoryPoint;
+
 
     Intake *m_intake;         ///< Intake class w/ color sorting
-    Lift *m_lift;             ///< Lift / chainbar / end-effector mechanism
+    Lift *m_lift;             ///< Lift + end effector (shares the PTO with the intake)
+    RollerMech *m_roller;     ///< Field roller spinner (lowest PTO priority); may be null
+
+    /// Tick the roller mech, inhibited while the lift wants the PTO or the intake runs
+    void updateRoller();
 
     /**
      * @brief Process a trajectory point from the trajectory
@@ -66,6 +82,12 @@ private:
      * @param ap Action point containing actions to execute
      */
     void processAction(const ActionPoint &ap);
+
+    /// Run m_pendingResets once the robot is still; called each tick of a wait_lift hold
+    void retryPendingResets();
+
+    /// Log and drop any m_pendingResets left when a hold ends
+    void dropPendingResets(const char *why);
 
 public:
     /**
@@ -89,6 +111,8 @@ public:
      * @param intake Pointer to the intake subsystem
      * @param lift Pointer to the lift subsystem. Robot ticks its update() during
      *             trajectory following, so the lift is live in autonomous.
+     * @param roller Pointer to the roller mech, or null for none. Ticked alongside the
+     *             intake; a route turns it on and off with its `roller` action slot.
      *
      * @pre All pointer parameters must be valid and properly initialized
      * @post Robot is fully initialized and ready for autonomous operation
@@ -103,7 +127,8 @@ public:
           RamseteController *ramseteController,
           std::unique_ptr<ILocalization> localization,
           Intake *intake,
-          Lift *lift);
+          Lift *lift,
+          RollerMech *roller = nullptr);
 
     /**
      * @brief Destructor for Robot class
@@ -222,59 +247,22 @@ public:
 
     // ---- Lift ---------------------------------------------------------------
     //
-    // Autonomous drives the lift through these. Both commands are NON-BLOCKING: they
-    // arm the move and return, and the lift advances one step per followTrajectory()
-    // tick -- so the mechanism can be moving to a scoring pose while the robot is still
-    // driving to it. Use waitForLift() where the two must be sequenced.
+    // Autonomous drives the lift from action points (Robot::processAction). Commands are
+    // NON-BLOCKING: they arm the move and the lift advances one step per followTrajectory()
+    // tick. Use waitForLift() where lift and drive must be sequenced.
     //
     // Between trajectories nothing is ticking the lift, so a command issued there does
     // not start moving until the next followTrajectory() or waitForLift().
 
-    /**
-     * @brief Run a lift macro by name (@ref Lift::run_macro).
-     * @param side FRONT or BACK; selects the front/back variant where one exists
-     * @param key  "prime", "matchload", "score", "return", "return_matchload",
-     *             "claw", "flip", "up", "down"
-     * @return false if the lift is not attached or the key is unknown (both logged)
-     */
-    bool liftMacro(Lift::Side side, const char *key);
-
-    /**
-     * @brief Send the lift to a named pose (@ref Lift::run_lift_state).
-     *
-     * The state carries the CLAW as well as the three angles, and it is commanded
-     * before the move starts -- so a state whose claw is open releases immediately.
-     *
-     * @param side which lift-state table to search
-     * @param key  a key from Lift::FRONT_LIFT_STATES / Lift::BACK_LIFT_STATES
-     * @return false if the lift is not attached, the key is unknown, or the lift is
-     *         still in its power-on startup choreography (all logged)
-     */
-    bool liftState(Lift::Side side, const char *key);
-
-    /**
-     * @brief Run a scripted sequence of lift states (@ref Lift::run_lift_chain).
-     *
-     * Non-blocking: the chain plays out inside Lift::update(), so the drivetrain keeps
-     * following the trajectory while it runs. An action point selects one of these by
-     * passing a value in the chain band (|value| >= Lift::LIFT_CHAIN_ID_MIN_ABS) as its
-     * lift_state parameter -- see Robot::processAction
-     *
-     * @param id a Lift::LiftChain::id from Lift::LIFT_CHAINS
-     * @return false if the lift is not attached or no chain has that id (both logged)
-     */
-    bool liftChain(double id);
-
-    /// @copydoc liftChain(double)
-    /// @param name a Lift::LiftChain::name from Lift::LIFT_CHAINS
-    bool liftChain(const char *name);
-
-    /// True while a lift choreography is still playing out. A running CHAIN counts for
-    /// its whole run, dwells between steps included
+    /// True while the lift is moving (raising, slewing to a stop, or returning home)
     bool liftBusy() const;
 
     /// True when the lift is on its target and nothing is in flight.
     bool liftSettled() const;
+
+    /// True when a wait_lift hold is over: a score once its pose is set
+    /// (Lift::score_released), anything else once the lift settles.
+    bool liftWaitDone() const;
 
     /**
      * @brief Block until the lift settles, ticking it at Config::DT.

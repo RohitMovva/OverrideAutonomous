@@ -76,6 +76,13 @@ class ControlTick:
     right_positions: list[float] | None = None
     cum_left: float | None = None           # cumulative avg position (inches)
     cum_right: float | None = None
+    # Raw wall-reset sensor readings this tick, mm ("DISTREAD" line; -1 no sensor,
+    # 9999 no object). Only in logs from firmware that logs them every tick.
+    distance_mm: dict[str, int] | None = None
+    # Tracking wheels this tick ("TRACKWHEEL" line, Odometry::update): vert/lat absolute
+    # inches, dvert/dlat this tick's deltas (nan when unusable), ddrive the drive-encoder
+    # forward delta, vok/lok 1 when the wheel was used. Absent from older logs.
+    tracking_wheel: dict[str, float] | None = None
 
     def numeric_fields(self):
         for name in ("left_vel_setpoint", "left_vel_actual",
@@ -97,7 +104,9 @@ class DistanceReset:
     t: float
     tick_index: int          # index into run.ticks of the last tick before reset
     sensor_reading_in: float | None = None
-    reset_axis: str | None = None    # 'x' or 'y' (unknown from log; left None)
+    reset_axis: str | None = None    # 'x' or 'y', from the "resettingX:" line
+    correction_in: float | None = None   # what the firmware computed (applied or not)
+    applied: bool = False            # False when a gate after the correction line refused it
 
 
 @dataclass
@@ -112,6 +121,9 @@ class Run:
     # that line was added. Without it there is no way to know which constants a
     # log ran with, so a mismatch against today's config.hpp is unattributable.
     build_config: dict[str, float] = field(default_factory=dict)
+    # Route the run followed: the last "trajectory '<folder/name>' loaded" before it
+    # (initialize or the route selector). None for logs from before that line existed.
+    route: str | None = None
     ticks: list[ControlTick] = field(default_factory=list)
     actions: list[float] = field(default_factory=list)   # timestamps of action points
     resets: list[DistanceReset] = field(default_factory=list)
@@ -150,6 +162,11 @@ _PATTERNS = {
     "positions_r": re.compile(rf"^Right Positions: ((?:{FLOAT}[ ]?)+)$"),
     "cum_pos": re.compile(rf"^Left: ({FLOAT}), Right: ({FLOAT})$"),
     "build_config": re.compile(r"^Build config: (.*)$"),
+    "route_loaded": re.compile(r"trajectory '([^']*)' loaded"),
+    "trackwheel": re.compile(r"^TRACKWHEEL (.*)$"),
+    "distread": re.compile(r"^DISTREAD front=(-?\d+) back=(-?\d+) left=(-?\d+) right=(-?\d+)$"),
+    "reset_result": re.compile(
+        rf"^resettingX: (\d), wallSign: {FLOAT}, wallToCenter: {FLOAT}, correction: ({FLOAT})$"),
 }
 
 _KV_PAIR = re.compile(rf"(\w+)=({FLOAT})")
@@ -163,6 +180,7 @@ def parse_log(path: str | Path) -> list[Session]:
     tick: ControlTick | None = None
     pending_reset = False
     pending_build: dict = {}
+    pending_route: str | None = None
     # Odometry logs its lines (IMU Heading, Heading, positions, Delta theta)
     # BEFORE processTrajectory logs Pose for the same iteration, so buffer them
     # and attach to the tick the next Pose line creates.
@@ -176,6 +194,13 @@ def parse_log(path: str | Path) -> list[Session]:
             h, mnt, s, ms, level, msg = m.groups()
             t = int(h) * 3600 + int(mnt) * 60 + int(s) + int(ms) / 1000.0
 
+            # Before the session check: initialize() loads the first route before it
+            # logs "Robot initialized".
+            pm = _PATTERNS["route_loaded"].search(msg)
+            if pm:
+                pending_route = pm.group(1)
+                continue
+
             if msg == "Robot initialized":
                 session = Session(t_start=t)
                 sessions.append(session)
@@ -187,6 +212,10 @@ def parse_log(path: str | Path) -> list[Session]:
 
             if level == "WARNING":
                 (run.warnings if run else session.warnings).append((t, msg))
+                # The one gate after the "resettingX:" line
+                if run and run.resets and msg.startswith("Distance reset rejected:") \
+                        and "correction" in msg:
+                    run.resets[-1].applied = False
                 continue
             if level == "ERROR":
                 (run.errors if run else session.errors).append((t, msg))
@@ -204,7 +233,8 @@ def parse_log(path: str | Path) -> list[Session]:
                 run = Run(t_start=t,
                           label=f"s{len(sessions)-1}r{len(session.runs)}",
                           initial_pose=tuple(parse_float(x) for x in pm.groups()),
-                          build_config=dict(pending_build))
+                          build_config=dict(pending_build),
+                          route=pending_route)
                 session.runs.append(run)
                 tick = None
                 pending_odo = {}
@@ -223,6 +253,16 @@ def parse_log(path: str | Path) -> list[Session]:
                 continue
 
             # Odometry-phase lines: buffer for the upcoming tick
+            pm = _PATTERNS["distread"].match(msg)
+            if pm:
+                pending_odo["distance_mm"] = dict(
+                    zip(("front", "back", "left", "right"), (int(x) for x in pm.groups())))
+                continue
+            pm = _PATTERNS["trackwheel"].match(msg)
+            if pm:
+                pending_odo["tracking_wheel"] = {
+                    k: parse_float(v) for k, v in _KV_PAIR.findall(pm.group(1))}
+                continue
             pm = _PATTERNS["heading"].match(msg)
             if pm:
                 pending_odo["heading"] = parse_float(pm.group(1))
@@ -265,6 +305,14 @@ def parse_log(path: str | Path) -> list[Session]:
             if msg == "DISTANCE RESET":
                 run.resets.append(DistanceReset(t=t, tick_index=len(run.ticks) - 1))
                 pending_reset = True
+                continue
+
+            pm = _PATTERNS["reset_result"].match(msg)
+            if pm and run.resets:
+                run.resets[-1].reset_axis = "x" if pm.group(1) == "1" else "y"
+                run.resets[-1].correction_in = parse_float(pm.group(2))
+                # Only the max-correction gate follows this line, and it warns.
+                run.resets[-1].applied = True
                 continue
 
             pm = _PATTERNS["sensor_reading"].match(msg)

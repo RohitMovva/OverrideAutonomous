@@ -13,6 +13,7 @@ Replaces the legacy scripts in tests/log_analyis/:
     velo_checker.py                    → visualize.py animate-wheels <log> --show
     (new)                              → visualize.py field | dashboard | all <log>
     (new)                              → visualize.py lift <log>   (lift debug stream)
+    (new)                              → visualize.py walls <log>  (DISTREAD: reset sensors along the path)
 
 Examples:
     python3 tests/visualize.py dashboard state.txt --run all
@@ -34,10 +35,10 @@ from pathlib import Path
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE))
 
-STATIC = ["tracking", "theta", "outputs", "wheels", "encoders", "field", "dashboard"]
+STATIC = ["tracking", "theta", "outputs", "wheels", "encoders", "field", "dashboard", "walls"]
 POOLED = ["gains"]   # per-file figures pooling all selected runs
 ANIMS = ["animate", "animate-mp", "animate-wheels"]
-LIFT = ["lift"]      # lift/chainbar debug stream (own parser, not trajectory)
+LIFT = ["lift"]      # lift debug stream (own parser, not trajectory)
 HEALTH = ["health"]  # drive motor health stream (spans auton AND driver)
 
 
@@ -85,16 +86,18 @@ def main():
 
     log_path = resolve_log(args.log)
 
-    # Lift debug stream: its own parser (opcontrol, not trajectory following) and
-    # its own selection ("run" = a boot with lift data; 'all' = every such boot).
+    # Lift debug stream: its own parser (the lift state machine runs alongside
+    # trajectory following, not inside it) and its own selection ("run" = a boot with
+    # lift data; 'all' = every such boot).
     if args.command in LIFT:
         from log_analysis.lift_parser import parse_lift_log, lift_sessions_with_data
         from log_analysis.lift_plots import lift_dashboard
 
         have = lift_sessions_with_data(parse_lift_log(log_path))
         if not have:
-            sys.exit("error: no LIFTDBG samples in this log. The lift only logs "
-                     "in opcontrol — drive the lift with the debug build to capture data.")
+            sys.exit("error: no LIFTDBG samples in this log. Logs from before the "
+                     "Lift::log_debug_state rewrite (boots up to 0161) carry none; "
+                     "capture a run on firmware that has it.")
         if args.run == "all":
             chosen = have
         else:

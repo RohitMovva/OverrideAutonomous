@@ -43,9 +43,14 @@ from .robot_config import (
     DT_NOMINAL,
     FREE_WHEEL_SPEED,
     INCHES_PER_TICK,
+    KS,
+    KV,
+    MAX_BEAM_ANGLE_DEG,
+    RESET_SENSORS,
     TRACK_WIDTH,
     UNPHYSICAL_WHEEL_SPEED,
     USABLE_WHEEL_SPEED,
+    WALL_POSITION,
 )
 
 # Retained as an alias: "the fastest a wheel can conceivably be measured going".
@@ -713,6 +718,61 @@ def encoder_disagreement(run: Run) -> dict:
             "right": _side_disagreement(run.ticks, "right_positions")}
 
 
+def tracking_wheel_agreement(run: Run) -> dict:
+    """Vertical tracking wheel vs drive-encoder forward travel ("TRACKWHEEL" lines).
+
+    The vertical wheel sits on the tracking centre line and is unpowered, so it measures
+    what the chassis actually travelled; the drive-encoder average measures what the
+    powered wheels turned. Their gap is drive-wheel slip -- or, until both are
+    calibrated, a diameter error (Config::VERTICAL_TRACKING_WHEEL_DIAMETER vs
+    Config::WHEEL_DIAMETER).
+
+    Fields:
+      n                  ticks where the vertical wheel was used (vok=1)
+      ticks              ticks with a TRACKWHEEL line
+      vertical_fallback  ticks where Odometry fell back to the drive encoders
+      lateral_fallback   ticks where Odometry assumed no sideslip
+      wheel_travel_in    sum |dvert| over the used ticks
+      wheel_net_in / drive_net_in   signed totals over the same ticks
+      slip_fraction      |drive_net - wheel_net| / wheel_travel
+      direction_dot      sum dvert*ddrive; negative means the vertical sensor is reversed
+      lateral_travel_in  sum |dlat|
+      wheel_abs_net_in   last minus first absolute vertical reading: everything the wheel
+                         rolled, including deltas odometry rejected
+      pose_forward_in    pose displacement along its heading, summed over ticks: what
+                         odometry integrated. Far below wheel_abs_net_in means it dropped
+                         wheel travel (boot 989: 68.8 vs 114.9 in)
+    Returns {"ticks": 0} for logs without TRACKWHEEL lines.
+    """
+    rows = [tk.tracking_wheel for tk in run.ticks if tk.tracking_wheel]
+    if not rows:
+        return {"ticks": 0}
+    used = [r for r in rows if r.get("vok") == 1 and math.isfinite(r.get("dvert", math.nan))
+            and math.isfinite(r.get("ddrive", math.nan))]
+    wheel_travel = sum(abs(r["dvert"]) for r in used)
+    wheel_net = sum(r["dvert"] for r in used)
+    drive_net = sum(r["ddrive"] for r in used)
+    verts = [r["vert"] for r in rows if math.isfinite(r.get("vert", math.nan))]
+    poses = [tk.pose for tk in run.ticks if tk.tracking_wheel and tk.pose]
+    pose_forward = sum((b[0] - a[0]) * math.cos(a[2]) + (b[1] - a[1]) * math.sin(a[2])
+                       for a, b in zip(poses, poses[1:]))
+    return {
+        "ticks": len(rows),
+        "n": len(used),
+        "vertical_fallback": sum(1 for r in rows if r.get("vok") != 1),
+        "lateral_fallback": sum(1 for r in rows if r.get("lok") != 1),
+        "wheel_travel_in": wheel_travel,
+        "wheel_net_in": wheel_net,
+        "drive_net_in": drive_net,
+        "slip_fraction": abs(drive_net - wheel_net) / wheel_travel if wheel_travel > 0 else 0.0,
+        "direction_dot": sum(r["dvert"] * r["ddrive"] for r in used),
+        "lateral_travel_in": sum(abs(r["dlat"]) for r in rows
+                                 if r.get("lok") == 1 and math.isfinite(r.get("dlat", math.nan))),
+        "wheel_abs_net_in": verts[-1] - verts[0] if verts else 0.0,
+        "pose_forward_in": pose_forward,
+    }
+
+
 def distance_integral_drift(run: Run) -> dict:
     """Cumulative commanded vs measured distance per side.
 
@@ -950,6 +1010,173 @@ def saturation_cost(runs: Run | list[Run], samples: bool = False) -> dict:
     return out
 
 
+# ------------------------------------------------------------ wall resets
+
+@dataclass
+class WallSample:
+    """What one wall-reset sensor says about the pose at one tick."""
+    t: float
+    sensor: str              # front / back / left / right
+    axis: str                # 'x' or 'y': the coordinate this sensor would reset
+    wall: int                # 0 +x, 1 +y, 2 -x, 3 -y (DistanceResetOdometry's numbering)
+    off_normal_deg: float    # beam angle off the wall normal
+    reading_in: float
+    implied: float           # the coordinate the wall puts the robot at
+    error_in: float          # implied - pose: what a reset here would correct
+
+
+def _lround(x: float) -> int:
+    """std::lround: halves away from zero (Python's round() is banker's)."""
+    return int(math.floor(abs(x) + 0.5)) * (1 if x >= 0 else -1)
+
+
+def wall_estimate(pose, sensor: str, reading_in: float,
+                  max_beam_deg: float = MAX_BEAM_ANGLE_DEG):
+    """DistanceResetOdometry::reset's geometry, offline.
+
+    Returns (axis, wall, off_normal_rad, implied coordinate), or None when the
+    sensor is unknown or its beam is further off a wall normal than a reset accepts.
+    Keep in step with src/navigation/distance_reset_odometry.cpp;
+    test_offline_wall_math_matches_firmware checks it against logged corrections.
+    """
+    if sensor not in RESET_SENSORS:
+        return None
+    angle_deg, along, across = RESET_SENSORS[sensor]
+    beam = _wrap(pose[2] + math.radians(angle_deg))
+    wall = _lround(beam / (math.pi / 2)) % 4
+    off = _wrap(beam - wall * (math.pi / 2))
+    if abs(off) > math.radians(max_beam_deg):
+        return None
+    wall_to_center = (reading_in + along) * math.cos(off) + across * math.sin(off)
+    sign = 1.0 if wall in (0, 1) else -1.0
+    axis = "x" if wall in (0, 2) else "y"
+    return axis, wall, off, sign * (WALL_POSITION - wall_to_center)
+
+
+def wall_samples(run: Run, max_beam_deg: float = MAX_BEAM_ANGLE_DEG) -> list[WallSample]:
+    """Per tick, per sensor: where its wall puts the robot vs where odometry does.
+
+    Needs the per-tick "DISTREAD" line; returns [] for older logs. error_in is the
+    correction a reset at that tick would apply (single reading, not the firmware's
+    100 ms median, and no speed gate), so it shows how far odometry has drifted at
+    every point a sensor squarely faces a wall, not just where the route resets.
+    A beam that hits a field element instead of the wall shows up as a large,
+    sudden error on that sensor alone.
+    """
+    out = []
+    for tk in run.ticks:
+        if tk.distance_mm is None or tk.pose is None:
+            continue
+        for sensor, mm in tk.distance_mm.items():
+            if mm < 0 or mm >= 9999:
+                continue
+            reading = mm / 25.4
+            est = wall_estimate(tk.pose, sensor, reading, max_beam_deg)
+            if est is None:
+                continue
+            axis, wall, off, implied = est
+            pos = tk.pose[0] if axis == "x" else tk.pose[1]
+            out.append(WallSample(tk.t, sensor, axis, wall, math.degrees(off),
+                                  reading, implied, implied - pos))
+    return out
+
+
+def stop_windows(run: Run, max_speed: float = 0.5, min_s: float = 0.05) -> list[tuple[int, int]]:
+    """[start, end) tick ranges where the *planned* pose (Goal) moves slower than
+    max_speed in/s for at least min_s: the route's stops, holds and waits, i.e. the
+    places a reset could go. The goal is exactly still there, unlike the measured
+    pose, which settles, creeps and gets pushed around by contact."""
+    out, start = [], None
+    for i in range(1, len(run.ticks)):
+        a, b = run.ticks[i - 1], run.ticks[i]
+        still = False
+        if a.goal is not None and b.goal is not None:
+            dt = b.t - a.t
+            if dt <= 0 or dt > 0.1:
+                dt = DT_NOMINAL
+            still = math.hypot(b.goal[0] - a.goal[0], b.goal[1] - a.goal[1]) / dt < max_speed
+        if still and start is None:
+            start = i - 1
+        elif not still and start is not None:
+            if run.ticks[i - 1].t - run.ticks[start].t >= min_s:
+                out.append((start, i))
+            start = None
+    if start is not None and run.ticks[-1].t - run.ticks[start].t >= min_s:
+        out.append((start, len(run.ticks)))
+    return out
+
+
+def wall_errors_at_stops(run: Run, max_beam_deg: float = MAX_BEAM_ANGLE_DEG) -> list[dict]:
+    """For every stop: the pose there and, per sensor facing a wall, the median
+    correction a reset during the first 100 ms of that stop would have applied.
+
+    Taken before any reset at the stop moves the pose, so it reads as "how wrong was
+    odometry on arrival here". The spread says whether the sensor read steadily
+    (a wall) or jumped (a beam clipping something).
+    """
+    samples = wall_samples(run, max_beam_deg)
+    out = []
+    for a, b in stop_windows(run):
+        t0 = run.ticks[a].t
+        first_reset = min((r.t for r in run.resets if r.applied and t0 <= r.t < run.ticks[b - 1].t),
+                          default=None)
+        t1 = min(t0 + 0.1, first_reset) if first_reset is not None else t0 + 0.1
+        by = {}
+        for s in samples:
+            if t0 <= s.t <= t1:
+                by.setdefault((s.sensor, s.axis), []).append(s)
+        sensors = {}
+        for (sensor, axis), ss in sorted(by.items()):
+            errs = [s.error_in for s in ss]
+            sensors[sensor] = {"axis": axis, "n": len(ss), "error_in": median(errs),
+                               "spread_in": max(errs) - min(errs),
+                               "off_normal_deg": median(s.off_normal_deg for s in ss),
+                               "reading_in": median(s.reading_in for s in ss)}
+        pose = run.ticks[a].pose
+        out.append({"t": t0, "duration_s": run.ticks[b - 1].t - t0, "pose": pose,
+                    "reset_here": first_reset is not None, "sensors": sensors})
+    return out
+
+
+def reset_agreement(run: Run) -> list[dict]:
+    """Each logged reset recomputed offline with wall_estimate().
+
+    Uses the median reading the firmware logged and the pose of the tick before the
+    reset. The reset line doesn't name its sensor, so the sensor is the one whose
+    DISTREAD readings around the reset are closest to that median. Resets without
+    DISTREAD data around them are skipped (older logs).
+    """
+    out = []
+    for r in run.resets:
+        if r.correction_in is None or r.sensor_reading_in is None:
+            continue
+        if not (0 <= r.tick_index < len(run.ticks)) or run.ticks[r.tick_index].pose is None:
+            continue
+        near = [tk.distance_mm for tk in run.ticks[max(0, r.tick_index - 9):r.tick_index + 2]
+                if tk.distance_mm is not None]
+        if not near:
+            continue
+        pose = run.ticks[r.tick_index].pose
+        best = None
+        for sensor in RESET_SENSORS:
+            vals = [d[sensor] / 25.4 for d in near if 0 <= d.get(sensor, -1) < 9999]
+            if not vals:
+                continue
+            est = wall_estimate(pose, sensor, r.sensor_reading_in, max_beam_deg=90.0)
+            if est is None or est[0] != r.reset_axis:
+                continue
+            gap = abs(median(vals) - r.sensor_reading_in)
+            if best is None or gap < best[0]:
+                pos = pose[0] if est[0] == "x" else pose[1]
+                best = (gap, sensor, est[3] - pos)
+        if best is None:
+            continue
+        out.append({"t": r.t, "sensor": best[1], "axis": r.reset_axis,
+                    "logged_in": r.correction_in, "offline_in": best[2],
+                    "diff_in": best[2] - r.correction_in})
+    return out
+
+
 # ---------------------------------------------------------------- warnings
 
 def warning_summary(run: Run) -> dict:
@@ -969,3 +1196,231 @@ def warning_summary(run: Run) -> dict:
         "invalid_sensor_count": sum(
             1 for _, w in run.warnings if w.startswith("Invalid distance sensor")),
     }
+
+
+# ---------------------------------------------------------------- spins (traction A/B)
+
+def traction_wheels(run: Run) -> int | None:
+    """Traction wheels per side the firmware was built for (Config::TRACTION_WHEELS_PER_SIDE,
+    "Build config: ... tractionWheels="). None for logs from before 2026-10-09."""
+    n = run.build_config.get("tractionWheels")
+    return int(n) if n is not None and math.isfinite(n) else None
+
+
+def _spin_samples(run: Run, min_rate: float = 0.3, max_speed: float = 1.0,
+                  smooth: int = 5) -> tuple[list[dict], list]:
+    """Ticks where the plan turns in place (|mp_w| >= min_rate rad/s, |mp_v| <= max_speed
+    in/s), each with this tick's heading change and the yaw rate the pose (IMU) shows,
+    differenced over `smooth` ticks. Returns (samples, pose ticks)."""
+    ticks = [tk for tk in run.ticks if tk.pose is not None]
+    theta, prev = [], None
+    for tk in ticks:
+        theta.append(tk.pose[2] if prev is None else theta[-1] + _wrap(tk.pose[2] - prev))
+        prev = tk.pose[2]
+    half = smooth // 2
+    out = []
+    for i, tk in enumerate(ticks):
+        if i == 0 or tk.mp_w is None or tk.mp_v is None:
+            continue
+        if abs(tk.mp_w) < min_rate or abs(tk.mp_v) > max_speed:
+            continue
+        lo, hi = max(0, i - half), min(len(ticks) - 1, i + half)
+        span = ticks[hi].t - ticks[lo].t
+        out.append({"i": i, "tick": tk, "dtheta": theta[i] - theta[i - 1],
+                    "w": (theta[hi] - theta[lo]) / span if span > 0 else math.nan})
+    return out, ticks
+
+
+def _ols(xs: list[float], ys: list[float]) -> tuple[float, float, float]:
+    """Least-squares line y = a + b x: (a, b, r^2)."""
+    n = len(xs)
+    mx, my = sum(xs) / n, sum(ys) / n
+    sxx = sum((x - mx) ** 2 for x in xs)
+    sxy = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+    syy = sum((y - my) ** 2 for y in ys)
+    b = sxy / sxx if sxx > 0 else math.nan
+    a = my - b * mx
+    r2 = (sxy * sxy / (sxx * syy)) if sxx > 0 and syy > 0 else math.nan
+    return a, b, r2
+
+
+def tracking_wheel_offsets(run: Run, min_rate: float = 0.3) -> dict:
+    """Tracking-wheel offsets from the pivot, fitted on turn-in-place ticks.
+
+    In a pure spin a wheel rolls only because it sits off the pivot: the lateral wheel
+    reads +offset * dtheta (Config::LATERAL_WHEEL_OFFSET, +forward) and the vertical one
+    -offset * dtheta (Config::VERTICAL_WHEEL_OFFSET, +left), the convention of
+    navigation/tracking_arc.hpp. Each is a least-squares line against the IMU's dtheta;
+    its intercept soaks up steady drift, so spinning both ways cancels it. The lateral
+    diameter scales the reading and the fit alike, so an uncalibrated one barely matters.
+
+    Fields (absent when the run has under pi rad of usable spin):
+      n, radians                      ticks and |rotation| used
+      lateral_offset_in, vertical_offset_in   the fits
+      lateral_ccw_in / lateral_cw_in, vertical_ccw_in / vertical_cw_in   the same per
+          spin direction (through the origin); far apart means the pivot moves
+      lateral_residual_in_per_rad     what the lateral wheel saw beyond the fit, per
+          radian turned: sideways scrub
+      pivot_drift_in_per_rev          how far the pose's tracking centre ends up from
+          where each spin began, per revolution
+    """
+    samples, ticks = _spin_samples(run, min_rate)
+    lat, vert = [], []
+    for sm in samples:
+        tw = sm["tick"].tracking_wheel
+        d = sm["dtheta"]
+        if not tw or not math.isfinite(d):
+            continue
+        if tw.get("lok") == 1 and math.isfinite(tw.get("dlat", math.nan)):
+            lat.append((d, tw["dlat"]))
+        if tw.get("vok") == 1 and math.isfinite(tw.get("dvert", math.nan)):
+            vert.append((d, tw["dvert"]))
+    radians = sum(abs(d) for d, _ in lat)
+    out = {"n": len(lat), "radians": radians}
+    if len(lat) < 20 or radians < math.pi or len(vert) < 20:
+        return out
+
+    def through_origin(rows, sign):
+        rows = [(d, y) for d, y in rows if d * sign > 0]
+        sxx = sum(d * d for d, _ in rows)
+        return sum(d * y for d, y in rows) / sxx if sxx > 0 else math.nan
+
+    a_lat, b_lat, _ = _ols([d for d, _ in lat], [y for _, y in lat])
+    _, b_vert, _ = _ols([d for d, _ in vert], [y for _, y in vert])
+    resid = sum(abs(y - (a_lat + b_lat * d)) for d, y in lat)
+
+    # Pivot drift: pose displacement across each contiguous spin segment
+    drift = revs = 0.0
+    seg = [samples[0]] if samples else []
+    for sm in samples[1:] + [None]:
+        if sm is not None and sm["i"] == seg[-1]["i"] + 1:
+            seg.append(sm)
+            continue
+        turned = sum(abs(x["dtheta"]) for x in seg if math.isfinite(x["dtheta"]))
+        if turned > math.pi:
+            p0, p1 = ticks[seg[0]["i"] - 1].pose, seg[-1]["tick"].pose
+            drift += math.hypot(p1[0] - p0[0], p1[1] - p0[1])
+            revs += turned / (2 * math.pi)
+        seg = [sm] if sm is not None else []
+
+    out.update({
+        "lateral_offset_in": b_lat,
+        "vertical_offset_in": -b_vert,
+        "lateral_ccw_in": through_origin(lat, 1), "lateral_cw_in": through_origin(lat, -1),
+        "vertical_ccw_in": -through_origin(vert, 1), "vertical_cw_in": -through_origin(vert, -1),
+        "lateral_residual_in_per_rad": resid / radians,
+        "pivot_drift_in_per_rev": drift / revs if revs > 0 else math.nan,
+    })
+    return out
+
+
+def spin_scrub(run: Run, min_rate: float = 0.3, plateau_tol: float = 0.02) -> dict:
+    """What turning in place costs, from the spin-rate routes (spin_w1..w4, spin_max).
+
+    On the plateau of a spin (planned rate steady, neither wheel at the rail) each wheel's
+    voltage beyond the straight-line feedforward, sign(v) * V - (KS + KV * |v|) with v the
+    measured wheel speed, is what the turn itself cost: Config::KS_ANGULAR +
+    KV_ANGULAR * |w| if those were right, plus whatever feedback added. fit_spin_scrub
+    regresses it on |w| over several rates. v comes from the drive encoders, so a wrong
+    WHEEL_DIAMETER biases KV * |v| -- identically for both sides of an A/B.
+
+    Fields: n (spin ticks), plateau_n, saturated_fraction (plateau ticks at the rail),
+    rate_mean / plan_rate_mean (rad/s on the plateau), delivered_ratio (their ratio),
+    scrub_v / scrub_v_left / scrub_v_right (mean extra voltage, motor units),
+    effective_track_width_in ((vR - vL) / w over every spin tick), top_rate (rad/s),
+    top_accel (spin-up rad/s^2), points ((|w|, scrub_left, scrub_right) per plateau tick).
+    """
+    samples, ticks = _spin_samples(run, min_rate)
+    pts, plan, eff = [], [], []
+    plateau = sat = 0
+    for sm in samples:
+        tk, i, w = sm["tick"], sm["i"], sm["w"]
+        if None in (tk.voltage_left, tk.voltage_right, tk.left_vel_actual, tk.right_vel_actual):
+            continue
+        if not math.isfinite(w):
+            continue
+        eff.append((w, tk.right_vel_actual - tk.left_vel_actual))
+        prev = ticks[i - 1].mp_w
+        if prev is None or abs(tk.mp_w - prev) > plateau_tol:
+            continue
+        plateau += 1
+        if abs(tk.voltage_left) >= VOLTAGE_LIMIT or abs(tk.voltage_right) >= VOLTAGE_LIMIT:
+            sat += 1
+            continue
+        vl, vr = tk.left_vel_actual, tk.right_vel_actual
+        if min(abs(vl), abs(vr)) < 2.0:
+            continue
+        sl = math.copysign(1.0, vl) * tk.voltage_left - (KS + KV * abs(vl))
+        sr = math.copysign(1.0, vr) * tk.voltage_right - (KS + KV * abs(vr))
+        pts.append((abs(w), sl, sr))
+        plan.append((abs(tk.mp_w), abs(w)))
+    if not eff:
+        return {"n": 0}
+
+    ws = [sm["w"] for sm in samples if math.isfinite(sm["w"])]
+    # Spin-up yaw acceleration (|w| rising) over a 10-tick span: braking is helped by the
+    # scrub and the motors, so it says nothing about the drive's limit, and IMU noise on
+    # the smoothed rate would set the maximum over a shorter span.
+    accel = 0.0
+    for k in range(5, len(samples) - 5):
+        a, b = samples[k - 5], samples[k + 5]
+        if b["i"] - a["i"] == 10 and math.isfinite(a["w"]) and math.isfinite(b["w"]):
+            span = b["tick"].t - a["tick"].t
+            if span > 0:
+                accel = max(accel, (abs(b["w"]) - abs(a["w"])) / span)
+    sxx = sum(w * w for w, _ in eff)
+    out = {
+        "n": len(eff),
+        "plateau_n": plateau,
+        "saturated_fraction": sat / plateau if plateau else 0.0,
+        "effective_track_width_in": sum(w * dv for w, dv in eff) / sxx if sxx > 0 else math.nan,
+        "top_rate": max(abs(w) for w in ws) if ws else math.nan,
+        "top_accel": accel,
+        "points": pts,
+    }
+    if pts:
+        out.update({
+            "rate_mean": mean(w for _, w in plan),
+            "plan_rate_mean": mean(p for p, _ in plan),
+            "delivered_ratio": mean(w for _, w in plan) / mean(p for p, _ in plan),
+            "scrub_v_left": mean(p[1] for p in pts),
+            "scrub_v_right": mean(p[2] for p in pts),
+            "scrub_v": mean(0.5 * (p[1] + p[2]) for p in pts),
+        })
+    return out
+
+
+def spin_creep(run: Run) -> dict:
+    """Forward speed RAMSETE commands while the plan spins in place, per rad/s turned.
+
+    A spin should command none. A wrong Config::LATERAL_WHEEL_OFFSET makes the pose orbit
+    a point ahead of the robot, so the goal reads as ahead all through the spin and
+    RAMSETE drives toward it: boot 1001 (offset 3.0 vs 2.37 measured) crept 0.72 in per
+    radian, ~4.5 in per revolution, in both directions. Returns {} without spin ticks."""
+    samples, _ = _spin_samples(run)
+    rows = [(sm["tick"].ramsete_v, abs(sm["w"])) for sm in samples
+            if sm["tick"].ramsete_v is not None and math.isfinite(sm["w"]) and abs(sm["w"]) > 0.3]
+    if len(rows) < 20:
+        return {}
+    return {"n": len(rows), "creep_in_per_rad": mean(v for v, _ in rows) / mean(w for _, w in rows)}
+
+
+def fit_spin_scrub(runs: Run | list[Run]) -> dict:
+    """Turn cost against yaw rate over several spin runs (pool spin_w1..w4 for one robot).
+
+    Fits mean extra voltage per wheel = ks + kv * |w| on every plateau tick of every run:
+    ks estimates Config::KS_ANGULAR (motor units), kv KV_ANGULAR ((motor units)/(rad/s)).
+    Needs at least two distinct rates to separate them. Also per side, since a side that
+    drags shows up as a higher intercept on that side only.
+    """
+    pts = [p for r in _as_runs(runs) for p in spin_scrub(r).get("points", [])]
+    if len(pts) < 30:
+        return {"n": len(pts)}
+    ws = [p[0] for p in pts]
+    if max(ws) - min(ws) < 0.8:
+        return {"n": len(pts), "rate_span": max(ws) - min(ws)}
+    ks, kv, r2 = _ols(ws, [0.5 * (p[1] + p[2]) for p in pts])
+    ks_l, kv_l, _ = _ols(ws, [p[1] for p in pts])
+    ks_r, kv_r, _ = _ols(ws, [p[2] for p in pts])
+    return {"n": len(pts), "rate_min": min(ws), "rate_max": max(ws), "ks": ks, "kv": kv, "r2": r2,
+            "ks_left": ks_l, "kv_left": kv_l, "ks_right": ks_r, "kv_right": kv_r}

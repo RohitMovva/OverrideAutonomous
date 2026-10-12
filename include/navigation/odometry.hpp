@@ -4,6 +4,7 @@
 #include "i_localization.hpp"
 #include "api.h"
 #include "filters/kalman_2d.hpp"
+#include "navigation/tracking_arc.hpp"
 #include "filters/heading_filter.hpp"
 #include "filters/velocity_observer.hpp"
 #include "config.hpp"
@@ -15,7 +16,11 @@
 #include "utilities/math/angle.hpp"
 
 /**
- * @brief Odometry implementation of localization using wheel encoders and IMU
+ * @brief Odometry implementation of localization using tracking wheels and IMU
+ *
+ * Translation comes from a vertical and a lateral tracking wheel, heading from the IMU.
+ * The drive motor encoders supply the per-side velocities and stand in for a tracking
+ * wheel that stops reading.
  *
  * Tracks robot position using advanced filtering techniques including Kalman filtering
  * and sensor fusion. Handles sensor validation, noise reduction, and uncertainty estimates.
@@ -23,13 +28,10 @@
 class Odometry : public ILocalization
 {
 private:
-    // Chassis measurements
-    double track_width;
-    double odom_wheel_offset;
-
     // Hardware references
     pros::MotorGroup &leftDrive;
     pros::MotorGroup &rightDrive;
+    pros::Rotation &verticalEncoder;
     pros::Rotation &lateralEncoder;
     pros::Imu &imu;
 
@@ -49,7 +51,7 @@ private:
 
     // State variables.
     //
-    // prevLeftPos / prevRightPos / prevLateralPos / prevImuRotation are ABSOLUTE sensor
+    // prevLeftPos / prevRightPos / prevVerticalPos / prevLateralPos / prevImuRotation are ABSOLUTE sensor
     // readings from the previous tick, and every delta is taken against them. Nothing is
     // tared inside update().
     //
@@ -63,7 +65,14 @@ private:
     double lastUpdateTime;
     std::vector<double> prevLeftPos;   ///< Absolute per-motor position, inches
     std::vector<double> prevRightPos;  ///< Absolute per-motor position, inches
-    double prevLateralPos;             ///< Absolute lateral encoder position, inches
+    double prevVerticalPos;            ///< Absolute vertical tracking wheel position, inches
+    double prevLateralPos;             ///< Absolute lateral tracking wheel position, inches
+    bool hasPrevVertical;              ///< prevVerticalPos is a real reading (sensor was connected)
+    bool hasPrevLateral;               ///< prevLateralPos is a real reading (sensor was connected)
+    bool verticalFallback;             ///< Last tick replaced the vertical wheel with the drive encoders
+    bool lateralFallback;              ///< Last tick assumed no sideslip in place of the lateral wheel
+    double verticalChangeTime;         ///< When the vertical wheel's reading last changed, seconds
+    double lateralChangeTime;          ///< When the lateral wheel's reading last changed, seconds
     double prevImuRotation;            ///< Absolute IMU rotation, degrees (continuous, unwrapped)
     bool hasPrevSensorReadings;        ///< False until the first post-reset baseline is captured
     double prevTime;
@@ -81,7 +90,10 @@ private:
 
     // Helper functions
     double ticksToInches(double ticks);
-    double latTicksToInches(int ticks);
+    /// Tracking wheel position in inches, or false when the sensor is unreadable.
+    /// get_position() reports a missing sensor as PROS_ERR (INT32_MAX), which is a finite
+    /// number, so std::isfinite cannot catch it.
+    bool readTrackingWheel(pros::Rotation &encoder, double diameter, double &inches);
     double degreesToRadians(double degrees);
     /// Mean of the finite entries only. A disconnected motor reports PROS_ERR_F
     /// (infinity); averaging that in would make the mean infinite, the delta NaN, and the
@@ -125,15 +137,14 @@ public:
      *
      * @param left Left drive motors
      * @param right Right drive motors
-     * @param lateral Lateral tracking encoder
+     * @param vertical Vertical (forward/back) tracking wheel rotation sensor
+     * @param lateral Lateral (sideways) tracking wheel rotation sensor
      * @param imuSensor IMU sensor
-     * @param chassis_track_width Distance between left and right wheels
-     * @param lateral_wheel_offset Distance from tracking center to lateral wheel
      * @param enable_heading_filter Enable heading filter
      * @param enable_velocity_filters Enable velocity filters
      */
     Odometry(pros::MotorGroup &left, pros::MotorGroup &right,
-             pros::Rotation &lateral, pros::Imu &imuSensor,
+             pros::Rotation &vertical, pros::Rotation &lateral, pros::Imu &imuSensor,
              bool enable_heading_filter = false,
              bool enable_velocity_filters = false);
 

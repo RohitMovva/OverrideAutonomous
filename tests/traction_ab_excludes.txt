@@ -1,0 +1,4 @@
+# Runs tests/traction_ab.py leaves out: LOG:RUN (0-based index among the log's trajectory
+# runs) then the reason. Add a line for any run that hit something or was disturbed.
+10092026-1001.txt:6 slip_turn_accel hit an object (chassis stopped dead at 2.47 s)
+10092026-1001.txt:8 corner_R6 hit an object (yaw jolt -0.95 rad/s and 6.6 in/s sideways at 3.0 s)

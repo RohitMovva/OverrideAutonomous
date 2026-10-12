@@ -26,7 +26,7 @@ void Particle::updateWeight(double likelihood)
 
 // MCL implementation
 MCL::MCL(pros::MotorGroup &left, pros::MotorGroup &right,
-                                pros::Rotation &lateral, pros::Imu &IMU,
+                                pros::Rotation &vertical, pros::Rotation &lateral, pros::Imu &IMU,
                                 std::vector<Distance>& distanceSensors,
                                 int particle_count, double motion_noise_std)
     : numParticles(particle_count)
@@ -39,7 +39,7 @@ MCL::MCL(pros::MotorGroup &left, pros::MotorGroup &right,
 {
     // Create internal motion model for particle prediction
     motionModel = std::make_unique<Odometry>(
-        left, right, lateral, IMU,
+        left, right, vertical, lateral, IMU,
         false, true  // Enable filters for better motion prediction
     );
     

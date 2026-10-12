@@ -26,6 +26,7 @@ from pathlib import Path
 import pytest
 
 from log_analysis.health_parser import (
+    battery_health, BatteryHealth, LOW_BATTERY_V, MAX_SESSION_SAG_V,
     parse_health_log,
     health_sessions_with_data,
     all_partner_imbalances,
@@ -204,6 +205,52 @@ def test_efficiency_in_range(health):
         if s.efficiency_pct is not None and math.isfinite(s.efficiency_pct):
             assert -0.1 <= s.efficiency_pct <= 100.1, (
                 f"{name}: {s.label} reported {s.efficiency_pct}% efficiency at t={s.t:.3f}")
+
+
+def test_battery_voltage_plausible(health):
+    """Every BATT reading must be a voltage a 7-cell V5 pack can actually hold.
+
+    Logs recorded before the BATT line existed are skipped rather than passed, so
+    adding the field cannot silently retro-bless old data.
+    """
+    name, sessions, _samples = health
+    if not any(sess.has_battery for sess in sessions):
+        pytest.skip(f"{name}: log predates the BATT line")
+    for sess in sessions:
+        for b in sess.battery:
+            if math.isfinite(b.volts):
+                assert 4.0 <= b.volts <= 14.5, (
+                    f"{name}: battery read {b.volts:.2f} V at t={b.t:.3f} — "
+                    f"outside anything a V5 pack can hold")
+            if math.isfinite(b.capacity_pct):
+                assert -0.1 <= b.capacity_pct <= 100.1, (
+                    f"{name}: battery reported {b.capacity_pct}% at t={b.t:.3f}")
+
+
+def test_battery_holds_up_across_session(health):
+    """The pack must stay high enough, and steady enough, for the session to mean
+    something.
+
+    This is the invariant behind the metric: a feedforward calibrated at 12.5 V
+    delivers proportionally less at 11 V, so a run on a drained pack looks like a
+    tuning regression when nothing was tuned. A failure here says "recharge and
+    re-run", not "the code got worse".
+    """
+    name, sessions, _samples = health
+    if not any(sess.has_battery for sess in sessions):
+        pytest.skip(f"{name}: log predates the BATT line")
+    for sess in sessions:
+        bh = battery_health(sess)
+        if bh is None:
+            continue
+        assert bh.min_v >= LOW_BATTERY_V, (
+            f"{name}: battery fell to {bh.min_v:.2f} V (started {bh.start_v:.2f}, "
+            f"{bh.start_pct:.0f}%) — below {LOW_BATTERY_V} V the drivetrain cannot "
+            f"deliver the feedforward's volts, so this session is not comparable")
+        assert bh.sag_v <= MAX_SESSION_SAG_V, (
+            f"{name}: battery sagged {bh.sag_v:.2f} V within the session "
+            f"({bh.start_v:.2f} -> {bh.min_v:.2f}) — later runs are not comparable "
+            f"to earlier ones")
 
 
 def test_over_temp_flag_agrees_with_temperature(health):

@@ -74,13 +74,14 @@ public:
      *
      * @param left Left drive motors (for internal motion model)
      * @param right Right drive motors (for internal motion model)  
-     * @param lateral Lateral tracking encoder (for internal motion model)
+     * @param vertical Vertical tracking wheel (for internal motion model)
+     * @param lateral Lateral tracking wheel (for internal motion model)
      * @param imuSensor IMU sensor (for internal motion model)
      * @param particle_count Number of particles to use
      * @param motion_noise_std Standard deviation of motion noise
      */
     MCL(pros::MotorGroup &left, pros::MotorGroup &right,
-                   pros::Rotation &lateral, pros::Imu &imuSensor,
+                   pros::Rotation &vertical, pros::Rotation &lateral, pros::Imu &imuSensor,
                    std::vector<Distance>& distanceSensors, int particle_count = 1000,
                    double motion_noise_std = 0.1);
 

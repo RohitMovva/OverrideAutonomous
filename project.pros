@@ -1,7 +1,7 @@
 {
   "py/object": "pros.conductor.project.Project",
   "py/state": {
-    "project_name": "threepin",
+    "project_name": "drivercontrols",
     "target": "v5",
     "templates": {
       "kernel": {

@@ -1,8 +1,13 @@
 #include "navigation/trajectory.hpp"
 #include "utilities/routes.hpp"
+#include "utilities/sd_lock.hpp"
 
 void Trajectory::loadFromFile(const std::string &filepath)
 {
+    // Held for the whole read: this is the leaf, so nothing below takes the lock
+    // again (see SdLock). Callers -- RouteSelector::loadSelected, the loader task
+    // -- must not hold it themselves.
+    SdLock lock;
     std::ifstream file(filepath);
     if (!file.is_open())
     {

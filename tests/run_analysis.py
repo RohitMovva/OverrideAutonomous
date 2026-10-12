@@ -113,6 +113,17 @@ def analyze_file(path: Path):
                 print(f"   invalid deltaTime warnings: {ws['invalid_deltatime_count']} "
                       f"(zero-dt {ws['zero_dt_count']}, mid-run stalls {ws['mid_run_stall_count']}, "
                       f"worst {ws['worst_stall_s']*1000:.0f} ms)")
+            stops = [st_ for st_ in metrics.wall_errors_at_stops(run) if st_["sensors"]]
+            if stops:
+                print("   wall sensors at stops (correction a reset on arrival would apply):")
+                for st_ in stops:
+                    p = st_["pose"]
+                    parts = [f"{name} {d['axis']} {d['error_in']:+.2f} in "
+                             f"(spread {d['spread_in']:.2f}, {d['off_normal_deg']:+.0f} deg)"
+                             for name, d in st_["sensors"].items()]
+                    tag = " [reset]" if st_["reset_here"] else ""
+                    print(f"     t={st_['t'] - run.ticks[0].t:5.1f}s at ({p[0]:6.1f},{p[1]:6.1f})"
+                          f"{tag}: " + "; ".join(parts))
             mr = metrics.motion_regimes(run)
             if mr["turn"]["n"] >= 50 and mr["straight"]["n"] >= 50:
                 print(f"   regime gain act/sp: straight={mr['straight']['gain']:.2f} "

@@ -512,6 +512,44 @@ def gains_figure(runs: Run | list[Run], label: str = "") -> plt.Figure:
     return fig
 
 
+def walls_figure(run: Run) -> plt.Figure:
+    """What each wall-reset sensor says odometry is off by, along the whole path.
+
+    One point per tick per sensor that squarely faces a wall (within the reset beam
+    gate): the X or Y correction a reset there would apply. Steady bands mean real
+    odometry drift; a lone sensor jumping means its beam is clipping a field element.
+    Applied resets are marked, stops (where a reset could go) shaded.
+    """
+    samples = metrics.wall_samples(run)
+    t0 = run.ticks[0].t
+    fig, axes = plt.subplots(2, 1, sharex=True, figsize=(13, 7))
+    if not samples:
+        for ax in axes:
+            ax.text(0.5, 0.5, "log has no DISTREAD lines (firmware from before 2026-09-30)",
+                    ha="center", transform=ax.transAxes)
+    colors = {"front": "tab:blue", "left": "tab:green", "right": "tab:red", "back": "tab:purple"}
+    for ax, axis in zip(axes, ("x", "y")):
+        for sensor, c in colors.items():
+            pts = [(s.t - t0, s.error_in) for s in samples if s.axis == axis and s.sensor == sensor]
+            if pts:
+                ax.scatter(*zip(*pts), s=3, color=c, label=sensor, alpha=0.7)
+        for a, b in metrics.stop_windows(run):
+            ax.axvspan(run.ticks[a].t - t0, run.ticks[b - 1].t - t0, color="gray", alpha=0.12, lw=0)
+        for r in run.resets:
+            if r.applied and r.reset_axis == axis:
+                ax.axvline(r.t - t0, color="black", lw=0.8, ls="--", alpha=0.7)
+        ax.axhline(0, color="gray", lw=0.6)
+        ax.set_ylim(-8, 8)
+        ax.set_ylabel(f"{axis}: wall minus odometry (in)")
+        ax.grid(alpha=0.3)
+        if ax.get_legend_handles_labels()[0]:
+            ax.legend(loc="upper left", fontsize=8, markerscale=3)
+    axes[1].set_xlabel("time (s)   [shaded: stops, dashed: applied resets on this axis]")
+    fig.suptitle(_title(run, "Wall-sensor view of odometry error"))
+    fig.tight_layout()
+    return fig
+
+
 FIGURES = {
     "tracking": tracking_figure,
     "theta": theta_figure,
@@ -520,6 +558,7 @@ FIGURES = {
     "encoders": encoders_figure,
     "field": field_figure,
     "dashboard": dashboard_figure,
+    "walls": walls_figure,
 }
 
 # Pooled (per-file) figures: take a list of runs instead of a single run

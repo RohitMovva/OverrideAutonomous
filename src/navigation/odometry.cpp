@@ -1,10 +1,11 @@
 #include "navigation/odometry.hpp"
+#include <algorithm>
 
 Odometry::Odometry(pros::MotorGroup &left, pros::MotorGroup &right,
-                   pros::Rotation &lateral, pros::Imu &imuSensor,
+                   pros::Rotation &vertical, pros::Rotation &lateral, pros::Imu &imuSensor,
                    bool enable_heading_filter,
                    bool enable_velocity_filters)
-    : leftDrive(left), rightDrive(right), lateralEncoder(lateral), imu(imuSensor),
+    : leftDrive(left), rightDrive(right), verticalEncoder(vertical), lateralEncoder(lateral), imu(imuSensor),
       leftVelocityObserver(Config::KS, Config::KV, Config::KA, Config::VELOCITY_OBSERVER_GAIN,
                            Config::VELOCITY_OBSERVER_DISTURBANCE_GAIN),
       rightVelocityObserver(Config::KS, Config::KV, Config::KA, Config::VELOCITY_OBSERVER_GAIN,
@@ -41,8 +42,13 @@ void Odometry::seedSensorBaseline()
     prevRightPos = getMotorPositionsInches(rightDrive.get_position_all(),
                                            Config::RIGHT_ODOM_MOTOR_INDEX);
 
-    const double lateral = latTicksToInches(lateralEncoder.get_position());
-    prevLateralPos = std::isfinite(lateral) ? lateral : 0.0;
+    verticalFallback = false;
+    lateralFallback = false;
+    hasPrevVertical = readTrackingWheel(verticalEncoder, Config::VERTICAL_TRACKING_WHEEL_DIAMETER,
+                                        prevVerticalPos);
+    hasPrevLateral = readTrackingWheel(lateralEncoder, Config::LATERAL_TRACKING_WHEEL_DIAMETER,
+                                       prevLateralPos);
+    verticalChangeTime = lateralChangeTime = Units::millisecondsToSeconds(pros::millis());
 
     const double rotation = imu.get_rotation();
     prevImuRotation = std::isfinite(rotation) ? rotation : 0.0;
@@ -82,24 +88,32 @@ void Odometry::update()
         Logger::getInstance()->logWarning("Invalid IMU reading; holding heading this tick");
     }
 
+    const auto rawLeftPositions = leftDrive.get_position_all();
+    const auto rawRightPositions = rightDrive.get_position_all();
     std::vector<double> leftPositions =
-        getMotorPositionsInches(leftDrive.get_position_all(), Config::LEFT_ODOM_MOTOR_INDEX);
+        getMotorPositionsInches(rawLeftPositions, Config::LEFT_ODOM_MOTOR_INDEX);
     std::vector<double> rightPositions =
-        getMotorPositionsInches(rightDrive.get_position_all(), Config::RIGHT_ODOM_MOTOR_INDEX);
+        getMotorPositionsInches(rawRightPositions, Config::RIGHT_ODOM_MOTOR_INDEX);
 
-    double lateralPos = latTicksToInches(lateralEncoder.get_position());
-    if (!std::isfinite(lateralPos))
-    {
-        lateralPos = prevLateralPos;
-    }
+    double verticalPos = 0.0;
+    double lateralPos = 0.0;
+    const bool verticalRead = readTrackingWheel(verticalEncoder, Config::VERTICAL_TRACKING_WHEEL_DIAMETER,
+                                                verticalPos);
+    const bool lateralRead = readTrackingWheel(lateralEncoder, Config::LATERAL_TRACKING_WHEEL_DIAMETER,
+                                               lateralPos);
 
-    // Only using drive IMEs so we don't need the lateral chord
-    lateralPos = 0;
-
-    Logger::getInstance()->log("Left Positions: %f %f %f", leftDrive.get_position_all()[0],
-                               leftDrive.get_position_all()[1], leftDrive.get_position_all()[2]);
-    Logger::getInstance()->log("Right Positions: %f %f %f", rightDrive.get_position_all()[0],
-                               rightDrive.get_position_all()[1], rightDrive.get_position_all()[2]);
+    // Log the same snapshot used above, and only motors that exist. This drive
+    // has two motors per side; indexing [2] was an out-of-bounds read.
+    const auto logPositions = [](const char *side, const std::vector<double> &positions) {
+        std::string values;
+        for (double position : positions) {
+            if (!values.empty()) values += ' ';
+            values += std::to_string(position);
+        }
+        Logger::getInstance()->log("%s Positions: %s", side, values.c_str());
+    };
+    logPositions("Left", rawLeftPositions);
+    logPositions("Right", rawRightPositions);
 
     // getMotorPositionsInches ignores unreadable motors. If a whole side dced (worst case), 
     // hold its previous position so the delta is zero
@@ -135,7 +149,59 @@ void Odometry::update()
         deltaRight = 0.0;
     }
 
+    // Tracking wheel deltas. A wheel needs a reading now AND last tick; when one is
+    // missing, or the delta is a jump no drivetrain can make, fall back for this tick:
+    // the vertical wheel to the drive-encoder average, the lateral wheel to "no
+    // sideslip". The baseline is re-taken from whatever reads now, so a sensor that
+    // reconnects is used again from the following tick.
+    const double driveForward = (deltaLeft + deltaRight) / 2.0;
+    double deltaVertical = verticalPos - prevVerticalPos;
     double deltaLateral = lateralPos - prevLateralPos;
+    // A wheel's delta may hold the travel of every tick since its reading last changed
+    // (see Config::TRACKING_WHEEL_MAX_STALE_TICKS), so gate it over that span.
+    const auto wheelMaxDelta = [&](double changeTime) {
+        const double span = std::clamp(currentTime - changeTime, deltaTime,
+                                       Config::TRACKING_WHEEL_MAX_STALE_TICKS * deltaTime);
+        return Config::FREE_WHEEL_VELOCITY * span * 1.5;
+    };
+    const bool verticalOk = verticalRead && hasPrevVertical &&
+                            std::abs(deltaVertical) <= wheelMaxDelta(verticalChangeTime);
+    const bool lateralOk = lateralRead && hasPrevLateral &&
+                           std::abs(deltaLateral) <= wheelMaxDelta(lateralChangeTime);
+    if (verticalRead && deltaVertical != 0.0)
+    {
+        verticalChangeTime = currentTime;
+    }
+    if (lateralRead && deltaLateral != 0.0)
+    {
+        lateralChangeTime = currentTime;
+    }
+    // Warn once per outage; the TRACKWHEEL line below records every tick of it
+    if (!verticalOk && !verticalFallback)
+    {
+        Logger::getInstance()->logWarning(
+            "Vertical tracking wheel unusable (read=%d delta=%f); using drive encoders",
+            verticalRead, deltaVertical);
+    }
+    if (!lateralOk && !lateralFallback)
+    {
+        Logger::getInstance()->logWarning(
+            "Lateral tracking wheel unusable (read=%d delta=%f); assuming no sideslip",
+            lateralRead, deltaLateral);
+    }
+    verticalFallback = !verticalOk;
+    lateralFallback = !lateralOk;
+    if (!verticalOk)
+    {
+        deltaVertical = driveForward;
+    }
+    // Raw deltas (nan when unusable) beside the drive-encoder estimate, for
+    // log_analysis.metrics.tracking_wheel_agreement.
+    Logger::getInstance()->log(
+        "TRACKWHEEL vert=%f lat=%f dvert=%f dlat=%f ddrive=%f vok=%d lok=%d",
+        verticalRead ? verticalPos : NAN, lateralRead ? lateralPos : NAN,
+        verticalOk ? deltaVertical : NAN, lateralOk ? deltaLateral : NAN,
+        driveForward, verticalOk, lateralOk);
 
     // Update velocities with optional filtering.
     const double prevLeftVelocity = leftVelocity.linear;
@@ -159,31 +225,18 @@ void Odometry::update()
     leftAccel.linear = (leftVelocity.linear - prevLeftVelocity) / deltaTime;
     rightAccel.linear = (rightVelocity.linear - prevRightVelocity) / deltaTime;
 
-    // Calculate forward displacement
-    double forwardDisplacement = (deltaLeft + deltaRight) / 2.0;
+    // Arc odometry in the robot frame. The fallbacks above already describe the tracking
+    // centre (the drive average is centred, "no sideslip" is zero), so they skip the
+    // wheel-offset correction by passing zero offsets.
+    const LocalDisplacement local = trackingArc(
+        deltaVertical, lateralOk ? deltaLateral : 0.0, deltaTheta,
+        verticalOk ? Config::VERTICAL_WHEEL_OFFSET : 0.0,
+        lateralOk ? Config::LATERAL_WHEEL_OFFSET : 0.0);
 
-    // Local position update
-    double deltaX, deltaY;
-
-    if (std::abs(deltaTheta) > 0.00001)
-    {
-        // Arc odometry
-        double turnRadius = forwardDisplacement / deltaTheta;
-        double centralChord = 2.0 * turnRadius * sin(deltaTheta / 2.0);
-        double lateralChord = deltaLateral - (Config::LATERAL_WHEEL_OFFSET * deltaTheta);
-        lateralChord = 0; // Disable for now
-
-        deltaX = centralChord * cos(currentPose.theta + deltaTheta / 2.0) -
-                 lateralChord * sin(currentPose.theta + deltaTheta / 2.0);
-        deltaY = centralChord * sin(currentPose.theta + deltaTheta / 2.0) +
-                 lateralChord * cos(currentPose.theta + deltaTheta / 2.0);
-    }
-    else
-    {
-        // Straight line approximation when dtheta is small
-        deltaX = forwardDisplacement * cos(currentPose.theta);
-        deltaY = forwardDisplacement * sin(currentPose.theta);
-    }
+    // Rotate into the field frame at the arc's mean heading
+    const double midTheta = currentPose.theta + deltaTheta / 2.0;
+    const double deltaX = local.x * cos(midTheta) - local.y * sin(midTheta);
+    const double deltaY = local.x * sin(midTheta) + local.y * cos(midTheta);
 
     // Update position with optional filtering
     currentPose.x += deltaX;
@@ -193,7 +246,10 @@ void Odometry::update()
 
     prevLeftPos = leftPositions;
     prevRightPos = rightPositions;
+    prevVerticalPos = verticalPos;
     prevLateralPos = lateralPos;
+    hasPrevVertical = verticalRead;
+    hasPrevLateral = lateralRead;
     prevTime = lastUpdateTime;
     lastUpdateTime = currentTime;
 }
@@ -221,7 +277,9 @@ void Odometry::setDriveVoltages(double leftVoltage, double rightVoltage)
 
 bool Odometry::isReliable() const
 {
-    return true; // TODO update based on if sensors are outputting valid 
+    // False until the IMU gives a finite rotation to take deltas from; update() skips
+    // every tick until then, so the pose is frozen
+    return hasPrevSensorReadings;
 }
 
 // Helper function implementations
@@ -230,9 +288,16 @@ double Odometry::ticksToInches(double ticks)
     return Units::ticksToDistance(ticks, Config::TICKS_PER_ROTATION, Config::WHEEL_DIAMETER, Config::GEAR_RATIO);
 }
 
-double Odometry::latTicksToInches(int ticks)
+bool Odometry::readTrackingWheel(pros::Rotation &encoder, double diameter, double &inches)
 {
-    return Units::ticksToDistance(ticks, Units::Constants::V5_ROTATION_SENSOR_TICKS_PER_ROTATION, Config::WHEEL_DIAMETER, Units::Constants::GEAR_RATIO_1_1);
+    const int32_t centidegrees = encoder.get_position();
+    if (centidegrees == PROS_ERR)
+    {
+        return false;
+    }
+    inches = Units::ticksToDistance(centidegrees, Units::Constants::V5_ROTATION_SENSOR_TICKS_PER_ROTATION,
+                                    diameter, Units::Constants::GEAR_RATIO_1_1);
+    return true;
 }
 
 double Odometry::getAveragePosition(const std::vector<double> &positions)
@@ -306,10 +371,15 @@ void Odometry::disableSensor(const std::string &sensor)
     {
         rightVelocityObserver.reset();
     }
+    else if (sensor == "vertical")
+    {
+        hasPrevVertical = readTrackingWheel(verticalEncoder, Config::VERTICAL_TRACKING_WHEEL_DIAMETER,
+                                            prevVerticalPos);
+    }
     else if (sensor == "lateral")
     {
-        const double lateral = latTicksToInches(lateralEncoder.get_position());
-        prevLateralPos = std::isfinite(lateral) ? lateral : prevLateralPos;
+        hasPrevLateral = readTrackingWheel(lateralEncoder, Config::LATERAL_TRACKING_WHEEL_DIAMETER,
+                                           prevLateralPos);
     }
 }
 

@@ -15,6 +15,16 @@ sampled every Robot::DRIVE_HEALTH_LOG_MS:
 
     DRIVEHEALTH auton L0 port=-18 tempC=35 curMA=810 W=5.2 eff=71 ovt=0
 
+One further line per sample carries the battery, which is a property of the robot
+rather than of a motor:
+
+    DRIVEHEALTH <context> BATT mV=<millivolts> mA=<milliamps> pct=<percent> tempC=<c>
+
+    DRIVEHEALTH auton BATT mV=12180 mA=4200 pct=68 tempC=31
+
+Logs captured before 2026-09-18 have no BATT line; `HealthSession.has_battery` is
+False for those and anything reading it should skip rather than invent numbers.
+
 `context` is "auton" or "driver". `side` is L/R, `index` is the motor's position
 within that side's MotorGroup — the same ordering as the "Left Positions:" /
 "Right Positions:" columns in the odometry stream, so the two can be correlated.
@@ -54,6 +64,10 @@ _VAL = rf"(?:--|{FLOAT})"
 _MOTOR_RE = re.compile(
     rf"DRIVEHEALTH (\S+) ([LR])(\d+) port=(-?\d+) tempC=({_VAL}) curMA=({_VAL}) "
     rf"W=({_VAL}) eff=({_VAL}) ovt=({_VAL})"
+)
+
+_BATTERY_RE = re.compile(
+    rf"DRIVEHEALTH (\S+) BATT mV=({_VAL}) mA=({_VAL}) pct=({_VAL}) tempC=({_VAL})"
 )
 
 # Legacy per-side line: "L tempC=a,b curMA=a,b [W=a,b] [eff=a,b] ovt=a,b"
@@ -116,11 +130,33 @@ class MotorSample:
 
 
 @dataclass
+class BatterySample:
+    """The pack at one sample instant.
+
+    `volts` is what every feedforward constant is implicitly calibrated against: kS
+    and kV convert a wheel speed into a fraction of whatever the pack happens to be
+    supplying, so the same command delivers less torque as the pack drains. A
+    comparison between two sessions is only meaningful if this stayed put.
+    """
+    t: float
+    context: str
+    millivolts: float
+    milliamps: float
+    capacity_pct: float
+    temp_c: float
+
+    @property
+    def volts(self) -> float:
+        return self.millivolts / 1000.0
+
+
+@dataclass
 class HealthSession:
     """One power-on (from a "Logger initialized successfully" line)."""
     t_start: float
     index: int = 0
     samples: list[MotorSample] = field(default_factory=list)
+    battery: list[BatterySample] = field(default_factory=list)
 
     @property
     def motors(self) -> list[tuple[str, int]]:
@@ -142,6 +178,11 @@ class HealthSession:
             if out.get(s.key) is None:
                 out[s.key] = s.port if s.port is not None else drive_port(s.side, s.index)
         return out
+
+    @property
+    def has_battery(self) -> bool:
+        """False for logs recorded before the BATT line existed."""
+        return bool(self.battery)
 
     @property
     def has_power(self) -> bool:
@@ -210,6 +251,15 @@ def parse_health_log(path: str | Path) -> list[HealthSession]:
                 session = HealthSession(t_start=t, index=0)
                 sessions.append(session)
 
+            bm = _BATTERY_RE.match(msg)
+            if bm:
+                session.battery.append(BatterySample(
+                    t=t, context=bm.group(1), millivolts=_val(bm.group(2)),
+                    milliamps=_val(bm.group(3)), capacity_pct=_val(bm.group(4)),
+                    temp_c=_val(bm.group(5)),
+                ))
+                continue
+
             mm = _MOTOR_RE.match(msg)
             if mm:
                 session.samples.append(_parse_motor_line(t, mm))
@@ -240,6 +290,57 @@ ENGAGED_MA = 150.0
 # its partner is over PULLING_MA.
 CUTOUT_MA = 100.0
 PULLING_MA = 400.0
+
+
+# A 7-cell V5 pack is ~12.8 V charged and the brain browns out near 7 V. Below this
+# the feedforward's volts are simply not available, whatever kS/kV say.
+LOW_BATTERY_V = 11.5
+
+# Sag beyond this within one session means the pack is being asked for more current
+# than it can hold up under, so later runs are not comparable to earlier ones.
+MAX_SESSION_SAG_V = 1.5
+
+
+@dataclass
+class BatteryHealth:
+    """The pack across one session, and whether it stayed put.
+
+    Exists because two sessions of the same routes on the same firmware are only
+    comparable if the supply did not move between them. Runs 09182026-128 and -130
+    differed by 1.09 in of final error on an untouched route with no pose jumps,
+    resets or overruns to explain it -- the only visible difference was ~20% less
+    peak drive power for the same commanded work.
+    """
+    n: int
+    start_v: float
+    end_v: float
+    min_v: float
+    sag_v: float              # start minus minimum, i.e. worst dip under load
+    mean_v: float
+    start_pct: float
+    end_pct: float
+    peak_ma: float
+    max_temp_c: float
+
+
+def battery_health(session: HealthSession) -> BatteryHealth | None:
+    """Summarise the pack over a session, or None if the log predates the BATT line."""
+    volts = [b.volts for b in session.battery if math.isfinite(b.volts)]
+    if not volts:
+        return None
+    pct = [b.capacity_pct for b in session.battery if math.isfinite(b.capacity_pct)]
+    amps = [b.milliamps for b in session.battery if math.isfinite(b.milliamps)]
+    temps = [b.temp_c for b in session.battery if math.isfinite(b.temp_c)]
+    return BatteryHealth(
+        n=len(volts),
+        start_v=volts[0], end_v=volts[-1], min_v=min(volts),
+        sag_v=volts[0] - min(volts),
+        mean_v=statistics.mean(volts),
+        start_pct=pct[0] if pct else math.nan,
+        end_pct=pct[-1] if pct else math.nan,
+        peak_ma=max(amps) if amps else math.nan,
+        max_temp_c=max(temps) if temps else math.nan,
+    )
 
 
 @dataclass

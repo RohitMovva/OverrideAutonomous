@@ -16,12 +16,20 @@ from pathlib import Path
 import pytest
 
 from log_analysis import metrics
+from log_analysis.robot_config import LATERAL_WHEEL_OFFSET, VERTICAL_WHEEL_OFFSET
 from log_analysis.parser import parse_log, trajectory_runs
 
 LOG_DIR = Path(__file__).parent / "logs"
-LOG_FILES = ["square.txt", "init.txt", "pikes.log", "erie.txt",
+LOG_FILES = ["09122026-3.txt", "square.txt", "init.txt", "pikes.log", "erie.txt",
              "state.txt", "league_night_2.txt", "default.log",
              "initial_tuning.txt", "07132026.txt", "07132026-2.txt", "07132026-3.txt", "07132026-4.txt", "07132026-5.txt", "07132026-6.txt", "07132026-7.txt", "07132026-8.txt"]
+# Logs from the path-following test suite (VexAutonomousPlanner/suite/manifest.yaml) are
+# copied in as suite_<route>-<n>.txt and picked up automatically.
+LOG_FILES += sorted(p.name for p in LOG_DIR.glob("suite_*.txt"))
+# Boots that ran routes from the planner's traction_ab/ folder (the traction A/B and the
+# tracking-wheel offset spins), picked up without copying them to suite_ names.
+LOG_FILES += sorted(p.name for p in LOG_DIR.glob("[01]*.txt")
+                    if b"trajectory 'traction_ab/" in p.read_bytes())
 
 _cache: dict[str, list] = {}
 
@@ -260,11 +268,9 @@ def test_effective_track_width_consistent(log_runs):
     """Measured wheel differential should imply the configured track width
     (Config::WHEEL_BASE_WIDTH, config.hpp:13).
 
-    Estimated by regressing (v_r - v_l) on IMU rotation rate per tick, using
-    *measured* wheel velocities -- so this tests the kinematic constant alone
-    and is unaffected by whether the drivetrain hit its setpoints. A real
-    mismatch mis-scales every RamseteController::calculate_wheel_velocities
-    conversion.
+    Estimated by regressing (v_r - v_l) on IMU rotation rate per tick.
+    This tests wheel/IMU agreement, which depends on geometry, encoder accuracy,
+    slip, and sensor timing. A mismatch requires investigation before tuning.
 
     Only estimates with r_squared >= 0.8 are trusted; a poorly-conditioned run
     (little turning) must not be allowed to indict the constant.
@@ -293,8 +299,9 @@ def test_effective_track_width_consistent(log_runs):
     assert abs(median - nominal) / nominal <= 0.10, (
         f"{name}: effective track width median {median:.1f} in "
         f"(runs: {[f'{e:.1f}' for e in sorted(estimates)]}) vs the "
-        f"{nominal:.1f} in this build used. Config::WHEEL_BASE_WIDTH is wrong; "
-        "angular velocity commands are systematically mis-scaled.")
+        f"{nominal:.1f} in this build used. Wheel motion and IMU yaw disagree; "
+        "check encoder agreement, slip, and sensor timing before calibrating "
+        "Config::WHEEL_BASE_WIDTH.")
 
 
 def test_dead_reckoned_actual_wheels_match_goal(log_runs):
@@ -376,14 +383,14 @@ def test_commanded_rotation_is_delivered(log_runs):
     Rotation is driven by the *difference* of two large wheel speeds, so it is
     the first thing to break when a wheel cannot hit its setpoint: a few in/s of
     shortfall on the outside wheel is a large fraction of the differential. The
-    result is systematic under-rotation -- the robot runs wide on every turn in
-    the same direction, which shows up as a one-sided cross-track error.
+    expected effect under ideal kinematics is under-rotation. IMU yaw must be
+    checked independently: slip or sensor errors can reverse that conclusion.
 
     Asserted on the integrated wheel differential (actual vs commanded), which
     never divides by a track width and so is valid even for logs whose build
     constants are unknown. Where the log does declare its build config, the
-    message also reports the resulting rotation in radians and what share of the
-    gap is wheel-tracking error rather than bad geometry.
+    message also compares the observed yaw gap with the wheel-tracking
+    contribution. Opposite signs rule out wheel shortfall as the sole cause.
     """
     name, runs = log_runs
     failures = []
@@ -397,12 +404,13 @@ def test_commanded_rotation_is_delivered(log_runs):
             if metrics.declared_track_width(run):
                 detail = (f"; rotation {rd['achieved_rotation_rad']:+.2f} of "
                           f"{rd['commanded_rotation_rad']:+.2f} rad, "
-                          f"{100*rd['explained_fraction']:.0f}% of the gap is "
-                          "wheel-velocity tracking error (not track width)")
+                          f"wheel-tracking contribution {rd['tracking_loss_rad']:+.2f} rad "
+                          f"versus observed gap {rd['deficit_rad']:+.2f} rad "
+                          "(opposite signs mean wheel shortfall alone cannot explain yaw)")
             failures.append(
                 f"run{i}: wheels delivered {100*frac:.0f}% of the commanded "
                 f"turn differential{detail}")
-    assert not failures, f"{name}: under-rotation: {failures}"
+    assert not failures, f"{name}: wheel differential shortfall: {failures}"
 
 
 def test_cross_track_error_not_one_sided(log_runs):
@@ -516,6 +524,211 @@ def test_encoder_columns_are_integral(log_runs):
     assert not failures, (
         f"{name}: non-integral encoder samples -- out-of-bounds read at "
         f"odometry.cpp:96-99: {failures}")
+
+
+def test_tracking_wheels_read_every_tick(log_runs):
+    """Both tracking wheels must be usable on every tick of a run.
+
+    When one is not (sensor unplugged, PROS_ERR, or a delta no drivetrain can make),
+    Odometry::update silently substitutes the drive encoders for the vertical wheel or
+    "no sideslip" for the lateral one, and the pose quietly loses what the wheels were
+    added for. The first tick of each outage also logs a WARNING naming the wheel.
+    """
+    name, runs = log_runs
+    checked = False
+    failures = []
+    for i, run in enumerate(runs):
+        tw = metrics.tracking_wheel_agreement(run)
+        if not tw["ticks"]:
+            continue
+        checked = True
+        if tw["vertical_fallback"] or tw["lateral_fallback"]:
+            failures.append(f"run{i}: vertical {tw['vertical_fallback']}, lateral "
+                            f"{tw['lateral_fallback']} of {tw['ticks']} ticks")
+    if not checked:
+        pytest.skip(f"{name}: no TRACKWHEEL lines (pre-tracking-wheel firmware)")
+    assert not failures, (
+        f"{name}: odometry fell back from the tracking wheels (check the rotation "
+        f"sensor ports in main.cpp and the wiring): {failures}")
+
+
+def test_vertical_tracking_wheel_direction(log_runs):
+    """The vertical tracking wheel must count the same way as the drive.
+
+    A reversed rotation sensor (wrong sign on its port in main.cpp) makes the pose run
+    backwards while the robot drives forwards. Its per-tick delta then anti-correlates
+    with the drive-encoder delta, which no amount of slip can cause.
+    """
+    name, runs = log_runs
+    checked = False
+    failures = []
+    for i, run in enumerate(runs):
+        tw = metrics.tracking_wheel_agreement(run)
+        if tw.get("n", 0) < 100 or tw["wheel_travel_in"] < 10.0:
+            continue
+        checked = True
+        if tw["direction_dot"] < 0:
+            failures.append(f"run{i}: wheel net {tw['wheel_net_in']:+.1f} in vs "
+                            f"drive net {tw['drive_net_in']:+.1f} in")
+    if not checked:
+        pytest.skip(f"{name}: no usable TRACKWHEEL lines")
+    assert not failures, (
+        f"{name}: vertical tracking wheel counts opposite to the drive -- negate "
+        f"vertical_encoder's port in main.cpp: {failures}")
+
+
+def test_drive_slip_against_tracking_wheel(log_runs):
+    """Drive encoders should agree with the vertical tracking wheel within 5% of travel.
+
+    The tracking wheel is unpowered and on the centre line, so it measures what the
+    chassis travelled. A larger gap is drive-wheel slip, or a diameter that has not
+    been calibrated: push-test Config::VERTICAL_TRACKING_WHEEL_DIAMETER (and check
+    Config::WHEEL_DIAMETER) before reading it as slip. Odometry no longer integrates
+    the drive encoders, so a failure here is a control (feedforward/velocity) concern,
+    not a pose error.
+    """
+    name, runs = log_runs
+    checked = False
+    failures = []
+    for i, run in enumerate(runs):
+        tw = metrics.tracking_wheel_agreement(run)
+        if tw.get("n", 0) < 100 or tw["wheel_travel_in"] < 40.0:
+            continue
+        checked = True
+        if tw["slip_fraction"] > 0.05:
+            failures.append(f"run{i}: {100*tw['slip_fraction']:.1f}% (drive "
+                            f"{tw['drive_net_in']:+.1f} in vs wheel {tw['wheel_net_in']:+.1f} in "
+                            f"over {tw['wheel_travel_in']:.0f} in)")
+    if not checked:
+        pytest.skip(f"{name}: no TRACKWHEEL runs with enough travel")
+    assert not failures, f"{name}: drive encoders vs vertical tracking wheel: {failures}"
+
+
+def test_pose_follows_vertical_wheel(log_runs):
+    """Odometry's forward travel should match what the vertical wheel rolled within 5%.
+
+    The wheel's absolute reading counts every inch it rolled, including deltas
+    Odometry::update rejected as implausible. When the gate drops real travel the pose
+    falls behind, RAMSETE chases the goal, and the robot overshoots on the field: boot
+    989 integrated 68.8 in of 114.9 in rolled and drove 116 in of a 96 in route. Check
+    the tracking-wheel gate (Config::TRACKING_WHEEL_MAX_STALE_TICKS, odometry.cpp) and
+    the rotation sensors' data rate (main.cpp initialize).
+    """
+    name, runs = log_runs
+    checked = False
+    failures = []
+    for i, run in enumerate(runs):
+        tw = metrics.tracking_wheel_agreement(run)
+        wheel = tw.get("wheel_abs_net_in", 0.0)
+        if abs(wheel) < 40.0:
+            continue
+        checked = True
+        gap = abs(tw["pose_forward_in"] - wheel) / abs(wheel)
+        if gap > 0.05:
+            failures.append(f"run{i}: pose {tw['pose_forward_in']:+.1f} in vs wheel "
+                            f"{wheel:+.1f} in ({100*gap:.0f}%)")
+    if not checked:
+        pytest.skip(f"{name}: no TRACKWHEEL runs with 40 in of vertical travel")
+    assert not failures, f"{name}: odometry lost vertical-wheel travel: {failures}"
+
+
+def test_tracking_wheel_offsets_match_config(log_runs):
+    """Spins must show the tracking wheels where config.hpp says they sit, within 0.25 in.
+
+    In a pure spin each wheel rolls only by its offset from the pivot times the angle
+    turned (metrics.tracking_wheel_offsets), so the spin routes (suite spin_w*) measure
+    Config::LATERAL_WHEEL_OFFSET and VERTICAL_WHEEL_OFFSET directly. A mismatch makes
+    every turn leak into the pose as fake translation. The pivot is where the drive
+    actually turns about, so the offsets move when the traction wheels do: re-measure
+    after a traction change, and move the distance-sensor offsets in main.cpp with them.
+    """
+    name, runs = log_runs
+    checked = False
+    failures = []
+    for i, run in enumerate(runs):
+        off = metrics.tracking_wheel_offsets(run)
+        if "lateral_offset_in" not in off or off["radians"] < 4 * math.pi:
+            continue
+        checked = True
+        for key, declared, const in (("lateral_offset_in", LATERAL_WHEEL_OFFSET, "LATERAL_WHEEL_OFFSET"),
+                                     ("vertical_offset_in", VERTICAL_WHEEL_OFFSET, "VERTICAL_WHEEL_OFFSET")):
+            if abs(off[key] - declared) > 0.25:
+                failures.append(f"run{i}: measured {const} {off[key]:+.2f} in vs config {declared:+.2f}")
+    if not checked:
+        pytest.skip(f"{name}: no tracking-wheel spin with 2 revolutions")
+    assert not failures, f"{name}: tracking-wheel offsets (include/config.hpp): {failures}"
+
+
+def test_spin_pivot_same_both_ways(log_runs):
+    """The offsets fitted from CCW and CW spins should agree within 0.3 in.
+
+    If they do not, the robot is not turning about a fixed point: scrub walks the pivot
+    one way per direction, and no single offset in config.hpp can be right for both.
+    Compare double vs single traction on this (tests/traction_ab.py).
+    """
+    name, runs = log_runs
+    checked = False
+    failures = []
+    for i, run in enumerate(runs):
+        off = metrics.tracking_wheel_offsets(run)
+        if "lateral_ccw_in" not in off or off["radians"] < 4 * math.pi:
+            continue
+        checked = True
+        for axis in ("lateral", "vertical"):
+            gap = off[f"{axis}_ccw_in"] - off[f"{axis}_cw_in"]
+            if abs(gap) > 0.3:
+                failures.append(f"run{i} {axis}: CCW {off[f'{axis}_ccw_in']:+.2f} vs CW "
+                                f"{off[f'{axis}_cw_in']:+.2f} in")
+    if not checked:
+        pytest.skip(f"{name}: no tracking-wheel spin with 2 revolutions")
+    assert not failures, f"{name}: spin pivot differs by direction: {failures}"
+
+
+def test_spin_commands_no_creep(log_runs):
+    """RAMSETE should command no forward speed while the plan spins in place.
+
+    It does when the pose believes the robot moves sideways during the turn, which a
+    wrong Config::LATERAL_WHEEL_OFFSET produces (metrics.spin_creep): the robot then
+    walks forward or back through every spin, and through every turn on a route.
+    """
+    name, runs = log_runs
+    checked = False
+    failures = []
+    for i, run in enumerate(runs):
+        cr = metrics.spin_creep(run)
+        if not cr:
+            continue
+        checked = True
+        if abs(cr["creep_in_per_rad"]) > 0.2:
+            failures.append(f"run{i}: {cr['creep_in_per_rad']:+.2f} in per radian")
+    if not checked:
+        pytest.skip(f"{name}: no spin in place")
+    assert not failures, (f"{name}: RAMSETE drives during spins -- check LATERAL_WHEEL_OFFSET "
+                          f"(include/config.hpp) against metrics.tracking_wheel_offsets: {failures}")
+
+
+def test_spin_delivers_planned_rate(log_runs):
+    """On the plateau of an unsaturated spin the robot should turn within 10% of plan.
+
+    The turn feedforward (Config::KS_ANGULAR / KV_ANGULAR, DrivetrainController) has to
+    pay the scrub; when it falls short the spin lags the plan and the follower starts
+    the next segment behind in heading. spin_max is planned past the robot's limit on
+    purpose and is skipped by its saturation.
+    """
+    name, runs = log_runs
+    checked = False
+    failures = []
+    for i, run in enumerate(runs):
+        sc = metrics.spin_scrub(run)
+        if "delivered_ratio" not in sc or sc["plateau_n"] < 50 or sc["saturated_fraction"] > 0.3:
+            continue
+        checked = True
+        if abs(sc["delivered_ratio"] - 1.0) > 0.10:
+            failures.append(f"run{i}: {sc['rate_mean']:.2f} rad/s for {sc['plan_rate_mean']:.2f} planned "
+                            f"(extra turn voltage {sc['scrub_v']:.1f})")
+    if not checked:
+        pytest.skip(f"{name}: no unsaturated spin plateau")
+    assert not failures, f"{name}: spin rate vs plan: {failures}"
 
 
 def test_distance_integral_drift_bounded(log_runs):
@@ -694,3 +907,41 @@ def test_distance_resets_are_small_corrections(log_runs):
     assert not big, (
         f"{name}: distance resets moved the pose estimate by up to "
         f"{worst:.1f} in: {big[:5]}. Odometry drift between resets is large.")
+
+
+def _distread_logs() -> list[str]:
+    """Imported logs carrying the per-tick DISTREAD line (firmware from 2026-09-30 on).
+
+    Only <MMDDYYYY>-<boot>.txt names dated 2026-09-30 or later are opened, and only
+    their first 256 KB: the line is logged from the first control tick.
+    """
+    out = []
+    for p in sorted(LOG_DIR.glob("*-*.txt")):
+        stem = p.stem.split("-")[0]
+        if len(stem) != 8 or not stem.isdigit():
+            continue
+        if (stem[4:], stem[:2], stem[2:4]) < ("2026", "09", "30"):
+            continue
+        with open(p, "rb") as fh:
+            if b"DISTREAD" in fh.read(256 * 1024):
+                out.append(p.name)
+    return out
+
+
+@pytest.mark.parametrize("name", _distread_logs() or ["(no DISTREAD logs)"])
+def test_offline_wall_math_matches_firmware(name):
+    """metrics.wall_estimate must reproduce every correction the firmware logged.
+
+    The walls plot and the stop report only mean anything if the offline geometry
+    (sensor offsets parsed from main.cpp, wall position from config.hpp, the beam /
+    wall snapping) is the firmware's. A mismatch means one side changed: re-sync
+    wall_estimate with src/navigation/distance_reset_odometry.cpp, or the offsets.
+    Needs the per-tick DISTREAD line to tell which sensor made each reset.
+    """
+    runs = get_runs(name)
+    rows = [(i, a) for i, run in enumerate(runs) for a in metrics.reset_agreement(run)]
+    if not rows:
+        pytest.skip(f"{name}: no resets with DISTREAD data")
+    bad = [f"run{i}@t={a['t'] % 60:.2f}s {a['sensor']} {a['axis']}: logged {a['logged_in']:+.2f} "
+           f"offline {a['offline_in']:+.2f}" for i, a in rows if abs(a["diff_in"]) > 0.25]
+    assert not bad, f"{name}: offline wall math disagrees with the firmware: {bad[:5]}"
